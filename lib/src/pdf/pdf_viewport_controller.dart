@@ -294,36 +294,15 @@ class PdfViewportController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Constrain viewport boundaries to keep PDF visible.
-  /// Centers PDF when smaller than viewport, clamps pan when larger.
+  /// Constrain viewport boundaries.
+  ///
+  /// With free pan mode, this method does nothing - users can drag the PDF
+  /// to any position on the screen. ElasticBoundary provides optional
+  /// elastic resistance when dragging beyond natural boundaries.
   void constrainBounds(Size pdfSize, Size viewportSize) {
-    final baseScale = viewportSize.width / pdfSize.width;
-    final scaledWidth = pdfSize.width * baseScale * _zoom;
-    final scaledHeight = pdfSize.height * baseScale * _zoom;
-
-    // Horizontal constraint
-    if (scaledWidth <= viewportSize.width) {
-      // PDF width smaller than viewport, center it
-      _panOffset = Offset((viewportSize.width - scaledWidth) / 2, _panOffset.dy);
-    } else {
-      // PDF width larger than viewport, clamp boundaries
-      final minX = viewportSize.width - scaledWidth;
-      final maxX = 0.0;
-      _panOffset = Offset(_panOffset.dx.clamp(minX, maxX), _panOffset.dy);
-    }
-
-    // Vertical constraint
-    if (scaledHeight <= viewportSize.height) {
-      // PDF height smaller than viewport, center it
-      _panOffset = Offset(_panOffset.dx, (viewportSize.height - scaledHeight) / 2);
-    } else {
-      // PDF height larger than viewport, clamp boundaries
-      final minY = viewportSize.height - scaledHeight;
-      final maxY = 0.0;
-      _panOffset = Offset(_panOffset.dx, _panOffset.dy.clamp(minY, maxY));
-    }
-
-    notifyListeners();
+    // 不做任何约束，完全自由平移
+    // 用户可以将 PDF 拖动到任意位置
+    // ElasticBoundary 提供弹性阻力（在 InteractiveCanvasViewer 中处理）
   }
 
   /// Sets both zoom and pan offset in one update.
