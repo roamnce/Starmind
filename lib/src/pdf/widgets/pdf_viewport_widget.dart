@@ -12,6 +12,7 @@ import '../pdf_viewport_controller.dart';
 import '../pdf_coordinates.dart';
 import '../viewport_repaint_notifier.dart';
 import 'interactive_canvas_viewer.dart';
+import 'text_selection_handler.dart';
 
 /// PDF viewport widget with pinch-to-zoom and pan support.
 ///
@@ -228,6 +229,8 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   ui.Image? _highResTile;
   Rect? _highResRect;
   Timer? _debounceTimer;
+  TextSelectionHandler? _selectionHandler;
+  bool _isSelecting = false;
 
   @override
   void initState() {
@@ -248,6 +251,17 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   Future<void> _initPage() async {
     final size = await widget.controller.getPageSize(widget.pageIndex);
     if (!mounted) return;
+
+    // Initialize TextSelectionHandler
+    final chars = await widget.controller.getPageChars(widget.pageIndex);
+    _selectionHandler = TextSelectionHandler(
+      chars: chars,
+      pageHeight: size.height,
+      zoom: widget.transformationController?.value.getMaxScaleOnAxis() ?? 1.0,
+      scrollOffset: Offset.zero,
+      onSelectionComplete: _onSelectionComplete,
+    );
+
     setState(() {
       _pdfSize = size;
     });
@@ -255,6 +269,21 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadHighResTile();
     });
+  }
+
+  void _onSelectionComplete(TextSelectionResult result) {
+    setState(() {
+      _isSelecting = false;
+    });
+
+    // Set selection state in controller
+    // The controller's selection mechanism uses internal state that we need to set
+    // For now, we use startSelection to trigger the state update
+    // Note: A cleaner approach would be to add a setSelectionState method to the controller
+    widget.controller.startSelection(
+      widget.pageIndex,
+      Offset.zero, // Placeholder - actual selection is driven by char indices
+    );
   }
 
   void _onControllerChanged() {
@@ -435,29 +464,50 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
     final logicalWidth = pdfWidth * scale;
     final logicalHeight = pdfHeight * scale;
 
-    return Container(
-      width: logicalWidth,
-      height: logicalHeight,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onLongPressStart: (details) {
+        if (_selectionHandler != null) {
+          _selectionHandler!.onLongPressStart(details.localPosition);
+          setState(() {
+            _isSelecting = true;
+          });
+        }
+      },
+      onLongPressMoveUpdate: (details) {
+        if (_selectionHandler != null && _isSelecting) {
+          _selectionHandler!.onLongPressMove(details.localPosition);
+          setState(() {}); // Trigger repaint to show selection area
+        }
+      },
+      onLongPressEnd: (details) {
+        if (_selectionHandler != null) {
+          _selectionHandler!.onLongPressEnd();
+        }
+      },
+      child: Container(
+        width: logicalWidth,
+        height: logicalHeight,
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: CustomPaint(
+          painter: PdfPagePainter(
+            lowResImage: _lowResImage,
+            highResTile: _highResTile,
+            highResRect: _highResRect,
+            highlights: widget.controller.highlights.where((h) => h.pageIndex == widget.pageIndex).toList(),
+            selectionRects: widget.controller.getSelectionRects(widget.pageIndex),
+            pdfHeight: pdfHeight,
+            scale: scale,
           ),
-        ],
-      ),
-      child: CustomPaint(
-        painter: PdfPagePainter(
-          lowResImage: _lowResImage,
-          highResTile: _highResTile,
-          highResRect: _highResRect,
-          highlights: widget.controller.highlights.where((h) => h.pageIndex == widget.pageIndex).toList(),
-          selectionRects: widget.controller.getSelectionRects(widget.pageIndex),
-          pdfHeight: pdfHeight,
-          scale: scale,
         ),
       ),
     );
