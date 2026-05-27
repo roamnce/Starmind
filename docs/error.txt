@@ -1,0 +1,512 @@
+➜  starmind git:(main) ✗ flutter build apk --target-platform android-arm64
+Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+Resolving dependencies... 
+Downloading packages... 
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.17.0 (1.18.2 available)
+  test_api 0.7.10 (0.7.12 available)
+  vector_math 2.2.0 (2.3.0 available)
+Got dependencies!
+4 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 3268 bytes (99.8% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Resolving dependencies...
+Downloading packages...
++ adaptive_number 1.0.0
++ args 2.4.2 (2.7.0 available)
++ async 2.13.1
++ build_tool 1.0.0 from path /workspace/starmind/rust_builder/cargokit/gradle/../build_tool
++ collection 1.18.0 (1.19.1 available)
++ convert 3.1.1 (3.1.2 available)
++ crypto 3.0.3 (3.0.7 available)
++ ed25519_edwards 0.3.1
++ fixnum 1.1.1
++ github 9.17.0 (9.25.1 available)
++ hex 0.2.0
++ http 1.1.0 (1.6.0 available)
++ http_parser 4.0.2 (4.1.2 available)
++ json_annotation 4.12.0
++ logging 1.2.0 (1.3.0 available)
++ meta 1.18.2
++ path 1.8.0 (1.9.1 available)
++ petitparser 5.4.0 (7.0.2 available)
++ source_span 1.10.0 (1.10.2 available)
++ string_scanner 1.4.1
++ term_glyph 1.2.2
++ toml 0.14.0 (0.18.0 available)
++ typed_data 1.4.0
++ version 3.0.0 (3.0.2 available)
++ yaml 3.1.2 (3.1.3 available)
+Changed 25 dependencies!
+14 packages have newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
+Compiling bin/build_tool_runner.dart to kernel file bin/build_tool_runner.dill.
+INFO: Precompiled binaries are disabled
+INFO: Building rust for aarch64-linux-android
+SEVERE: ================================================================================
+SEVERE: Cargokit BuildTool failed with error:
+SEVERE: --------------------------------------------------------------------------------
+SEVERE: External Command: rustup "run" "stable" "cargo" "build" "--manifest-path" "/workspace/starmind/rust/Cargo.toml" "-p" "rust" "--release" "--target" "aarch64-linux-android" "--target-dir" "/workspace/starmind/build/rust_lib_starmind/build"
+SEVERE: Returned Exit Code: 101
+SEVERE: --------------------------------------------------------------------------------
+SEVERE: STDOUT:
+SEVERE: --------------------------------------------------------------------------------
+SEVERE: STDERR:
+SEVERE: Compiling autocfg v1.1.0
+SEVERE:    Compiling libc v0.2.186
+SEVERE:    Compiling memchr v2.6.4
+SEVERE:    Compiling proc-macro2 v1.0.106
+SEVERE:    Compiling quote v1.0.45
+SEVERE:    Compiling unicode-ident v1.0.12
+SEVERE:    Compiling version_check v0.9.4
+SEVERE:    Compiling typenum v1.17.0
+SEVERE:    Compiling cfg-if v1.0.0
+SEVERE:    Compiling futures-core v0.3.29
+SEVERE:    Compiling generic-array v0.14.7
+SEVERE:    Compiling num-traits v0.2.19
+SEVERE:    Compiling slab v0.4.9
+SEVERE:    Compiling futures-channel v0.3.29
+SEVERE:    Compiling futures-task v0.3.29
+SEVERE:    Compiling futures-sink v0.3.29
+SEVERE:    Compiling aho-corasick v1.1.2
+SEVERE:    Compiling futures-util v0.3.29
+SEVERE:    Compiling pin-project-lite v0.2.13
+SEVERE:    Compiling regex-syntax v0.8.2
+SEVERE:    Compiling syn v2.0.117
+SEVERE:    Compiling anyhow v1.0.75
+SEVERE:    Compiling log v0.4.20
+SEVERE:    Compiling cc v1.0.83
+SEVERE:    Compiling serde_core v1.0.228
+SEVERE:    Compiling adler v1.0.2
+SEVERE:    Compiling gimli v0.28.1
+SEVERE:    Compiling futures-io v0.3.29
+SEVERE:    Compiling pin-utils v0.1.0
+SEVERE:    Compiling block-buffer v0.10.4
+SEVERE:    Compiling crypto-common v0.1.6
+SEVERE:    Compiling digest v0.10.7
+SEVERE:    Compiling miniz_oxide v0.7.1
+SEVERE:    Compiling android_system_properties v0.1.5
+SEVERE:    Compiling num_cpus v1.16.0
+SEVERE:    Compiling object v0.32.1
+SEVERE:    Compiling pxfm v0.1.29
+SEVERE:    Compiling backtrace v0.3.69
+SEVERE:    Compiling regex-automata v0.4.3
+SEVERE:    Compiling dart-sys v4.1.5
+SEVERE:    Compiling rustc-demangle v0.1.23
+SEVERE:    Compiling addr2line v0.21.0
+SEVERE:    Compiling getrandom v0.4.2
+SEVERE:    Compiling zune-core v0.5.1
+SEVERE:    Compiling build-target v0.4.0
+SEVERE:    Compiling portable-atomic v1.13.1
+SEVERE:    Compiling byteorder v1.5.0
+SEVERE:    Compiling zmij v1.0.21
+SEVERE:    Compiling md-5 v0.10.6
+SEVERE:    Compiling regex v1.10.2
+SEVERE:    Compiling futures-macro v0.3.29
+SEVERE:    Compiling env_filter v0.1.4
+SEVERE:    Compiling flutter_rust_bridge v2.12.0
+SEVERE:    Compiling moxcms v0.8.1
+SEVERE:    Compiling zune-jpeg v0.5.15
+SEVERE:    Compiling iana-time-zone v0.1.65
+SEVERE:    Compiling atomic v0.5.3
+SEVERE:    Compiling bytemuck v1.14.0
+SEVERE:    Compiling byteorder-lite v0.1.0
+SEVERE:    Compiling android_log-sys v0.3.2
+SEVERE:    Compiling hex v0.4.3
+SEVERE:    Compiling piston-float v1.0.1
+SEVERE:    Compiling serde v1.0.228
+SEVERE:    Compiling futures-executor v0.3.29
+SEVERE:    Compiling either v1.16.0
+SEVERE:    Compiling serde_json v1.0.150
+SEVERE:    Compiling pdfium-render v0.8.37
+SEVERE:    Compiling itertools v0.14.0
+SEVERE:    Compiling futures v0.3.29
+SEVERE:    Compiling flutter_rust_bridge_macros v2.12.0
+SEVERE:    Compiling vecmath v1.0.0
+SEVERE:    Compiling image v0.25.10
+SEVERE:    Compiling android_logger v0.15.1
+SEVERE:    Compiling allo-isolate v0.1.27
+SEVERE:    Compiling chrono v0.4.44
+SEVERE:    Compiling serde_derive v1.0.228
+SEVERE:    Compiling delegate-attr v0.3.0
+SEVERE:    Compiling utf16string v0.2.0
+SEVERE:    Compiling threadpool v1.8.1
+SEVERE:    Compiling tokio v1.34.0
+SEVERE:    Compiling libloading v0.9.0
+SEVERE:    Compiling once_cell v1.21.4
+SEVERE:    Compiling bitflags v2.11.1
+SEVERE:    Compiling bytes v1.11.1
+SEVERE:    Compiling lazy_static v1.4.0
+SEVERE:    Compiling itoa v1.0.18
+SEVERE:    Compiling maybe-owned v0.3.4
+SEVERE:    Compiling uuid v1.23.1
+SEVERE:    Compiling rust v0.1.0 (/workspace/starmind/rust)
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:121:31
+SEVERE:     |
+SEVERE: 121 |             let api_field0 = <PdfDocument<'static>>::sse_decode(&mut deserializer);
+SEVERE:     |                               ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:218:31
+SEVERE:     |
+SEVERE: 218 |             let api_field0 = <Pdfium>::sse_decode(&mut deserializer);
+SEVERE:     |                               ^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:518:61
+SEVERE:     |
+SEVERE: 518 |     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument<'static>>
+SEVERE:     |                                                             ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:521:61
+SEVERE:     |
+SEVERE: 521 |     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>
+SEVERE:     |                                                             ^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:539:20
+SEVERE:     |
+SEVERE: 539 | impl SseDecode for PdfDocument<'static> {
+SEVERE:     |                    ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:543:69
+SEVERE:     |
+SEVERE: 543 |             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument<'static>>,
+SEVERE:     |                                                                     ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:549:20
+SEVERE:     |
+SEVERE: 549 | impl SseDecode for Pdfium {
+SEVERE:     |                    ^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:553:69
+SEVERE:     |
+SEVERE: 553 |             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>,
+SEVERE:     |                                                                     ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 549 | impl<Pdfium> SseDecode for Pdfium {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:580:79
+SEVERE:     |
+SEVERE: 580 |     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument<'static>>>
+SEVERE:     |                                                                               ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:589:90
+SEVERE:     |
+SEVERE: 589 | impl SseDecode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>> {
+SEVERE:     |                                                                                          ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 589 | impl<Pdfium> SseDecode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>> {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:824:51
+SEVERE:     |
+SEVERE: 824 | impl flutter_rust_bridge::IntoDart for FrbWrapper<PdfDocument<'static>> {
+SEVERE:     |                                                   ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:831:20
+SEVERE:     |
+SEVERE: 831 |     for FrbWrapper<PdfDocument<'static>>
+SEVERE:     |                    ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:835:51
+SEVERE:     |
+SEVERE: 835 | impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<PdfDocument<'static>>> for PdfDocument<'static> {
+SEVERE:     |                                                   ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:835:78
+SEVERE:     |
+SEVERE: 835 | impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<PdfDocument<'static>>> for PdfDocument<'static> {
+SEVERE:     |                                                                              ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:836:43
+SEVERE:     |
+SEVERE: 836 |     fn into_into_dart(self) -> FrbWrapper<PdfDocument<'static>> {
+SEVERE:     |                                           ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:842:51
+SEVERE:     |
+SEVERE: 842 | impl flutter_rust_bridge::IntoDart for FrbWrapper<Pdfium> {
+SEVERE:     |                                                   ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 842 | impl<Pdfium> flutter_rust_bridge::IntoDart for FrbWrapper<Pdfium> {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:848:81
+SEVERE:     |
+SEVERE: 848 | impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<Pdfium> {}
+SEVERE:     |                                                                                 ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 848 | impl<Pdfium> flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<Pdfium> {}
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:850:51
+SEVERE:     |
+SEVERE: 850 | impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<Pdfium>> for Pdfium {
+SEVERE:     |                                                   ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 850 | impl<Pdfium> flutter_rust_bridge::IntoIntoDart<FrbWrapper<Pdfium>> for Pdfium {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:850:64
+SEVERE:     |
+SEVERE: 850 | impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<Pdfium>> for Pdfium {
+SEVERE:     |                                                                ^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:851:43
+SEVERE:     |
+SEVERE: 851 |     fn into_into_dart(self) -> FrbWrapper<Pdfium> {
+SEVERE:     |                                           ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 850 | impl<Pdfium> flutter_rust_bridge::IntoIntoDart<FrbWrapper<Pdfium>> for Pdfium {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:926:20
+SEVERE:     |
+SEVERE: 926 | impl SseEncode for PdfDocument<'static> {
+SEVERE:     |                    ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:930:69
+SEVERE:     |
+SEVERE: 930 |             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument<'static>>,
+SEVERE:     |                                                                     ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:938:20
+SEVERE:     |
+SEVERE: 938 | impl SseEncode for Pdfium {
+SEVERE:     |                    ^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:941:80
+SEVERE:     |
+SEVERE: 941 | ...   <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>>>::sse_encode(flutter_rust_bridge::for_generat...
+SEVERE:     |                                                                              ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 938 | impl<Pdfium> SseEncode for Pdfium {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:    --> src/frb_generated.rs:964:79
+SEVERE:     |
+SEVERE: 964 |     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument<'static>>>
+SEVERE:     |                                                                               ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:    --> src/frb_generated.rs:974:90
+SEVERE:     |
+SEVERE: 974 | impl SseEncode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>> {
+SEVERE:     |                                                                                          ^^^^^^ not found in this scope
+SEVERE:     |
+SEVERE: help: you might be missing a type parameter
+SEVERE:     |
+SEVERE: 974 | impl<Pdfium> SseEncode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>> {
+SEVERE:     |     ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:     --> src/frb_generated.rs:1153:74
+SEVERE:      |
+SEVERE: 1153 |         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument < 'static >>>::increment_strong_count(ptr as _);
+SEVERE:      |                                                                          ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `PdfDocument` in this scope
+SEVERE:     --> src/frb_generated.rs:1160:74
+SEVERE:      |
+SEVERE: 1160 |         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocument < 'static >>>::decrement_strong_count(ptr as _);
+SEVERE:      |                                                                          ^^^^^^^^^^^ not found in this scope
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:     --> src/frb_generated.rs:1167:74
+SEVERE:      |
+SEVERE: 1167 |         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>>::increment_strong_count(ptr as _);
+SEVERE:      |                                                                          ^^^^^^ not found in this scope
+SEVERE:      |
+SEVERE: help: you might be missing a type parameter
+SEVERE:      |
+SEVERE: 1164 |     pub extern "C" fn frbgen_starmind_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPdfium<Pdfium>(
+SEVERE:      |                                                                                                                                           ++++++++
+SEVERE: 
+SEVERE: error[E0425]: cannot find type `Pdfium` in this scope
+SEVERE:     --> src/frb_generated.rs:1174:74
+SEVERE:      |
+SEVERE: 1174 |         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Pdfium>>::decrement_strong_count(ptr as _);
+SEVERE:      |                                                                          ^^^^^^ not found in this scope
+SEVERE:      |
+SEVERE: help: you might be missing a type parameter
+SEVERE:      |
+SEVERE: 1171 |     pub extern "C" fn frbgen_starmind_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPdfium<Pdfium>(
+SEVERE:      |                                                                                                                                           ++++++++
+SEVERE: 
+SEVERE: error[E0609]: no field `field0` on type `flutter_rust_bridge::rust_async::RwLockReadGuard<'_, pdf::PdfDocumentWrapper>`
+SEVERE:   --> src/frb_generated.rs:91:68
+SEVERE:    |
+SEVERE: 91 |                 let output_ok = Result::<_, ()>::Ok(api_that_guard.field0.clone())?;
+SEVERE:    |                                                                    ^^^^^^ unknown field
+SEVERE:    |
+SEVERE:    = note: available field is: `0`
+SEVERE: 
+SEVERE: error[E0609]: no field `field0` on type `flutter_rust_bridge::rust_async::RwLockWriteGuard<'_, pdf::PdfDocumentWrapper>`
+SEVERE:    --> src/frb_generated.rs:140:40
+SEVERE:     |
+SEVERE: 140 |                         api_that_guard.field0 = api_field0;
+SEVERE:     |                                        ^^^^^^ unknown field
+SEVERE:     |
+SEVERE:     = note: available field is: `0`
+SEVERE: 
+SEVERE: error[E0609]: no field `field0` on type `flutter_rust_bridge::rust_async::RwLockReadGuard<'_, pdf::PdfiumWrapper>`
+SEVERE:    --> src/frb_generated.rs:188:68
+SEVERE:     |
+SEVERE: 188 |                 let output_ok = Result::<_, ()>::Ok(api_that_guard.field0.clone())?;
+SEVERE:     |                                                                    ^^^^^^ unknown field
+SEVERE:     |
+SEVERE:     = note: available field is: `0`
+SEVERE: 
+SEVERE: error[E0609]: no field `field0` on type `flutter_rust_bridge::rust_async::RwLockWriteGuard<'_, pdf::PdfiumWrapper>`
+SEVERE:    --> src/frb_generated.rs:237:40
+SEVERE:     |
+SEVERE: 237 |                         api_that_guard.field0 = api_field0;
+SEVERE:     |                                        ^^^^^^ unknown field
+SEVERE:     |
+SEVERE:     = note: available field is: `0`
+SEVERE: 
+SEVERE: error[E0308]: mismatched types
+SEVERE:    --> src/frb_generated.rs:808:85
+SEVERE:     |
+SEVERE: 808 |         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+SEVERE:     |         --------------------------------------------------------------------------- ^^^^^^ expected `PdfiumWrapper`, found `PdfDocumentWrapper`
+SEVERE:     |         |
+SEVERE:     |         arguments to this function are incorrect
+SEVERE:     |
+SEVERE: help: the return type of this call is `pdf::PdfDocumentWrapper` due to the type of the argument passed
+SEVERE:    --> src/frb_generated.rs:808:9
+SEVERE:     |
+SEVERE: 808 |         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+SEVERE:     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------^
+SEVERE:     |                                                                                     |
+SEVERE:     |                                                                                     this argument influences the return type of `rust_auto_opaque_encode`
+SEVERE: note: function defined here
+SEVERE:    --> /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/flutter_rust_bridge-2.12.0/src/rust_auto_opaque/dart2rust_implicit.rs:21:8
+SEVERE:     |
+SEVERE:  21 | pub fn rust_auto_opaque_encode<T, A: BaseArc<RustAutoOpaqueInner<T>>>(
+SEVERE:     |        ^^^^^^^^^^^^^^^^^^^^^^^
+SEVERE: 
+SEVERE: error[E0308]: mismatched types
+SEVERE:    --> src/frb_generated.rs:922:190
+SEVERE:     |
+SEVERE: 922 | ...per>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+SEVERE:     |                       --------------------------------------------------------------------------- ^^^^ expected `PdfiumWrapper`, found `PdfDocumentWrapper`
+SEVERE:     |                       |
+SEVERE:     |                       arguments to this function are incorrect
+SEVERE:     |
+SEVERE: help: the return type of this call is `pdf::PdfDocumentWrapper` due to the type of the argument passed
+SEVERE:    --> src/frb_generated.rs:922:114
+SEVERE:     |
+SEVERE: 922 | ...per>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+SEVERE:     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^----^
+SEVERE:     |                                                                                                   |
+SEVERE:     |                                                                                                   this argument influences the return type of `rust_auto_opaque_encode`
+SEVERE: note: function defined here
+SEVERE:    --> /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/flutter_rust_bridge-2.12.0/src/rust_auto_opaque/dart2rust_implicit.rs:21:8
+SEVERE:     |
+SEVERE:  21 | pub fn rust_auto_opaque_encode<T, A: BaseArc<RustAutoOpaqueInner<T>>>(
+SEVERE:     |        ^^^^^^^^^^^^^^^^^^^^^^^
+SEVERE: 
+SEVERE: error[E0308]: mismatched types
+SEVERE:    --> src/frb_generated.rs:922:114
+SEVERE:     |
+SEVERE: 922 | ...   <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PdfDocumentWrapper>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), s...
+SEVERE:     |       -------------------------------------------------------------------------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `pdf::PdfDocumentWrapper`, found `pdf::PdfiumWrapper`
+SEVERE:     |       |
+SEVERE:     |       arguments to this function are incorrect
+SEVERE:     |
+SEVERE:     = note: expected struct `RustOpaqueBase<RustAutoOpaqueInner<PdfDocumentWrapper>, MoiArc<...>>`
+SEVERE:                found struct `RustOpaqueBase<RustAutoOpaqueInner<PdfiumWrapper>, MoiArc<...>>`
+SEVERE: note: method defined here
+SEVERE:    --> src/frb_generated.rs:37:1
+SEVERE:     |
+SEVERE:  37 | / flutter_rust_bridge::frb_generated_boilerplate!(
+SEVERE:  38 | |     default_stream_sink_codec = SseCodec,
+SEVERE:  39 | |     default_rust_opaque = RustOpaqueMoi,
+SEVERE:  40 | |     default_rust_auto_opaque = RustAutoOpaqueMoi,
+SEVERE:  41 | | );
+SEVERE:     | |_^
+SEVERE:     = note: the full name for the type has been written to '/workspace/starmind/build/rust_lib_starmind/build/aarch64-linux-android/release/deps/rust.long-type-2861303029942234992.txt'
+SEVERE:     = note: consider using `--verbose` to print the full type name to the console
+SEVERE:     = note: this error originates in the macro `$crate::frb_generated_sse_codec` which comes from the expansion of the macro `flutter_rust_bridge::frb_generated_boilerplate` (in Nightly builds, run with -Z macro-backtrace for more info)
+SEVERE: 
+SEVERE: Some errors have detailed explanations: E0308, E0425, E0609.
+SEVERE: For more information about an error, try `rustc --explain E0308`.
+SEVERE: error: could not compile `rust` (lib) due to 37 previous errors
+SEVERE: --------------------------------------------------------------------------------
+SEVERE: #0      runCommand (package:build_tool/src/util.dart:121:5)
+SEVERE: #1      RustBuilder.build (package:build_tool/src/builder.dart:148:5)
+SEVERE: <asynchronous suspension>
+SEVERE: #2      ArtifactProvider.getArtifacts (package:build_tool/src/artifacts_provider.dart:71:25)
+SEVERE: <asynchronous suspension>
+SEVERE: #3      BuildGradle.build (package:build_tool/src/build_gradle.dart:35:23)
+SEVERE: <asynchronous suspension>
+SEVERE: #4      BuildGradleCommand.runBuildCommand (package:build_tool/src/build_tool.dart:65:5)
+SEVERE: <asynchronous suspension>
+SEVERE: #5      BuildCommand.run (package:build_tool/src/build_tool.dart:37:5)
+SEVERE: <asynchronous suspension>
+SEVERE: #6      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+SEVERE: <asynchronous suspension>
+SEVERE: #7      runMain (package:build_tool/src/build_tool.dart:256:5)
+SEVERE: <asynchronous suspension>
+SEVERE: --------------------------------------------------------------------------------
+SEVERE: BuildTool arguments: [build-gradle]
+SEVERE: ================================================================================
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Script '/workspace/starmind/rust_builder/cargokit/gradle/plugin.gradle' line: 68
+
+* What went wrong:
+Execution failed for task ':rust_lib_starmind:cargokitCargoBuildRust_lib_starmindRelease'.
+> Process 'command '/workspace/starmind/rust_builder/cargokit/gradle/../run_build_tool.sh'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 48s
+Running Gradle task 'assembleRelease'...                           48.9s
+Gradle task assembleRelease failed with exit code 1

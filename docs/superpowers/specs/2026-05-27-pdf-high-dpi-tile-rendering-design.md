@@ -555,4 +555,346 @@ pub fn render_viewport(req: ViewportRequest) -> Result<Vec<u8>, String> {
 
 ---
 
+## 七、缩放与平移交互优化
+
+### 7.1 当前问题
+
+| 问题 | 描述 | 根因 |
+|------|------|------|
+| 手势缩放只能缩小到页面刚好覆盖屏幕 | 无法缩小到更小级别 | `_matrixScale` 中有硬编码约束 `totalScale >= viewport.width / boundaryRect.width` |
+| 按钮缩小后页面留在左侧 | 无法拖动到其他位置 | `constrainBounds` 强制居中，且 ElasticBoundary 未正确生效 |
+| 按钮缩小后双指缩放弹回 | 直接弹回页面覆盖屏幕的状态 | 按钮缩放未同步 TransformationController 状态 |
+| 缩放焦点不跟手 | 双指缩放时中心点不是手指焦点 | `_matrixScale` 未正确处理 focal point |
+
+### 7.2 目标交互
+
+对标 GoodNotes/MarginNote 的 PDF 视图交互：
+
+1. **双指缩放无级且范围宽**
+   - 缩放范围：最小 0.1x（原文档尺寸的 10%），最大 300%（或更高）
+   - 缩放必须以双指中心点为焦点，全程跟手
+   - 不应在某个级别卡死
+
+2. **单指自由拖动无边界限制**
+   - PDF 可以被拖动到屏幕任意位置，四周都可以留白
+   - 不应被固定在左侧、居中或任何单一位置
+   - 支持惯性滚动
+
+3. **缩放与拖动协同、不互相干扰**
+   - 缩放结束后，视图保持位置，允许继续拖动
+   - 按钮缩放与手势缩放共享同一状态
+
+4. **按钮缩放行为**
+   - 固定步长（如 20%）递增/递减
+   - 操作后页面保持在视图中心（或原位）
+   - 随后用户可以立即拖动调整位置
+
+### 7.3 设计方案
+
+#### 7.3.1 移除硬编码缩放约束
+
+**问题位置**: `interactive_canvas_viewer.dart` `_matrixScale` 方法（第 693-702 行）
+
+```dart
+// 当前代码（有问题）
+final double totalScale = math.max(
+  currentScale * scale,
+  // 确保缩放不会让 child 太大以至于无法放入边界
+  math.max(
+    _viewport.width / _boundaryRect.width,  // ← 这行导致无法缩小
+    _viewport.height / _boundaryRect.height,
+  ),
+);
+```
+
+**修改方案**:
+
+```dart
+// 修改后：只限制 minScale/maxScale，不限制边界约束
+final double totalScale = currentScale * scale;
+final double clampedTotalScale = clampDouble(
+  totalScale,
+  widget.minScale,
+  widget.maxScale,
+);
+final double clampedScale = clampedTotalScale / currentScale;
+```
+
+#### 7.3.2 扩展缩放范围
+
+**问题位置**: `pdf_viewport_controller.dart` 第 96-99 行
+
+```dart
+// 当前范围
+static const double minZoom = 0.3;
+static const double maxZoom = 10.0;
+```
+
+**修改方案**:
+
+```dart
+// 扩展范围：最小 0.1x，最大 30x
+static const double minZoom = 0.1;
+static const double maxZoom = 30.0;
+```
+
+#### 7.3.3 移除强制居中约束
+
+**问题位置**: `pdf_viewport_controller.dart` `constrainBounds` 方法（第 299-326 行）
+
+```dart
+// 当前代码（强制居中）
+if (scaledWidth <= viewportSize.width) {
+  // PDF 宽度小于视口，强制居中 ← 问题所在
+  _panOffset = Offset((viewportSize.width - scaledWidth) / 2, _panOffset.dy);
+}
+```
+
+**修改方案**:
+
+```dart
+// 修改后：完全移除 constrainBounds，使用自由平移模式
+void constrainBounds(Size pdfSize, Size viewportSize) {
+  // 不做任何约束，完全自由平移
+  // 用户可以将 PDF 拖动到任意位置
+  // 依赖 ElasticBoundary 提供弹性阻力（可选）
+}
+```
+
+#### 7.3.4 按钮缩放与手势缩放状态同步
+
+**问题**: 按钮缩放使用 `setZoom()`，但未更新 `TransformationController`
+
+**修改方案**:
+
+```dart
+// PdfViewportWidget 中按钮缩放处理
+void _onZoomInButtonPressed() {
+  final currentZoom = _transformationController.value.getMaxScaleOnAxis();
+  final newZoom = currentZoom * 1.2; // 20% 步长
+  
+  // 使用 TransformationController 的 _matrixScale 保持状态一致
+  final scaleChange = newZoom / currentZoom;
+  final center = Offset(viewportSize.width / 2, viewportSize.height / 2);
+  
+  // 以视图中心为焦点缩放
+  final focalPointScene = _transformationController.toScene(center);
+  _transformationController.value = _matrixScale(
+    _transformationController.value,
+    scaleChange,
+  );
+  final focalPointSceneScaled = _transformationController.toScene(center);
+  _transformationController.value = _matrixTranslate(
+    _transformationController.value,
+    focalPointSceneScaled - focalPointScene,
+  );
+}
+```
+
+#### 7.3.5 自由平移模式配置
+
+**InteractiveCanvasViewer 参数调整**:
+
+```dart
+InteractiveCanvasViewer.builder(
+  minScale: 0.1,   // 最小缩放 10%
+  maxScale: 30.0,  // 最大缩放 300%
+  panEnabled: true,
+  scaleEnabled: true,
+  boundaryMargin: EdgeInsets.all(double.infinity),  // 无边界限制
+  constrained: false,  // 允许 PDF 超出视口约束
+  ...
+)
+```
+
+### 7.4 文件修改清单
+
+| 文件 | 修改内容 |
+|------|----------|
+| `lib/src/pdf/widgets/interactive_canvas_viewer.dart` | 移除 `_matrixScale` 中的边界约束 |
+| `lib/src/pdf/pdf_viewport_controller.dart` | 扩展缩放范围至 0.1x-30x，移除 `constrainBounds` 强制居中 |
+| `lib/src/pdf/widgets/pdf_viewport_widget.dart` | 添加按钮缩放方法，同步 TransformationController 状态；使用 `boundaryMargin: EdgeInsets.all(double.infinity)` |
+
+---
+
+## 八、文本选择交互优化
+
+### 8.1 当前问题
+
+| 问题 | 描述 | 根因 |
+|------|------|------|
+| 长按无法触发文本选择 | 长按手势未被正确识别 | `TextSelectionHandler` 未与 `PdfViewportWidget` 集成 |
+| 无法执行文本高亮 | 选择后无工具栏或工具栏未显示 | `onSelectionComplete` 未连接到 AnnotationToolbar |
+| 无法添加下划线等批注 | 批注功能未与选择结果关联 | 缺少 SelectionToAnnotation 转换逻辑 |
+
+### 8.2 设计方案
+
+#### 8.2.1 长按手势检测集成
+
+在 `PdfPageWidget` 中添加长按手势检测：
+
+```dart
+class _PdfPageWidgetState extends State<PdfPageWidget> {
+  late TextSelectionHandler _selectionHandler;
+  
+  @override
+  void initState() {
+    super.initState();
+    _selectionHandler = TextSelectionHandler(
+      chars: [], // 初始化时为空，后续加载
+      pageHeight: 0,
+      zoom: 1.0,
+      scrollOffset: Offset.zero,
+      onSelectionComplete: _onSelectionComplete,
+    );
+    _initPage();
+  }
+  
+  void _onSelectionComplete(TextSelectionResult result) {
+    // 显示批注工具栏
+    widget.controller.setSelectionState(
+      pageIndex: widget.pageIndex,
+      startCharIndex: result.startCharIndex,
+      endCharIndex: result.endCharIndex,
+      rects: result.rects,
+    );
+    // 触发工具栏显示
+    widget.controller.showAnnotationToolbar(
+      type: AnnotationType.highlight,
+      selection: result,
+    );
+  }
+}
+```
+
+#### 8.2.2 GestureDetector 集成
+
+```dart
+Widget build(BuildContext context) {
+  return GestureDetector(
+    onLongPressStart: (details) {
+      _selectionHandler.onLongPressStart(details.localPosition);
+    },
+    onLongPressMoveUpdate: (details) {
+      _selectionHandler.onLongPressMove(details.localPosition);
+      setState(() {}); // 触发重绘显示选择区域
+    },
+    onLongPressEnd: (details) {
+      _selectionHandler.onLongPressEnd();
+    },
+    child: Container(
+      // ... PDF 页面渲染
+    ),
+  );
+}
+```
+
+#### 8.2.3 选择区域渲染
+
+在 `PdfPagePainter` 中添加选择区域渲染：
+
+```dart
+@override
+void paint(Canvas canvas, Size size) {
+  // ... 现有渲染代码
+  
+  // 渲染文本选择区域
+  if (_selectionHandler.isSelecting) {
+    final selection = _selectionHandler.currentSelection;
+    if (selection != null) {
+      final selectPaint = Paint()
+        ..color = Colors.blue.withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill;
+      
+      for (final rect in selection.rects) {
+        final screenRect = _selectionHandler.pdfToScreen(rect.left, rect.top) &
+            Size(rect.right - rect.left, rect.bottom - rect.top);
+        canvas.drawRect(screenRect, selectPaint);
+      }
+    }
+  }
+}
+```
+
+#### 8.2.4 批注工具栏触发
+
+```dart
+// AnnotationToolbar 或新建 SelectionToolbar
+class SelectionToolbar extends StatelessWidget {
+  final PdfViewportController controller;
+  final TextSelectionResult selection;
+  final int pageIndex;
+  
+  void _onHighlightPressed(Color color) {
+    controller.addHighlight(PdfHighlight(
+      id: uuid.v4(),
+      pageIndex: pageIndex,
+      startCharIndex: selection.startCharIndex,
+      endCharIndex: selection.endCharIndex,
+      color: color,
+      rects: selection.rects.map((r) => Rect.fromLTRB(
+        r.left, r.top, r.right, r.bottom,
+      )).toList(),
+      text: selection.selectedText,
+    ));
+    controller.clearSelection();
+  }
+  
+  void _onUnderlinePressed(Color color) {
+    // 类似高亮，但类型为 underline
+  }
+}
+```
+
+### 8.3 文件修改清单
+
+| 文件 | 修改内容 |
+|------|----------|
+| `lib/src/pdf/widgets/pdf_viewport_widget.dart` | 在 `PdfPageWidget` 中集成 `TextSelectionHandler` 和长按手势 |
+| `lib/src/pdf/widgets/text_selection_handler.dart` | 添加屏幕坐标转换方法，修复坐标系统问题 |
+| `lib/src/pdf/widgets/annotation_toolbar.dart` | 添加选择后批注工具栏触发逻辑 |
+| **新增** `lib/src/pdf/widgets/selection_toolbar.dart` | 选择后的浮动工具栏（高亮、下划线、复制） |
+
+---
+
+## 九、验收标准（完整）
+
+### 9.1 视觉质量
+
+- [ ] 5x 缩放时文字边缘清晰，无明显锯齿
+- [ ] 10x 缩放时文字仍可辨识，笔画清晰
+- [ ] 高 DPI 瓦片加载后，文字清晰度接近矢量效果
+
+### 9.2 缩放交互
+
+- [ ] 手势缩放可缩小到 0.1x（原文档 10%）
+- [ ] 手势缩放可放大到 30x（原文档 300%）
+- [ ] 缩放以双指中心为焦点，全程跟手
+- [ ] 不在任何缩放级别卡死或弹回
+
+### 9.3 平移交互
+
+- [ ] PDF 可被拖动到屏幕任意位置
+- [ ] 四周都可以留白
+- [ ] 拖动支持惯性滚动
+- [ ] 不出现突然跳动或回弹
+
+### 9.4 按钮缩放交互
+
+- [ ] 按钮缩放按 20% 步长变化
+- [ ] 按钮缩放后页面可立即拖动
+- [ ] 按钮缩放与手势缩放共享状态
+- [ ] 从按钮缩放状态再次手势缩放不弹回
+
+### 9.5 文本选择交互
+
+- [ ] 长按触发文本选择
+- [ ] 拖动可调整选择范围
+- [ ] 选择后显示工具栏
+- [ ] 可添加高亮批注
+- [ ] 可添加下划线批注
+- [ ] 可复制选中文本
+
+---
+
 **设计完成，待用户批准后进入实现阶段。**

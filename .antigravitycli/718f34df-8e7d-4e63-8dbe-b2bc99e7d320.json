@@ -1,0 +1,14 @@
+{
+  "id":  "718f34df-8e7d-4e63-8dbe-b2bc99e7d320",
+  "name":  "E:\\app\\saber\\starmind",
+  "projectResources":  {
+    "resources":  [
+      {
+        "gitFolder":  {
+          "folderUri":  "file:///e%3A/app/saber/starmind",
+          "defaultBranch":  "main"
+        }
+      }
+    ]
+  }
+}

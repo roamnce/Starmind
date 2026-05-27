@@ -13,6 +13,7 @@ import '../pdf_coordinates.dart';
 import '../viewport_repaint_notifier.dart';
 import 'interactive_canvas_viewer.dart';
 import 'text_selection_handler.dart';
+import 'selection_toolbar.dart';
 
 /// PDF viewport widget with pinch-to-zoom and pan support.
 ///

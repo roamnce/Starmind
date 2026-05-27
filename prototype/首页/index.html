@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarMind</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg0:#0c0a07;--bg1:#141008;--bg2:#1c1710;
+  --glass:rgba(255,248,230,0.055);
+  --glass-h:rgba(255,248,230,0.1);
+  --glass-a:rgba(255,248,230,0.14);
+  --border:rgba(255,220,140,0.1);
+  --border-h:rgba(255,220,140,0.2);
+  --accent:#c8841a;--accent2:#e8a83c;
+  --accent-glow:rgba(200,132,26,0.35);
+  --accent-bg:rgba(200,132,26,0.18);
+  --tp:rgba(255,248,235,0.9);
+  --ts:rgba(255,248,235,0.5);
+  --tm:rgba(255,248,235,0.28);
+  --danger:#e05858;
+  --sw:258px;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+  background:var(--bg0);color:var(--tp);
+  height:100vh;overflow:hidden;user-select:none;
+}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
+.o1{width:500px;height:500px;background:#6b3a08;opacity:.2;top:-150px;left:-100px;}
+.o2{width:360px;height:360px;background:#3d1f02;opacity:.25;bottom:-80px;right:-60px;}
+.o3{width:280px;height:280px;background:#1a2820;opacity:.18;top:35%;left:42%;}
+
+/* ── floating controls ── */
+.fc{
+  position:fixed;top:54px;
+  left:calc(var(--sw) - 88px);
+  display:flex;gap:6px;z-index:300;
+  transition:left .35s cubic-bezier(.4,0,.2,1);
+}
+body.sbc .fc{left:12px;}
+.fc-btn{
+  width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:9px;
+  background:rgba(255,220,120,0.07);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border-h);
+  color:var(--ts);cursor:pointer;transition:all .2s;
+}
+.fc-btn:hover{background:rgba(255,220,120,0.14);color:var(--tp);}
+.fc-btn svg{width:16px;height:16px;}
+
+/* ── app layout ── */
+.app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1;}
+.app-body{display:flex;flex:1;overflow:hidden;}
+
+/* ── sidebar ── */
+.sb{
+  width:var(--sw);min-width:var(--sw);
+  height:100%;display:flex;flex-direction:column;
+  background:rgba(20,16,8,0.6);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-right:1px solid var(--border);
+  overflow:hidden;z-index:10;
+  transition:width .35s cubic-bezier(.4,0,.2,1),
+             min-width .35s cubic-bezier(.4,0,.2,1),
+             opacity .3s ease;
+}
+body.sbc .sb{width:0;min-width:0;opacity:0;border-right:none;}
+.sb-spacer{height:52px;flex-shrink:0;}
+.sb-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:0 8px 20px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,200,80,.12) transparent;
+}
+.sb-scroll::-webkit-scrollbar{width:3px;}
+.sb-scroll::-webkit-scrollbar-thumb{background:rgba(255,200,80,.12);border-radius:3px;}
+
+/* sb nav items */
+.sb-sep{height:1px;background:var(--border);margin:6px 4px;}
+.sbn{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:9px;
+  font-size:12.5px;color:var(--ts);
+  cursor:pointer;transition:all .18s;margin:1px 0;
+}
+.sbn:hover{background:var(--glass-h);color:var(--tp);}
+.sbn.active{background:var(--accent-bg);color:var(--tp);}
+.sbn svg{width:15px;height:15px;flex-shrink:0;}
+.sbn .acc{color:var(--accent);}
+.sbn .red{color:var(--danger);}
+.sbn-label{flex:1;font-weight:500;}
+.sbn-count{font-size:11px;color:var(--tm);background:rgba(255,220,80,.06);padding:1px 7px;border-radius:5px;}
+.sbn-chev{width:13px;height:13px;color:var(--tm);transition:transform .22s;flex-shrink:0;}
+.sbn-chev.open{transform:rotate(90deg);}
+
+/* collapsible section */
+.sb-section{overflow:hidden;max-height:0;transition:max-height .3s cubic-bezier(.4,0,.2,1);}
+.sb-section.open{max-height:300px;}
+.sbn.sub{padding-left:28px;font-size:12px;}
+
+/* group header (folders / tags) */
+.sg{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:9px;
+  font-size:12.5px;font-weight:600;color:var(--ts);
+  cursor:pointer;transition:all .18s;
+  background:rgba(255,220,80,.04);
+  border:1px solid var(--border);
+  margin:3px 0;
+}
+.sg:hover{background:var(--glass-h);color:var(--tp);}
+.sg svg.si{width:15px;height:15px;flex-shrink:0;}
+.sg .fi{color:#e8a040;}
+.sg .ti{color:#e06080;}
+.sg .sg-chev{width:13px;height:13px;color:var(--tm);transition:transform .22s;margin-left:auto;}
+.sg .sg-chev.open{transform:rotate(90deg);}
+
+/* circle + button */
+.cbtn{
+  width:19px;height:19px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:50%;border:2px solid rgba(255,200,80,.4);
+  color:rgba(255,200,80,.6);font-size:13px;font-weight:700;line-height:1;
+  cursor:pointer;transition:all .2s;flex-shrink:0;background:transparent;
+}
+.cbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+
+.sg-body{overflow:hidden;max-height:0;padding-left:8px;transition:max-height .3s cubic-bezier(.4,0,.2,1);}
+.sg-body.open{max-height:900px;}
+
+.ti-row{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 10px 6px 12px;border-radius:8px;
+  font-size:12px;color:var(--ts);
+  cursor:pointer;transition:all .18s;margin:1px 0;
+}
+.ti-row:hover{background:var(--glass-h);color:var(--tp);}
+.ti-row.active{background:var(--accent-bg);color:var(--tp);}
+.ti-row svg{width:13px;height:13px;flex-shrink:0;}
+.ti-row .fi{color:#e8a040;}
+.ti-chev{width:12px;height:12px;color:var(--tm);transition:transform .2s;cursor:pointer;flex-shrink:0;}
+.ti-chev.open{transform:rotate(90deg);}
+.ti-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ti-count{font-size:11px;color:var(--tm);background:rgba(255,220,80,.06);padding:1px 6px;border-radius:5px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.tc{overflow:hidden;max-height:0;padding-left:16px;transition:max-height .25s cubic-bezier(.4,0,.2,1);}
+.tc.open{max-height:500px;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;z-index:1;}
+body.sbc .tab-bar{padding-left:96px;}
+
+/* tab bar — full width across top */
+.tab-bar{
+  display:flex;align-items:center;
+  height:44px;padding:0 12px;
+  background:rgba(14,11,6,0.8);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  gap:2px;z-index:50;flex-shrink:0;
+  width:100%;
+  transition:padding-left .35s cubic-bezier(.4,0,.2,1);
+}.tab-tabs{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none;}
+.tab-tabs::-webkit-scrollbar{display:none;}
+.tab-it{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;height:30px;border-radius:7px;
+  background:transparent;border:1px solid transparent;
+  color:var(--ts);font-size:12px;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;
+}
+.tab-it:hover{background:var(--glass-h);color:var(--tp);}
+.tab-it.active{background:var(--accent-bg);color:var(--tp);border-color:rgba(200,132,26,.3);}
+.tab-it svg{width:13px;height:13px;}
+.tab-x{
+  width:16px;height:16px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;background:transparent;border:none;
+  color:var(--tm);cursor:pointer;transition:all .15s;margin-left:3px;
+}
+.tab-x:hover{background:rgba(224,88,88,.2);color:var(--danger);}
+.tab-x svg{width:10px;height:10px;}
+.tab-actions{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;}
+.ta-btn{
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:7px;background:transparent;border:1px solid transparent;
+  color:var(--ts);cursor:pointer;transition:all .2s;
+}
+.ta-btn:hover{background:var(--glass-h);color:var(--tp);border-color:var(--border);}
+.ta-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(200,132,26,.3);}
+.ta-btn svg{width:14px;height:14px;}
+
+/* ── content header ── */
+.content-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:52px;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  background:rgba(12,10,7,0.4);
+}
+.ch-title{font-size:18px;font-weight:700;color:var(--tp);}
+.ch-right{display:flex;align-items:center;gap:6px;}
+.ch-btn{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;background:var(--glass);border:1px solid var(--border);
+  color:var(--ts);cursor:pointer;transition:all .2s;
+}
+.ch-btn:hover{background:var(--glass-h);color:var(--tp);border-color:var(--border-h);}
+.ch-btn svg{width:15px;height:15px;}
+
+/* import button — right side of header */
+.import-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:0 14px;height:32px;border-radius:8px;
+  background:var(--accent);border:none;color:#1a0e00;
+  font-size:12.5px;font-weight:700;cursor:pointer;
+  transition:all .22s;box-shadow:0 3px 16px var(--accent-glow);
+  flex-shrink:0;
+}
+.import-btn:hover{background:var(--accent2);box-shadow:0 5px 22px rgba(200,132,26,.5);transform:translateY(-1px);}
+.import-btn svg{width:15px;height:15px;}
+
+/* filter tabs */
+.filter-bar{
+  display:flex;align-items:center;gap:2px;
+  padding:8px 20px 0;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.f-tab{
+  padding:6px 14px;border-radius:7px 7px 0 0;
+  font-size:12.5px;color:var(--ts);cursor:pointer;
+  transition:all .18s;border:1px solid transparent;border-bottom:none;
+  margin-bottom:-1px;
+}
+.f-tab:hover{color:var(--tp);background:var(--glass);}
+.f-tab.active{color:var(--accent2);background:rgba(200,132,26,.1);border-color:var(--border);border-bottom-color:var(--bg0);}
+
+/* ── card grid ── */
+.grid-area{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:rgba(255,200,80,.1) transparent;}
+.grid-area::-webkit-scrollbar{width:5px;}
+.grid-area::-webkit-scrollbar-thumb{background:rgba(255,200,80,.1);border-radius:5px;}
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+  gap:14px;
+}
+
+/* new card */
+.card-new{
+  border-radius:12px;
+  border:2px dashed rgba(200,132,26,.35);
+  background:rgba(200,132,26,.06);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;cursor:pointer;transition:all .22s;
+  aspect-ratio:3/4;
+}
+.card-new:hover{border-color:var(--accent);background:var(--accent-bg);}
+.card-new .plus-circle{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(200,132,26,.5);
+  color:var(--accent);font-size:24px;font-weight:300;
+  transition:all .2s;
+}
+.card-new:hover .plus-circle{border-color:var(--accent);background:var(--accent-bg);}
+.card-new span{font-size:12px;color:var(--ts);}
+
+/* file card */
+.card{
+  border-radius:12px;overflow:hidden;cursor:pointer;
+  transition:all .22s;position:relative;
+  border:1px solid var(--border);
+  background:var(--glass);
+}
+.card:hover{transform:translateY(-3px);border-color:var(--border-h);box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.card-cover{aspect-ratio:3/4;position:relative;overflow:hidden;}
+.card-cover img{width:100%;height:100%;object-fit:cover;}
+.card-cover.c1{background:linear-gradient(145deg,#1a3a2a,#0e2018);}
+.card-cover.c2{background:linear-gradient(145deg,#2a1a0e,#1a0e05);}
+.card-cover.c3{background:linear-gradient(145deg,#0e1a2a,#05101a);}
+.card-cover.c4{background:linear-gradient(145deg,#2a1a2a,#150d15);}
+.card-cover.c5{background:linear-gradient(145deg,#1a2a1a,#0e180e);}
+.card-cover.c6{background:linear-gradient(145deg,#2a200e,#1a1408);}
+.card-cover.c7{background:linear-gradient(145deg,#1e1018,#120a10);}
+.card-cover.c8{background:linear-gradient(145deg,#0e1e2a,#081218);}
+.card-cover-inner{
+  position:absolute;inset:0;padding:14px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.cover-tag{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:5px;
+  font-size:10px;font-weight:700;letter-spacing:.5px;
+  backdrop-filter:blur(8px);width:fit-content;
+}
+.cover-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);line-height:1.3;margin-top:auto;}
+.cover-lines{margin-top:8px;}
+.cover-line{height:2px;border-radius:2px;margin-bottom:4px;opacity:.35;}
+.card-meta{padding:8px 10px;}
+.card-name{font-size:11.5px;font-weight:500;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-date{font-size:10.5px;color:var(--tm);margin-top:3px;}
+
+/* ── modals ── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(10px);
+  z-index:200;align-items:center;justify-content:center;
+}
+.overlay.show{display:flex;}
+.modal{
+  width:460px;
+  background:rgba(22,17,10,.92);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border-h);
+  border-radius:18px;padding:26px;
+  box-shadow:0 24px 64px rgba(0,0,0,.5);
+  animation:pop .26s cubic-bezier(.4,0,.2,1);
+}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:9px;}
+.modal-title svg{width:18px;height:18px;color:var(--accent);}
+.drop-zone{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  padding:36px;border-radius:14px;
+  border:2px dashed rgba(200,132,26,.28);
+  background:rgba(200,132,26,.05);color:var(--ts);cursor:pointer;transition:all .22s;
+}
+.drop-zone:hover{border-color:var(--accent);background:var(--accent-bg);color:var(--tp);}
+.drop-zone svg{width:40px;height:40px;color:var(--accent);}
+.drop-t{font-size:13.5px;font-weight:500;}
+.drop-s{font-size:11.5px;color:var(--tm);}
+.modal-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.mbtn{
+  padding:8px 18px;border-radius:9px;font-size:12.5px;cursor:pointer;
+  border:1px solid var(--border);background:var(--glass);color:var(--ts);transition:all .18s;
+}
+.mbtn:hover{background:var(--glass-h);color:var(--tp);}
+.mbtn.p{background:var(--accent);color:#1a0e00;border-color:transparent;font-weight:700;box-shadow:0 3px 12px var(--accent-glow);}
+.mbtn.p:hover{background:var(--accent2);}
+
+/* settings */
+.sm{width:520px;max-height:80vh;overflow-y:auto;}
+.ss{margin-bottom:16px;}
+.ss-t{font-size:12px;font-weight:600;color:var(--tm);margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--border);letter-spacing:.5px;text-transform:uppercase;}
+.sr{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13px;}
+.sr-l{color:var(--tp);}
+.sr-d{font-size:11px;color:var(--tm);margin-top:2px;}
+.tog{width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.1);border:1px solid var(--border);cursor:pointer;position:relative;transition:all .22s;}
+.tog.on{background:var(--accent);border-color:var(--accent);}
+.tog-d{width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .22s;}
+.tog.on .tog-d{transform:translateX(16px);}
+</style>
+</head>
+<body>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="orb o3"></div>
+
+<!-- floating controls -->
+<div class="fc" id="fc">
+  <div class="fc-btn" onclick="toggleSb()" title="折叠侧栏">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+  </div>
+  <div class="fc-btn" onclick="openSettings()" title="设置">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </div>
+</div>
+
+<div class="app">
+  <!-- ── FULL-WIDTH TAB BAR ── -->
+  <div class="tab-bar" id="tabBar">
+    <div class="tab-tabs">
+      <div class="tab-it active" onclick="selTab(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        首页
+      </div>
+      <div class="tab-it" onclick="selTab(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        认知科学导论.pdf
+        <div class="tab-x" onclick="event.stopPropagation();this.closest('.tab-it').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+      </div>
+      <div class="tab-it" onclick="selTab(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        深度学习.pdf
+        <div class="tab-x" onclick="event.stopPropagation();this.closest('.tab-it').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+      </div>
+    </div>
+    <div class="tab-actions">
+      <div class="ta-btn" id="splitBtn" onclick="this.classList.toggle('active')" title="分屏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BODY: sidebar + main ── -->
+  <div class="app-body">
+<div class="sb" id="sb">
+  <div class="sb-spacer"></div>
+  <div class="sb-scroll">
+
+    <!-- 全部笔记 -->
+    <div class="sbn active" onclick="toggleSec('allNotes',this)">
+      <svg class="acc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span class="sbn-label">全部笔记</span>
+      <span class="sbn-count">63</span>
+      <svg class="sbn-chev" id="allNotesChev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="sb-section" id="allNotesBody">
+      <div class="sbn sub" onclick="selectNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="sbn-label">未分类</span><span class="sbn-count">20</span>
+      </div>
+      <div class="sbn sub" onclick="selectNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+        <span class="sbn-label">未标签</span><span class="sbn-count">43</span>
+      </div>
+    </div>
+
+    <!-- 回收站 — 与全部笔记并列 -->
+    <div class="sbn" onclick="selectNav(this)">
+      <svg class="red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span class="sbn-label" style="color:rgba(224,88,88,.8)">回收站</span>
+      <span class="sbn-count">3</span>
+    </div>
+
+    <div class="sb-sep"></div>
+
+    <!-- 文件夹 -->
+    <div class="sg" onclick="toggleTg('folders')">
+      <svg class="si fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span>文件夹</span>
+      <div class="cbtn" onclick="event.stopPropagation()" title="新建文件夹">+</div>
+      <svg class="sg-chev" id="foldersChev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="sg-body" id="foldersBody">
+      <div class="ti-row" onclick="selectNav(this)">
+        <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="ti-label">学术研究</span><span class="ti-count">24</span>
+      </div>
+      <div class="tc">
+        <div class="ti-row" onclick="selectNav(this)">
+          <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span class="ti-label">认知科学</span><span class="ti-count">8</span>
+        </div>
+        <div class="tc">
+          <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">记忆与学习</span><span class="ti-count">3</span></div>
+          <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">神经科学</span><span class="ti-count">5</span></div>
+        </div>
+        <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">机器学习</span><span class="ti-count">16</span></div>
+      </div>
+      <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">读书笔记</span><span class="ti-count">9</span></div>
+      <div class="ti-row" onclick="selectNav(this)">
+        <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="ti-label">工作资料</span><span class="ti-count">18</span>
+      </div>
+      <div class="tc">
+        <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">项目管理</span><span class="ti-count">10</span></div>
+        <div class="ti-row" onclick="selectNav(this)"><svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="ti-label">会议纪要</span><span class="ti-count">8</span></div>
+      </div>
+    </div>
+
+    <!-- 标签 -->
+    <div class="sg" onclick="toggleTg('tags')">
+      <svg class="si ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span>标签</span>
+      <div class="cbtn" onclick="event.stopPropagation()" title="新建标签">+</div>
+      <svg class="sg-chev" id="tagsChev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="sg-body" id="tagsBody">
+      <div class="ti-row" onclick="selectNav(this)">
+        <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="dot" style="background:#5cb8fc"></span><span class="ti-label">重要</span><span class="ti-count">15</span>
+      </div>
+      <div class="tc">
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#5cb8fc"></span><span class="ti-label">紧急</span><span class="ti-count">6</span></div>
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#5cb8fc"></span><span class="ti-label">待办</span><span class="ti-count">9</span></div>
+      </div>
+      <div class="ti-row" onclick="selectNav(this)">
+        <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="dot" style="background:#e8708a"></span><span class="ti-label">灵感</span><span class="ti-count">11</span>
+      </div>
+      <div class="tc">
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#e8708a"></span><span class="ti-label">设计思路</span><span class="ti-count">4</span></div>
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#e8708a"></span><span class="ti-label">写作素材</span><span class="ti-count">7</span></div>
+      </div>
+      <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#5ce8a0"></span><span class="ti-label">已读完</span><span class="ti-count">20</span></div>
+      <div class="ti-row" onclick="selectNav(this)">
+        <svg class="ti-chev" onclick="event.stopPropagation();toggleTc(this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="dot" style="background:#e8c060"></span><span class="ti-label">学习</span><span class="ti-count">28</span>
+      </div>
+      <div class="tc">
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#e8c060"></span><span class="ti-label">编程</span><span class="ti-count">14</span></div>
+        <div class="ti-row" onclick="selectNav(this)"><span class="dot" style="background:#e8c060"></span><span class="ti-label">数学</span><span class="ti-count">14</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <!-- content header -->
+  <div class="content-header">
+    <div class="ch-title">未分类</div>
+    <div class="ch-right">
+      <div class="ch-btn" title="搜索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="ch-btn" title="网格视图">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <div class="ch-btn" title="排序">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <!-- 导入PDF按钮 — 在首页/未分类页面右上角 -->
+      <div class="import-btn" onclick="openImport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        导入 PDF
+      </div>
+    </div>
+  </div>
+
+  <!-- filter tabs -->
+  <div class="filter-bar">
+    <div class="f-tab active" onclick="selFilter(this)">全部</div>
+    <div class="f-tab" onclick="selFilter(this)">笔记</div>
+    <div class="f-tab" onclick="selFilter(this)">PDF</div>
+  </div>
+
+  <!-- card grid -->
+  <div class="grid-area">
+    <div class="card-grid">
+
+      <!-- new card -->
+      <div class="card-new" onclick="openImport()">
+        <div class="plus-circle">+</div>
+        <span>导入文件</span>
+      </div>
+
+      <!-- cards -->
+      <div class="card">
+        <div class="card-cover c1">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(92,232,160,.15);color:#5ce8a0">认知科学</span>
+            <div>
+              <div class="cover-title">认知科学导论</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#5ce8a0;width:80%"></div>
+                <div class="cover-line" style="background:#5ce8a0;width:55%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">认知科学导论.pdf</div><div class="card-date">2025/11/30</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c2">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(232,160,64,.15);color:#e8a040">深度学习</span>
+            <div>
+              <div class="cover-title">深度学习</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#e8a040;width:70%"></div>
+                <div class="cover-line" style="background:#e8a040;width:45%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">深度学习.pdf</div><div class="card-date">2025/11/28</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c3">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(92,184,252,.15);color:#5cb8fc">神经网络</span>
+            <div>
+              <div class="cover-title">Neural Networks & Deep Learning</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#5cb8fc;width:90%"></div>
+                <div class="cover-line" style="background:#5cb8fc;width:60%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">Neural Networks.pdf</div><div class="card-date">2025/11/20</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c4">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(232,112,138,.15);color:#e8708a">语言处理</span>
+            <div>
+              <div class="cover-title">自然语言处理综论</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#e8708a;width:75%"></div>
+                <div class="cover-line" style="background:#e8708a;width:50%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">NLP综论.pdf</div><div class="card-date">2025/11/15</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c5">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(160,232,120,.15);color:#a0e878">计算机视觉</span>
+            <div>
+              <div class="cover-title">Computer Vision: Algorithms</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#a0e878;width:65%"></div>
+                <div class="cover-line" style="background:#a0e878;width:40%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">CV Algorithms.pdf</div><div class="card-date">2025/11/10</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c6">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(232,192,88,.15);color:#e8c058">数学</span>
+            <div>
+              <div class="cover-title">线性代数与矩阵论</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#e8c058;width:85%"></div>
+                <div class="cover-line" style="background:#e8c058;width:55%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">线性代数.pdf</div><div class="card-date">2025/10/28</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c7">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(200,160,232,.15);color:#c8a0e8">机器学习</span>
+            <div>
+              <div class="cover-title">Pattern Recognition & ML</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#c8a0e8;width:72%"></div>
+                <div class="cover-line" style="background:#c8a0e8;width:48%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">PRML.pdf</div><div class="card-date">2025/10/20</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c8">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(92,200,220,.15);color:#5cc8dc">操作系统</span>
+            <div>
+              <div class="cover-title">现代操作系统原理</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#5cc8dc;width:68%"></div>
+                <div class="cover-line" style="background:#5cc8dc;width:42%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">操作系统.pdf</div><div class="card-date">2025/10/15</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c1" style="background:linear-gradient(145deg,#2a1808,#180e04)">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(232,140,80,.15);color:#e88c50">数据结构</span>
+            <div>
+              <div class="cover-title">数据结构与算法分析</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#e88c50;width:78%"></div>
+                <div class="cover-line" style="background:#e88c50;width:52%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">数据结构.pdf</div><div class="card-date">2025/10/08</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-cover c3" style="background:linear-gradient(145deg,#1a2818,#0e180a)">
+          <div class="card-cover-inner">
+            <span class="cover-tag" style="background:rgba(120,220,140,.15);color:#78dc8c">强化学习</span>
+            <div>
+              <div class="cover-title">Reinforcement Learning: An Introduction</div>
+              <div class="cover-lines">
+                <div class="cover-line" style="background:#78dc8c;width:82%"></div>
+                <div class="cover-line" style="background:#78dc8c;width:58%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><div class="card-name">RL Introduction.pdf</div><div class="card-date">2025/09/30</div></div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- .app-body -->
+</div><!-- .app -->
+
+<!-- import modal -->
+<div class="overlay" id="importOverlay">
+  <div class="modal">
+    <div class="modal-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      导入 PDF 文档
+    </div>
+    <div class="drop-zone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="drop-t">拖拽 PDF 文件到此处</div>
+      <div class="drop-s">或点击选择文件 · 支持 .pdf 格式</div>
+    </div>
+    <div class="modal-acts">
+      <div class="mbtn" onclick="closeImport()">取消</div>
+      <div class="mbtn p" onclick="closeImport()">选择文件</div>
+    </div>
+  </div>
+</div>
+
+<!-- settings modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal sm">
+    <div class="modal-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      设置
+    </div>
+    <div class="ss"><div class="ss-t">通用</div>
+      <div class="sr"><div><div class="sr-l">自动保存</div><div class="sr-d">笔记变更时自动保存到本地</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-d"></div></div></div>
+      <div class="sr"><div><div class="sr-l">深色模式</div><div class="sr-d">使用深色界面主题</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-d"></div></div></div>
+      <div class="sr"><div><div class="sr-l">侧边栏默认展开</div><div class="sr-d">启动时自动展开左侧导航</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-d"></div></div></div>
+    </div>
+    <div class="ss"><div class="ss-t">阅读</div>
+      <div class="sr"><div><div class="sr-l">翻页动画</div><div class="sr-d">切换页面时的过渡效果</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-d"></div></div></div>
+      <div class="sr"><div><div class="sr-l">Markdown 支持</div><div class="sr-d">在笔记中使用 Markdown 格式</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-d"></div></div></div>
+    </div>
+    <div class="modal-acts">
+      <div class="mbtn" onclick="closeSettings()">取消</div>
+      <div class="mbtn p" onclick="closeSettings()">保存</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSb(){document.body.classList.toggle('sbc');}
+function toggleSec(id,row){
+  const b=document.getElementById(id+'Body'),c=document.getElementById(id+'Chev');
+  b.classList.toggle('open');c.classList.toggle('open');
+}
+function toggleTg(id){
+  const b=document.getElementById(id+'Body'),c=document.getElementById(id+'Chev');
+  b.classList.toggle('open');c.classList.toggle('open');
+}
+function toggleTc(chev){
+  const item=chev.closest('.ti-row'),tc=item.nextElementSibling;
+  if(tc&&tc.classList.contains('tc')){tc.classList.toggle('open');chev.classList.toggle('open');}
+}
+function selectNav(el){
+  document.querySelectorAll('.sbn,.ti-row').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+}
+function selTab(el){
+  document.querySelectorAll('.tab-it').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+function selFilter(el){
+  document.querySelectorAll('.f-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+function openImport(){document.getElementById('importOverlay').classList.add('show');}
+function closeImport(){document.getElementById('importOverlay').classList.remove('show');}
+function openSettings(){document.getElementById('settingsOverlay').classList.add('show');}
+function closeSettings(){document.getElementById('settingsOverlay').classList.remove('show');}
+document.getElementById('importOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeImport();});
+document.getElementById('settingsOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSettings();});
+
+// init
+toggleSec('allNotes',null);
+toggleTg('folders');
+toggleTg('tags');
+</script>
+</body>
+</html>
