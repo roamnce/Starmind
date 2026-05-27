@@ -92,11 +92,11 @@ class PdfViewportController extends ChangeNotifier {
   double _zoom = 1.0;
   double get zoom => _zoom;
 
-  /// Minimum zoom factor.
-  static const double minZoom = 0.3;
+  /// Minimum zoom factor (10% of original size).
+  static const double minZoom = 0.1;
 
-  /// Maximum zoom factor.
-  static const double maxZoom = 10.0;
+  /// Maximum zoom factor (3000% of original size).
+  static const double maxZoom = 30.0;
 
   /// Pan offset in local viewport coordinates (baseScale units).
   /// Origin is the top-left corner of the child widget.
