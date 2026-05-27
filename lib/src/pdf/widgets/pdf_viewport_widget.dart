@@ -108,33 +108,54 @@ class _PdfViewportWidgetState extends State<PdfViewportWidget> {
     final viewportSize = MediaQuery.of(context).size;
     final baseScale = viewportSize.width / pdfSize.width;
 
-    return InteractiveCanvasViewer.builder(
-      minScale: PdfViewportController.minZoom,
-      maxScale: PdfViewportController.maxZoom,
-      panEnabled: true,
-      scaleEnabled: true,
-      transformationController: _transformationController,
-      // 无边界限制，允许用户将 PDF 拖动到任意位置
-      boundaryMargin: EdgeInsets.all(double.infinity),
-      isDrawGesture: _isDrawGesture,
-      onInteractionEnd: (details) {
-        // Sync controller state
-        final scale = _transformationController.value.getMaxScaleOnAxis();
-        final translation = _transformationController.value.getTranslation();
-        widget.controller.setViewportState(
-          zoom: scale,
-          panOffset: Offset(translation.x, translation.y),
-        );
-      },
-      builder: (BuildContext context, Quad viewport) {
-        return _PdfPagesContainer(
-          controller: widget.controller,
-          viewport: viewport,
-          viewportKey: _viewportKey,
-          baseScale: baseScale,
+    return Stack(
+      children: [
+        InteractiveCanvasViewer.builder(
+          minScale: PdfViewportController.minZoom,
+          maxScale: PdfViewportController.maxZoom,
+          panEnabled: true,
+          scaleEnabled: true,
           transformationController: _transformationController,
-        );
-      },
+          // 无边界限制，允许用户将 PDF 拖动到任意位置
+          boundaryMargin: EdgeInsets.all(double.infinity),
+          isDrawGesture: _isDrawGesture,
+          onInteractionEnd: (details) {
+            // Sync controller state
+            final scale = _transformationController.value.getMaxScaleOnAxis();
+            final translation = _transformationController.value.getTranslation();
+            widget.controller.setViewportState(
+              zoom: scale,
+              panOffset: Offset(translation.x, translation.y),
+            );
+          },
+          builder: (BuildContext context, Quad viewport) {
+            return _PdfPagesContainer(
+              controller: widget.controller,
+              viewport: viewport,
+              viewportKey: _viewportKey,
+              baseScale: baseScale,
+              transformationController: _transformationController,
+            );
+          },
+        ),
+        // 浮动工具栏
+        if (widget.controller.selectingPageIndex != null &&
+            widget.controller.selectionToolbarPosition != null)
+          Positioned(
+            left: widget.controller.selectionToolbarPosition!.dx,
+            top: widget.controller.selectionToolbarPosition!.dy,
+            child: SelectionToolbar(
+              controller: widget.controller,
+              pageIndex: widget.controller.selectingPageIndex!,
+              startCharIndex: widget.controller.selectionStartCharIndex!,
+              endCharIndex: widget.controller.selectionEndCharIndex!,
+              rects: widget.controller.getSelectionRects(
+                  widget.controller.selectingPageIndex!),
+              selectedText: widget.controller.getSelectedText(),
+              onClose: () => widget.controller.clearSelection(),
+            ),
+          ),
+      ],
     );
   }
 
