@@ -507,6 +507,8 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
             selectionRects: widget.controller.getSelectionRects(widget.pageIndex),
             pdfHeight: pdfHeight,
             scale: scale,
+            selectionHandler: _selectionHandler,
+            isSelecting: _isSelecting,
           ),
         ),
       ),
@@ -531,6 +533,8 @@ class PdfPagePainter extends CustomPainter {
   final List<Rect> selectionRects;
   final double pdfHeight;
   final double scale;
+  final TextSelectionHandler? selectionHandler;
+  final bool isSelecting;
 
   PdfPagePainter({
     required this.lowResImage,
@@ -540,6 +544,8 @@ class PdfPagePainter extends CustomPainter {
     required this.selectionRects,
     required this.pdfHeight,
     required this.scale,
+    this.selectionHandler,
+    this.isSelecting = false,
   });
 
   @override
@@ -583,6 +589,22 @@ class PdfPagePainter extends CustomPainter {
         canvas.drawRect(localRect, selectPaint);
       }
     }
+
+    // Render current text selection during drag operation
+    if (isSelecting && selectionHandler != null) {
+      final selection = selectionHandler!.currentSelection;
+      if (selection != null) {
+        final selectPaint = Paint()
+          ..color = Colors.blue.withValues(alpha: 0.3)
+          ..style = PaintingStyle.fill;
+
+        for (final rect in selection.rects) {
+          final screenRect = selectionHandler!.pdfToScreen(rect.left, rect.top) &
+              Size(rect.right - rect.left, rect.bottom - rect.top);
+          canvas.drawRect(screenRect, selectPaint);
+        }
+      }
+    }
   }
 
   Rect _pdfRectToLocal(Rect pdfRect) {
@@ -602,6 +624,7 @@ class PdfPagePainter extends CustomPainter {
         oldDelegate.highlights != highlights ||
         oldDelegate.selectionRects != selectionRects ||
         oldDelegate.scale != scale ||
-        oldDelegate.pdfHeight != pdfHeight;
+        oldDelegate.pdfHeight != pdfHeight ||
+        oldDelegate.isSelecting != isSelecting;
   }
 }
