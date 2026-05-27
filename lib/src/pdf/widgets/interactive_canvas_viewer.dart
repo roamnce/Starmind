@@ -689,18 +689,10 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     }
     assert(scale != 0.0);
 
-    // Don't allow a scale that results in an overall scale beyond min/max
-    // scale.
+    // 只限制 minScale/maxScale，不再限制边界约束
+    // 这允许用户缩小到任意级别（如 0.1x）
     final double currentScale = _transformer.value.getMaxScaleOnAxis();
-    final double totalScale = math.max(
-      currentScale * scale,
-      // Ensure that the scale cannot make the child so big that it can't fit
-      // inside the boundaries (in either direction).
-      math.max(
-        _viewport.width / _boundaryRect.width,
-        _viewport.height / _boundaryRect.height,
-      ),
-    );
+    final double totalScale = currentScale * scale;
     final double clampedTotalScale = clampDouble(
       totalScale,
       widget.minScale,
