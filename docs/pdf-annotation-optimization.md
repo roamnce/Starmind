@@ -82,7 +82,21 @@ Picture 缓存，缓存静态内容避免重绘。
 | 版本 | 最小缩放 | 最大缩放 |
 |------|----------|----------|
 | 优化前 | 0.5x | 5.0x |
-| 优化后 | 0.3x | 10.0x |
+| 优化后 | 0.1x | 30.0x |
+
+## 文本选择
+
+新增浮动工具栏 `SelectionToolbar`，支持文本选择后的批注操作：
+
+**位置**: `lib/src/pdf/widgets/selection_toolbar.dart`
+
+**功能**:
+- 高亮按钮（黄色高亮）
+- 下划线按钮
+- 复制按钮
+- 颜色选择（黄/绿/蓝/橙）
+
+**使用方式**: 长按 PDF 文本触发选择，拖动调整范围后自动显示工具栏。
 
 ## 测试覆盖
 
@@ -91,6 +105,9 @@ Picture 缓存，缓存静态内容避免重绘。
 - `test/pdf/viewport_repaint_notifier_test.dart`
 - `test/pdf/static_picture_cache_test.dart`
 - `test/pdf/gesture_dispatcher_test.dart`
+- `test/pdf/tile_manager_test.dart`
+- `test/pdf/pdf_viewport_controller_test.dart`
 - `test/pdf/widgets/interactive_canvas_viewer_test.dart`
 - `test/pdf/widgets/pdf_viewport_widget_test.dart`
 - `test/pdf/widgets/ink_canvas_layer_test.dart`
+- `test/pdf/widgets/text_selection_handler_test.dart`
