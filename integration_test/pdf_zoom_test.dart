@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:starmind/src/pdf/pdf_viewport_controller.dart';
 import 'package:starmind/src/pdf/pdf_gesture_handler.dart';
+import 'package:starmind/src/pdf/viewport_transform.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -166,9 +167,9 @@ void main() {
 
         // PDF should be centered after constraint
         // baseScale = 400 / 595 = 0.672
-        // scaledWidth = 595 * 0.672 * 0.5 = 200
-        // centerX = (400 - 200) / 2 = 100
-        expect(controller.panOffset.dx, closeTo(100, 1.0));
+        // scaledWidth = 595 * 0.672 * 0.25 = 100 (since minZoom is 0.1, zoom is 0.25)
+        // centerX = (400 - 100) / 2 = 150
+        expect(controller.panOffset.dx, closeTo(150, 1.0));
       });
 
       testWidgets('boundary constraints should clamp large PDF', (tester) async {

@@ -101,6 +101,7 @@ void main() {
     group('constrainBounds', () {
       test('should not modify pan when free pan is enabled', () {
         // constrainBounds is now a no-op for free panning
+        controller.setFreePanEnabled(true);
         controller.setViewportSize(const Size(400, 600));
         controller.setZoom(0.5);
         controller.setPanOffset(Offset.zero);
@@ -112,6 +113,7 @@ void main() {
       });
 
       test('should allow any pan position with free pan', () {
+        controller.setFreePanEnabled(true);
         controller.setViewportSize(const Size(400, 600));
         controller.setZoom(2.0);
         controller.setPanOffset(const Offset(-1000, -1000));
@@ -123,6 +125,7 @@ void main() {
       });
 
       test('should not modify pan when already at any position', () {
+        controller.setFreePanEnabled(true);
         controller.setViewportSize(const Size(400, 600));
         controller.setZoom(2.0);
         controller.setPanOffset(const Offset(-100, -100));

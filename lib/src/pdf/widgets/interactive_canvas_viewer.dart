@@ -516,6 +516,13 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   // https://github.com/flutter/flutter/issues/57698
   final bool _rotateEnabled = false;
 
+  double _getMatrixScale2D(Matrix4 matrix) {
+    final double m00 = matrix.entry(0, 0);
+    final double m10 = matrix.entry(1, 0);
+    final double m20 = matrix.entry(2, 0);
+    return math.sqrt(m00 * m00 + m10 * m10 + m20 * m20);
+  }
+
   // The _boundaryRect is calculated by adding the boundaryMargin to the size of
   // the child.
   Rect get _boundaryRect {
@@ -610,7 +617,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     // Desired translation goes out of bounds, so translate to the nearest
     // in-bounds point instead.
     final Offset nextTotalTranslation = _getMatrixTranslation(nextMatrix);
-    final double currentScale = matrix.getMaxScaleOnAxis();
+    final double currentScale = _getMatrixScale2D(matrix);
     final Offset correctedTotalTranslation = Offset(
       nextTotalTranslation.dx - offendingDistance.dx * currentScale,
       nextTotalTranslation.dy - offendingDistance.dy * currentScale,
@@ -691,7 +698,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
 
     // 只限制 minScale/maxScale，不再限制边界约束
     // 这允许用户缩小到任意级别（如 0.1x）
-    final double currentScale = _transformer.value.getMaxScaleOnAxis();
+    final double currentScale = _getMatrixScale2D(_transformer.value);
     final double totalScale = currentScale * scale;
     final double clampedTotalScale = clampDouble(
       totalScale,
@@ -761,7 +768,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
 
     _gestureType = null;
     _currentAxis = null;
-    _scaleStart = _transformer.value.getMaxScaleOnAxis();
+    _scaleStart = _getMatrixScale2D(_transformer.value);
     _referenceFocalPoint = _transformer.toScene(details.localFocalPoint);
     _rotationStart = _currentRotation;
 
@@ -780,7 +787,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     if (!isCurrentGestureADrawGesture) {
       widget.onInteractionUpdate?.call(details);
     }
-    final double scale = _transformer.value.getMaxScaleOnAxis();
+    final double scale = _getMatrixScale2D(_transformer.value);
     _scaleAnimationFocalPoint = details.localFocalPoint;
     final Offset focalPointScene = _transformer.toScene(
       details.localFocalPoint,
@@ -938,7 +945,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
           _currentAxis = null;
           return;
         }
-        final double scale = _transformer.value.getMaxScaleOnAxis();
+        final double scale = _getMatrixScale2D(_transformer.value);
         final FrictionSimulation frictionSimulation = FrictionSimulation(
           widget.interactionEndFrictionCoefficient * widget.scaleFactor,
           scale,
@@ -1055,7 +1062,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     }
     final double desiredScale = _scaleAnimation!.value;
     final double scaleChange =
-        desiredScale / _transformer.value.getMaxScaleOnAxis();
+        desiredScale / _getMatrixScale2D(_transformer.value);
     final Offset referenceFocalPoint = _transformer.toScene(
       _scaleAnimationFocalPoint,
     );

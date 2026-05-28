@@ -10,7 +10,7 @@ import 'package:starmind/src/pdf/undo_redo_stack.dart';
 /// Provides:
 /// - CRUD operations for all annotation types
 /// - Page-indexed annotation lookup for efficient rendering
-/// - Document-level Undo/Redo stack
+/// - Document-level Undo/Redo stack (shared with viewport operations)
 ///
 /// Coordinates with [StorageRepository] for persistence.
 class AnnotationController extends ChangeNotifier {
@@ -24,12 +24,14 @@ class AnnotationController extends ChangeNotifier {
   /// Annotations indexed by page number for efficient lookup.
   final Map<int, List<Annotation>> _pageAnnotations = {};
 
-  /// Document-level undo/redo stack (shared with zoom/scroll operations).
-  final UndoRedoStack undoRedoStack = UndoRedoStack();
+  /// Document-level undo/redo stack (shared with viewport operations).
+  /// Must be injected to share with PdfViewportController.
+  final UndoRedoStack undoRedoStack;
 
   AnnotationController({
     required StorageRepository repository,
     required this.documentId,
+    required this.undoRedoStack,
   }) : _repository = repository;
 
   /// Get all annotations for this document.

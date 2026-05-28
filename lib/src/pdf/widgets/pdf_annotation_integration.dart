@@ -48,13 +48,22 @@ Widget buildAnnotationRenderer({
   required PdfViewportController controller,
   required int pageIndex,
   required double scale, // Static baseScale of the page layout
+  AnnotationController? annotationController,
 }) {
   final pdfSize = controller.pageSizes[pageIndex];
   if (pdfSize == null) return const SizedBox.shrink();
 
-  // Convert highlights to annotations for rendering
-  final annotations = controller.highlights
-      .where((h) => h.pageIndex == pageIndex)
+  final annotations = <Annotation>[];
+
+  // 1. Load persistent annotations from SQLite DB
+  if (annotationController != null) {
+    annotations.addAll(annotationController.annotationsForPage(pageIndex));
+  }
+
+  // 2. Load temporary highlights from controller, excluding duplicates
+  final persistentIds = annotations.map((a) => a.id).toSet();
+  final tempAnnotations = controller.highlights
+      .where((h) => h.pageIndex == pageIndex && !persistentIds.contains(h.id))
       .map((h) => Annotation.highlight(
             id: h.id,
             documentId: 'current-doc',
@@ -69,8 +78,8 @@ Widget buildAnnotationRenderer({
                   bottom: r.bottom,
                 )).toList(),
             colorHex: _colorToHex(h.color),
-          ))
-      .toList();
+          ));
+  annotations.addAll(tempAnnotations);
 
   return Positioned.fill(
     child: CustomPaint(

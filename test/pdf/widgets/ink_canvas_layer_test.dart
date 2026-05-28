@@ -3,19 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:starmind/src/domain/in_memory_storage_repository.dart';
 import 'package:starmind/src/pdf/widgets/ink_canvas_layer.dart';
 import 'package:starmind/src/pdf/annotation_controller.dart';
+import 'package:starmind/src/pdf/undo_redo_stack.dart';
 import 'package:starmind/src/pdf/widgets/ink_toolbar.dart' show InkTool;
 
 void main() {
   group('InkCanvasLayer gesture handling', () {
     late AnnotationController annotationController;
     late InMemoryStorageRepository repository;
+    late UndoRedoStack undoStack;
 
     setUp(() async {
       repository = InMemoryStorageRepository();
       await repository.initialize('', '');
+      undoStack = UndoRedoStack();
       annotationController = AnnotationController(
         repository: repository,
         documentId: 'test-doc',
+        undoRedoStack: undoStack,
       );
     });
 

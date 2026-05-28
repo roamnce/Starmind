@@ -88,8 +88,6 @@ class InkToolbar extends StatefulWidget {
 }
 
 class _InkToolbarState extends State<InkToolbar> {
-  bool _showColorPicker = false;
-  bool _showWidthSlider = false;
 
   /// Preset colors for ink.
   static const List<String> presetColors = [

@@ -6,14 +6,22 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' show Quad;
+import 'package:vector_math/vector_math_64.dart' show Quad, Matrix4;
 import '../pdf_service.dart';
 import '../pdf_viewport_controller.dart';
 import '../pdf_coordinates.dart';
 import '../viewport_repaint_notifier.dart';
+import '../pdf_highlight.dart';
 import 'interactive_canvas_viewer.dart';
 import 'text_selection_handler.dart';
 import 'selection_toolbar.dart';
+
+double _getMatrixScale2D(Matrix4 matrix) {
+  final double m00 = matrix.entry(0, 0);
+  final double m10 = matrix.entry(1, 0);
+  final double m20 = matrix.entry(2, 0);
+  return sqrt(m00 * m00 + m10 * m10 + m20 * m20);
+}
 
 /// PDF viewport widget with pinch-to-zoom and pan support.
 ///
@@ -121,7 +129,7 @@ class _PdfViewportWidgetState extends State<PdfViewportWidget> {
           isDrawGesture: _isDrawGesture,
           onInteractionEnd: (details) {
             // Sync controller state
-            final scale = _transformationController.value.getMaxScaleOnAxis();
+            final scale = _getMatrixScale2D(_transformationController.value);
             final translation = _transformationController.value.getTranslation();
             widget.controller.setViewportState(
               zoom: scale,
@@ -215,6 +223,7 @@ class _PdfPagesContainer extends StatelessWidget {
           controller: controller,
           viewport: viewport,
           viewportWidth: viewportWidth,
+          viewportKey: viewportKey,
           transformationController: transformationController,
         );
       }),
@@ -250,6 +259,7 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   ui.Image? _lowResImage;
   ui.Image? _highResTile;
   Rect? _highResRect;
+  double? _highResZoom;
   Timer? _debounceTimer;
   TextSelectionHandler? _selectionHandler;
   bool _isSelecting = false;
@@ -279,7 +289,9 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
     _selectionHandler = TextSelectionHandler(
       chars: chars,
       pageHeight: size.height,
-      zoom: widget.transformationController?.value.getMaxScaleOnAxis() ?? 1.0,
+      zoom: widget.transformationController != null
+          ? _getMatrixScale2D(widget.transformationController!.value)
+          : 1.0,
       scrollOffset: Offset.zero,
       onSelectionComplete: _onSelectionComplete,
     );
@@ -368,12 +380,21 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
           _highResTile?.dispose();
           _highResTile = null;
           _highResRect = null;
+          _highResZoom = null;
         });
       }
       return;
     }
 
-    if (_highResRect != null && _highResTile != null && _highResRect!.containsRect(visibleRect)) {
+    final zoom = widget.transformationController != null
+        ? _getMatrixScale2D(widget.transformationController!.value)
+        : 1.0;
+
+    if (_highResRect != null &&
+        _highResTile != null &&
+        _highResZoom != null &&
+        (_highResZoom! - zoom).abs() < 0.01 &&
+        _highResRect!.containsRect(visibleRect)) {
       return;
     }
 
@@ -386,7 +407,6 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
       if (viewportBox == null) return;
 
       final baseScale = widget.viewportWidth / pdfWidth;
-      final zoom = widget.transformationController?.value.getMaxScaleOnAxis() ?? 1.0;
 
       final double expandX = 100.0 / zoom;
       final double expandY = 150.0 / zoom;
@@ -401,9 +421,29 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
       final pdfRect = coords.flutterToPdf(expandedVisibleRect, baseScale);
 
       final dpr = MediaQuery.of(context).devicePixelRatio;
-      final renderScale = zoom * dpr * 1.3;
-      final targetWidth = (expandedVisibleRect.width * renderScale).round();
-      final targetHeight = (expandedVisibleRect.height * renderScale).round();
+      
+      // Scale down multiplier at high zoom factors to optimize performance
+      double scaleMultiplier = 1.3;
+      if (zoom > 10.0) {
+        scaleMultiplier = 0.8;
+      } else if (zoom > 5.0) {
+        scaleMultiplier = 1.0;
+      }
+      
+      final renderScale = zoom * dpr * scaleMultiplier;
+      double targetWidthDouble = expandedVisibleRect.width * renderScale;
+      double targetHeightDouble = expandedVisibleRect.height * renderScale;
+
+      // Cap tile dimensions to a maximum of 2048px to prevent CPU rendering lags and high memory overhead
+      const double maxDimension = 2048.0;
+      if (targetWidthDouble > maxDimension || targetHeightDouble > maxDimension) {
+        final double ratio = maxDimension / max(targetWidthDouble, targetHeightDouble);
+        targetWidthDouble *= ratio;
+        targetHeightDouble *= ratio;
+      }
+
+      final targetWidth = targetWidthDouble.round();
+      final targetHeight = targetHeightDouble.round();
 
       if (targetWidth <= 0 || targetHeight <= 0) return;
 
@@ -424,6 +464,7 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
           _highResTile?.dispose();
           _highResTile = img;
           _highResRect = expandedVisibleRect;
+          _highResZoom = zoom;
         });
       }
     } catch (e) {
@@ -434,25 +475,26 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   Rect? _getVisibleRect() {
     if (!mounted || _pdfSize == null) return null;
     final pageBox = context.findRenderObject() as RenderBox?;
-    final viewportBox = context.findRenderObject() as RenderBox?;
+    final viewportBox = widget.viewportKey?.currentContext?.findRenderObject() as RenderBox?;
     if (pageBox == null || viewportBox == null || !pageBox.attached || !viewportBox.attached) {
       return null;
     }
 
-    final pageLocalToGlobal = pageBox.localToGlobal(Offset.zero);
-    final pageRect = pageLocalToGlobal & pageBox.size;
     final viewportLocalToGlobal = viewportBox.localToGlobal(Offset.zero);
     final viewportRect = viewportLocalToGlobal & viewportBox.size;
 
-    final visibleGlobalRect = pageRect.intersect(viewportRect);
-    if (visibleGlobalRect.width <= 0 || visibleGlobalRect.height <= 0) {
+    // Convert viewport global boundaries into page-local coordinate system (handles zoom/pan)
+    final localTopLeft = pageBox.globalToLocal(viewportRect.topLeft);
+    final localBottomRight = pageBox.globalToLocal(viewportRect.bottomRight);
+
+    final left = localTopLeft.dx.clamp(0.0, pageBox.size.width);
+    final top = localTopLeft.dy.clamp(0.0, pageBox.size.height);
+    final right = localBottomRight.dx.clamp(0.0, pageBox.size.width);
+    final bottom = localBottomRight.dy.clamp(0.0, pageBox.size.height);
+
+    if (right <= left || bottom <= top) {
       return null;
     }
-
-    final left = max(0.0, visibleGlobalRect.left - pageLocalToGlobal.dx);
-    final top = max(0.0, visibleGlobalRect.top - pageLocalToGlobal.dy);
-    final right = min(pageBox.size.width, visibleGlobalRect.right - pageLocalToGlobal.dx);
-    final bottom = min(pageBox.size.height, visibleGlobalRect.bottom - pageLocalToGlobal.dy);
 
     return Rect.fromLTRB(left, top, right, bottom);
   }

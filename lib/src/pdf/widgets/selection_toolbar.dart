@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../pdf_viewport_controller.dart';
+import '../../domain/annotation.dart';
 
 /// 浮动工具栏，用于文本选择后的批注操作
 class SelectionToolbar extends StatelessWidget {
@@ -11,6 +11,7 @@ class SelectionToolbar extends StatelessWidget {
   final List<Rect> rects;
   final String selectedText;
   final VoidCallback? onClose;
+  final void Function(AnnotationType type, Color color)? onCreateAnnotation;
 
   const SelectionToolbar({
     super.key,
@@ -21,24 +22,21 @@ class SelectionToolbar extends StatelessWidget {
     required this.rects,
     required this.selectedText,
     this.onClose,
+    this.onCreateAnnotation,
   });
 
   void _onHighlightPressed(Color color) {
-    controller.addHighlight(PdfHighlight(
-      id: const Uuid().v4(),
-      pageIndex: pageIndex,
-      startCharIndex: startCharIndex,
-      endCharIndex: endCharIndex,
-      color: color,
-      rects: rects,
-      text: selectedText,
-    ));
+    if (onCreateAnnotation != null) {
+      onCreateAnnotation!(AnnotationType.highlight, color);
+    }
     controller.clearSelection();
     onClose?.call();
   }
 
   void _onUnderlinePressed(Color color) {
-    // TODO: 实现下划线批注
+    if (onCreateAnnotation != null) {
+      onCreateAnnotation!(AnnotationType.underline, color);
+    }
     controller.clearSelection();
     onClose?.call();
   }

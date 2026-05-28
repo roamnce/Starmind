@@ -1,647 +1,217 @@
-/// 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
-library;
-
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'pdf_service.dart';
 import '../rust/api/pdf.dart' show CharInfo;
+import 'pdf_doc_session.dart';
+import 'viewport_transform.dart';
+import 'text_selection_model.dart';
+import 'undo_redo_stack.dart';
+import 'pdf_service.dart';
+import 'pdf_highlight.dart';
 
-/// Model representing a text highlight or annotation on a PDF page.
-class PdfHighlight {
-  final String id;
-  final int pageIndex;
-  final int startCharIndex;
-  final int endCharIndex;
-  final Color color;
-  final List<Rect> rects; // Bounding boxes in PDF point coordinates
-  final String text;
-
-  PdfHighlight({
-    required this.id,
-    required this.pageIndex,
-    required this.startCharIndex,
-    required this.endCharIndex,
-    required this.color,
-    required this.rects,
-    required this.text,
-  });
-}
-
-/// Abstract base class for all session undo/redo actions.
-abstract class PdfUndoAction {
-  void undo(PdfViewportController controller);
-  void redo(PdfViewportController controller);
-}
-
-/// Undo/Redo action for adding a highlight.
-class AddHighlightAction implements PdfUndoAction {
-  final PdfHighlight highlight;
-  AddHighlightAction(this.highlight);
-
-  @override
-  void undo(PdfViewportController controller) {
-    controller.removeHighlightSilent(highlight.id);
-  }
-
-  @override
-  void redo(PdfViewportController controller) {
-    controller.addHighlightSilent(highlight);
-  }
-}
-
-/// Undo/Redo action for removing a highlight.
-class RemoveHighlightAction implements PdfUndoAction {
-  final PdfHighlight highlight;
-  RemoveHighlightAction(this.highlight);
-
-  @override
-  void undo(PdfViewportController controller) {
-    controller.addHighlightSilent(highlight);
-  }
-
-  @override
-  void redo(PdfViewportController controller) {
-    controller.removeHighlightSilent(highlight.id);
-  }
-}
-
-/// Manages PDF document states, zoom, pan, selection, and undo/redo stacks.
+/// Facade controller for PDF viewport operations.
+///
+/// This controller coordinates three sub-modules:
+/// - [PdfDocSession]: Document lifecycle and page data
+/// - [ViewportTransform]: Zoom and pan transformations
+/// - [TextSelectionModel]: Text selection state
+///
+/// The undo/redo stack is shared with [AnnotationController]
+/// to provide a unified document history.
+///
+/// This is a shallow facade: the interface is kept stable for backward
+/// compatibility, but all logic delegates to deep sub-modules.
 class PdfViewportController extends ChangeNotifier {
-  final PdfService _pdfService = PdfService();
+  // ── Sub-modules ──
 
-  // Diagnostic loading step tracking
-  String _loadingStep = '';
-  String get loadingStep => _loadingStep;
-  String? _loadingError;
-  String? get loadingError => _loadingError;
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  final PdfDocSession _session;
+  final ViewportTransform _transform;
+  final TextSelectionModel _selection;
+  final UndoRedoStack _undoStack;
 
-  String? _docId;
-  String? get docId => _docId;
+  // ── Constructor ──
 
-  String? _filePath;
-  String? get filePath => _filePath;
+  PdfViewportController({
+    PdfService? pdfService,
+    UndoRedoStack? undoStack,
+  })  : _session = PdfDocSession(pdfService: pdfService),
+        _transform = ViewportTransform(),
+        _selection = TextSelectionModel(),
+        _undoStack = undoStack ?? UndoRedoStack() {
+    // Forward notifications from sub-modules
+    _session.addListener(notifyListeners);
+    _transform.addListener(notifyListeners);
+    _selection.addListener(notifyListeners);
+  }
 
-  int _pageCount = 0;
-  int get pageCount => _pageCount;
+  // ── PdfDocSession Delegation ──
 
-  // ── Viewport State ──
+  String? get docId => _session.docId;
+  String? get filePath => _session.filePath;
+  int get pageCount => _session.pageCount;
+  bool get isLoading => _session.isLoading;
+  String get loadingStep => _session.loadingStep;
+  String? get loadingError => _session.loadingError;
+  Map<int, Size> get pageSizes => _session.pageSizes;
 
-  /// Current zoom factor (0.5 ~ 5.0).
-  double _zoom = 1.0;
-  double get zoom => _zoom;
+  Future<void> loadDoc(String path) async {
+    await _session.loadDoc(path);
+    _selection.clearSelection();
+    notifyListeners();
+  }
 
-  /// Minimum zoom factor (10% of original size).
-  static const double minZoom = 0.1;
+  Future<void> closeDoc() async {
+    await _session.closeDoc();
+    _selection.clearSelection();
+    notifyListeners();
+  }
 
-  /// Maximum zoom factor (3000% of original size).
-  static const double maxZoom = 30.0;
+  Future<Size> getPageSize(int pageIndex) => _session.getPageSize(pageIndex);
+  Future<List<CharInfo>> getPageChars(int pageIndex) => _session.getPageChars(pageIndex);
 
-  /// Pan offset in local viewport coordinates (baseScale units).
-  /// Origin is the top-left corner of the child widget.
-  Offset _panOffset = Offset.zero;
-  Offset get panOffset => _panOffset;
+  // ── ViewportTransform Delegation ──
 
-  /// Whether free pan mode is enabled (no boundary constraints).
-  bool _freePanEnabled = false;
-  bool get freePanEnabled => _freePanEnabled;
+  static double get minZoom => ViewportTransform.minZoom;
+  static double get maxZoom => ViewportTransform.maxZoom;
 
-  /// Whether palm rejection is enabled (stylus only for drawing).
-  bool _palmRejectionEnabled = false;
-  bool get palmRejectionEnabled => _palmRejectionEnabled;
+  double get zoom => _transform.zoom;
+  Offset get panOffset => _transform.panOffset;
+  Size get viewportSize => _transform.viewportSize;
+  bool get freePanEnabled => _transform.freePanEnabled;
+  bool get palmRejectionEnabled => _transform.palmRejectionEnabled;
 
-  /// Viewport size in screen coordinates (set by widget).
-  Size _viewportSize = Size.zero;
-  Size get viewportSize => _viewportSize;
+  void setZoom(double newZoom) => _transform.setZoom(newZoom);
+  void setPanOffset(Offset offset) => _transform.setPanOffset(offset);
+  void pan(Offset delta) => _transform.pan(delta);
+  void zoomAt(Offset focalPoint, double newZoom) => _transform.zoomAt(focalPoint, newZoom);
+  void setViewportState({double? zoom, Offset? panOffset}) =>
+      _transform.setViewportState(zoom: zoom, panOffset: panOffset);
+  void setViewportSize(Size size) => _transform.setViewportSize(size);
+  void resetViewport() => _transform.resetViewport();
+  void setFreePanEnabled(bool enabled) => _transform.setFreePanEnabled(enabled);
+  void setPalmRejectionEnabled(bool enabled) => _transform.setPalmRejectionEnabled(enabled);
+  ViewportState getViewportState() => _transform.getViewportState();
+  void restoreViewportState(ViewportState state) => _transform.restoreViewportState(state);
 
-  // Cache for page sizes: pageIndex -> Size(width, height)
-  final Map<int, Size> _pageSizes = {};
-  Map<int, Size> get pageSizes => _pageSizes;
+  /// Constrain viewport boundaries (no-op with free pan mode).
+  void constrainBounds(Size pdfSize, Size viewportSize) {
+    if (freePanEnabled || pdfSize.isEmpty || viewportSize.isEmpty) return;
 
-  // Cache for characters: pageIndex -> list of CharInfo
-  final Map<int, List<CharInfo>> _pageChars = {};
+    final baseScale = viewportSize.width / pdfSize.width;
+    final pdfDisplayWidth = pdfSize.width * baseScale * zoom;
+    final pdfDisplayHeight = pdfSize.height * baseScale * zoom;
 
-  // Active highlights: highlightId -> PdfHighlight
+    double minX;
+    double maxX;
+    if (pdfDisplayWidth < viewportSize.width) {
+      minX = (viewportSize.width - pdfDisplayWidth) / 2;
+      maxX = minX;
+    } else {
+      minX = viewportSize.width - pdfDisplayWidth;
+      maxX = 0.0;
+    }
+
+    double minY;
+    double maxY;
+    if (pdfDisplayHeight < viewportSize.height) {
+      minY = (viewportSize.height - pdfDisplayHeight) / 2;
+      maxY = minY;
+    } else {
+      minY = viewportSize.height - pdfDisplayHeight;
+      maxY = 0.0;
+    }
+
+    final targetX = panOffset.dx.clamp(minX, maxX);
+    final targetY = panOffset.dy.clamp(minY, maxY);
+    setPanOffset(Offset(targetX, targetY));
+  }
+
+  // ── TextSelectionModel Delegation ──
+
+  int? get selectingPageIndex => _selection.selectingPageIndex;
+  int? get selectionStartCharIndex => _selection.selectionStartCharIndex;
+  int? get selectionEndCharIndex => _selection.selectionEndCharIndex;
+  Offset? get selectionToolbarPosition => _selection.selectionToolbarPosition;
+
+  Future<void> startSelection(int pageIndex, Offset pdfPoint) =>
+      _selection.startSelection(pageIndex, pdfPoint, _session.getPageChars);
+
+  Future<void> updateSelection(Offset pdfPoint) =>
+      _selection.updateSelection(pdfPoint, _session.getPageChars);
+
+  void updateSelectionStart(int charIndex) =>
+      _selection.updateSelectionStart(charIndex);
+
+  void updateSelectionEnd(int charIndex) =>
+      _selection.updateSelectionEnd(charIndex);
+
+  void endSelection(Offset globalToolbarOffset) =>
+      _selection.endSelection(globalToolbarOffset);
+
+  void clearSelection() => _selection.clearSelection();
+
+  List<Rect> getSelectionRects(int pageIndex) =>
+      _selection.getSelectionRects(pageIndex, _session.pageCharsCache);
+
+  List<Rect> mergeCharacterBoxes(List<CharInfo> selectedChars) =>
+      _selection.mergeCharacterBoxes(selectedChars);
+
+  String getSelectedText() => _selection.getSelectedText(_session.pageCharsCache);
+
+  // ── Undo/Redo (delegates to shared stack) ──
+
+  bool get canUndo => _undoStack.canUndo;
+  bool get canRedo => _undoStack.canRedo;
+
+  Future<void> undo() async {
+    await _undoStack.undo();
+    notifyListeners();
+  }
+
+  Future<void> redo() async {
+    await _undoStack.redo();
+    notifyListeners();
+  }
+
+  /// Returns the shared undo stack for injection into AnnotationController.
+  UndoRedoStack get undoRedoStack => _undoStack;
+
+  // ── Highlights (temporary, for rendering) ──
+  // Note: Persistent highlights are stored in AnnotationController.
+  // This is kept for backward compatibility with existing widgets.
+
   final Map<String, PdfHighlight> _highlights = {};
   List<PdfHighlight> get highlights => _highlights.values.toList();
 
-  // Selection states
-  int? _selectingPageIndex;
-  int? get selectingPageIndex => _selectingPageIndex;
-
-  int? _selectionStartCharIndex;
-  int? get selectionStartCharIndex => _selectionStartCharIndex;
-
-  int? _selectionEndCharIndex;
-  int? get selectionEndCharIndex => _selectionEndCharIndex;
-
-  // Screen/Overlay layout position for showing the toolbar
-  Offset? _selectionToolbarPosition;
-  Offset? get selectionToolbarPosition => _selectionToolbarPosition;
-
-  // Undo/Redo action stacks
-  final List<PdfUndoAction> _undoStack = [];
-  final List<PdfUndoAction> _redoStack = [];
-
-  bool get canUndo => _undoStack.isNotEmpty;
-  bool get canRedo => _redoStack.isNotEmpty;
-
-  /// Loads the PDF document and caches its initial properties.
-  /// Each step updates UI so crash point can be identified.
-  Future<void> loadDoc(String path) async {
-    _filePath = path;
-    _isLoading = true;
-    _loadingError = null;
-
-    // Step 1: Initialize PDFium engine
-    _loadingStep = '步骤1: 初始化PDFium引擎...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-    try {
-      await _pdfService.initialize();
-    } catch (e) {
-      _loadingError = '步骤1失败: $e';
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
-
-    // Step 2: Load document file
-    _loadingStep = '步骤2: 加载PDF文件...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-    try {
-      _docId = await _pdfService.loadDocument(path);
-    } catch (e) {
-      _loadingError = '步骤2失败: $e';
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
-
-    // Step 3: Get page count
-    _loadingStep = '步骤3: 获取页数...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-    try {
-      _pageCount = await _pdfService.getPageCount(_docId!);
-    } catch (e) {
-      _loadingError = '步骤3失败: $e';
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
-
-    // Step 4a: Prepare to load first page size
-    _loadingStep = '步骤4a: 准备获取页面尺寸...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // Step 4b: FFI call to get page size
-    _loadingStep = '步骤4b: 调用FFI获取尺寸...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-    try {
-      final sizeTuple = await _pdfService.getPageSize(_docId!, 0);
-      _pageSizes[0] = Size(sizeTuple.$1, sizeTuple.$2);
-    } catch (e) {
-      _loadingError = '步骤4b失败(Dart异常): $e';
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
-
-    // Step 4c: Page size returned successfully
-    _loadingStep = '步骤4c: 尺寸获取成功 (${_pageSizes[0]?.width.toStringAsFixed(1)}x${_pageSizes[0]?.height.toStringAsFixed(1)})';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    _pageChars.clear();
-    _highlights.clear();
-    _undoStack.clear();
-    _redoStack.clear();
-    _clearSelectionSilent();
-
-    // Step 5: About to switch to rendering mode
-    _loadingStep = '步骤5: 准备切换到渲染模式...';
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    _loadingStep = '加载完成 ✓';
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  /// Closes the document and releases PDFium memory cache.
-  Future<void> closeDoc() async {
-    if (_docId != null) {
-      await _pdfService.closeDocument(_docId!);
-      _docId = null;
-      _filePath = null;
-      _pageCount = 0;
-      _loadingStep = '';
-      _loadingError = null;
-      _isLoading = false;
-      _pageSizes.clear();
-      _pageChars.clear();
-      _highlights.clear();
-      _undoStack.clear();
-      _redoStack.clear();
-      _clearSelectionSilent();
-      notifyListeners();
-    }
-  }
-
-  /// Sets the zoom factor (clamps between minZoom and maxZoom).
-  void setZoom(double newZoom) {
-    final clamped = newZoom.clamp(minZoom, maxZoom);
-    if (_zoom != clamped) {
-      _zoom = clamped;
-      notifyListeners();
-    }
-  }
-
-  /// Sets the pan offset (in PDF coordinates).
-  void setPanOffset(Offset offset) {
-    _panOffset = offset;
-    notifyListeners();
-  }
-
-  /// Pan the viewport by a delta amount.
-  void pan(Offset delta) {
-    _panOffset += delta;
-    notifyListeners();
-  }
-
-  /// Zoom with a specific focal point (the point that stays fixed on screen).
-  /// The focal point remains at the same screen position after zooming.
-  void zoomAt(Offset focalPoint, double newZoom) {
-    final clampedZoom = newZoom.clamp(minZoom, maxZoom);
-    if (clampedZoom == _zoom) return;
-
-    // Calculate scale ratio
-    final scaleRatio = clampedZoom / _zoom;
-
-    // Adjust pan offset to keep the focal point fixed
-    // New panOffset = focalPoint - (focalPoint - oldPanOffset) * scaleRatio
-    _panOffset = Offset(
-      focalPoint.dx - (focalPoint.dx - _panOffset.dx) * scaleRatio,
-      focalPoint.dy - (focalPoint.dy - _panOffset.dy) * scaleRatio,
-    );
-
-    _zoom = clampedZoom;
-    notifyListeners();
-  }
-
-  /// Constrain viewport boundaries.
-  ///
-  /// With free pan mode, this method does nothing - users can drag the PDF
-  /// to any position on the screen. ElasticBoundary provides optional
-  /// elastic resistance when dragging beyond natural boundaries.
-  void constrainBounds(Size pdfSize, Size viewportSize) {
-    // 不做任何约束，完全自由平移
-    // 用户可以将 PDF 拖动到任意位置
-    // ElasticBoundary 提供弹性阻力（在 InteractiveCanvasViewer 中处理）
-  }
-
-  /// Sets both zoom and pan offset in one update.
-  void setViewportState({double? zoom, Offset? panOffset}) {
-    if (zoom != null) {
-      _zoom = zoom.clamp(minZoom, maxZoom);
-    }
-    if (panOffset != null) {
-      _panOffset = panOffset;
-    }
-    notifyListeners();
-  }
-
-  /// Enables or disables free pan mode.
-  void setFreePanEnabled(bool enabled) {
-    if (_freePanEnabled != enabled) {
-      _freePanEnabled = enabled;
-      notifyListeners();
-    }
-  }
-
-  /// Enables or disables palm rejection.
-  void setPalmRejectionEnabled(bool enabled) {
-    if (_palmRejectionEnabled != enabled) {
-      _palmRejectionEnabled = enabled;
-      notifyListeners();
-    }
-  }
-
-  /// Sets the viewport size (called by widget).
-  void setViewportSize(Size size) {
-    _viewportSize = size;
-  }
-
-  /// Resets viewport to default state (centered, zoom 1.0).
-  void resetViewport() {
-    _zoom = 1.0;
-    _panOffset = Offset.zero;
-    notifyListeners();
-  }
-
-  /// Gets the viewport state for persistence.
-  ViewportState getViewportState() {
-    return ViewportState(
-      zoom: _zoom,
-      panOffsetX: _panOffset.dx,
-      panOffsetY: _panOffset.dy,
-    );
-  }
-
-  /// Restores viewport state from persistence.
-  void restoreViewportState(ViewportState state) {
-    _zoom = state.zoom.clamp(minZoom, maxZoom);
-    _panOffset = Offset(state.panOffsetX, state.panOffsetY);
-    notifyListeners();
-  }
-
-  /// Retrieves the size of a page, reading from cache or FFI.
-  Future<Size> getPageSize(int pageIndex) async {
-    if (_pageSizes.containsKey(pageIndex)) {
-      return _pageSizes[pageIndex]!;
-    }
-    if (_docId == null) return const Size(0, 0);
-
-    final sizeTuple = await _pdfService.getPageSize(_docId!, pageIndex);
-    final size = Size(sizeTuple.$1, sizeTuple.$2);
-    _pageSizes[pageIndex] = size;
-    return size;
-  }
-
-  /// Retrieves page characters, reading from cache or FFI.
-  Future<List<CharInfo>> getPageChars(int pageIndex) async {
-    if (_pageChars.containsKey(pageIndex)) {
-      return _pageChars[pageIndex]!;
-    }
-    if (_docId == null) return [];
-
-    final chars = await _pdfService.getPageChars(_docId!, pageIndex);
-    _pageChars[pageIndex] = chars;
-    return chars;
-  }
-
-  // --- Highlights Undo / Redo Operations ---
-
+  /// Add a temporary highlight (for rendering before AnnotationController persistence).
   void addHighlight(PdfHighlight highlight) {
-    addHighlightSilent(highlight);
-    _undoStack.add(AddHighlightAction(highlight));
-    _redoStack.clear();
-    notifyListeners();
-  }
-
-  void removeHighlight(String id) {
-    final highlight = _highlights[id];
-    if (highlight != null) {
-      removeHighlightSilent(id);
-      _undoStack.add(RemoveHighlightAction(highlight));
-      _redoStack.clear();
-      notifyListeners();
-    }
-  }
-
-  void addHighlightSilent(PdfHighlight highlight) {
     _highlights[highlight.id] = highlight;
-  }
-
-  void removeHighlightSilent(String id) {
-    _highlights.remove(id);
-  }
-
-  void undo() {
-    if (_undoStack.isNotEmpty) {
-      final action = _undoStack.removeLast();
-      action.undo(this);
-      _redoStack.add(action);
-      notifyListeners();
-    }
-  }
-
-  void redo() {
-    if (_redoStack.isNotEmpty) {
-      final action = _redoStack.removeLast();
-      action.redo(this);
-      _undoStack.add(action);
-      notifyListeners();
-    }
-  }
-
-  // --- Character Selection & Coordinate Mapping ---
-
-  /// Finds the character closest to the touch coordinate (in PDF point space).
-  /// Penalizes vertical distance to ensure alignment with lines.
-  int _findClosestChar(List<CharInfo> chars, Offset pdfPoint) {
-    if (chars.isEmpty) return -1;
-
-    int closestIndex = -1;
-    double minDistance = double.maxFinite;
-
-    for (int i = 0; i < chars.length; i++) {
-      final char = chars[i];
-      final cLeft = char.left;
-      final cRight = char.right;
-      final cBottom = char.bottom;
-      final cTop = char.top;
-
-      // Distance from pdfPoint to character bounding box
-      double dy = 0.0;
-      if (pdfPoint.dy < cBottom) {
-        dy = cBottom - pdfPoint.dy;
-      } else if (pdfPoint.dy > cTop) {
-        dy = pdfPoint.dy - cTop;
-      }
-
-      double dx = 0.0;
-      if (pdfPoint.dx < cLeft) {
-        dx = cLeft - pdfPoint.dx;
-      } else if (pdfPoint.dx > cRight) {
-        dx = pdfPoint.dx - cRight;
-      }
-
-      // Heuristic: heavily weight vertical distance (line mismatch) over horizontal
-      final distance = dy * dy * 12.0 + dx * dx;
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = i;
-      }
-    }
-
-    return closestIndex;
-  }
-
-  /// Begins a new text selection on a long press or drag starting point.
-  Future<void> startSelection(int pageIndex, Offset pdfPoint) async {
-    final chars = await getPageChars(pageIndex);
-    final idx = _findClosestChar(chars, pdfPoint);
-    if (idx != -1) {
-      _selectingPageIndex = pageIndex;
-      _selectionStartCharIndex = idx;
-      _selectionEndCharIndex = idx;
-      _selectionToolbarPosition = null;
-      notifyListeners();
-    }
-  }
-
-  /// Updates the selection end point during drag selection.
-  Future<void> updateSelection(Offset pdfPoint) async {
-    if (_selectingPageIndex == null || _selectionStartCharIndex == null) return;
-    final chars = await getPageChars(_selectingPageIndex!);
-    final idx = _findClosestChar(chars, pdfPoint);
-    if (idx != -1 && idx != _selectionEndCharIndex) {
-      _selectionEndCharIndex = idx;
-      notifyListeners();
-    }
-  }
-
-  /// Concludes the selection drag and positions the floating toolbar.
-  /// [globalToolbarOffset] specifies the screen coordinate directly above selection.
-  void endSelection(Offset globalToolbarOffset) {
-    if (_selectingPageIndex != null &&
-        _selectionStartCharIndex != null &&
-        _selectionEndCharIndex != null) {
-      _selectionToolbarPosition = globalToolbarOffset;
-      notifyListeners();
-    }
-  }
-
-  /// Clears the selection active state.
-  void clearSelection() {
-    _clearSelectionSilent();
     notifyListeners();
   }
 
-  void _clearSelectionSilent() {
-    _selectingPageIndex = null;
-    _selectionStartCharIndex = null;
-    _selectionEndCharIndex = null;
-    _selectionToolbarPosition = null;
+  /// Remove a temporary highlight.
+  void removeHighlight(String id) {
+    _highlights.remove(id);
+    notifyListeners();
   }
 
-  /// Computes merged highlighted rectangles for active selection.
-  List<Rect> getSelectionRects(int pageIndex) {
-    if (_selectingPageIndex != pageIndex ||
-        _selectionStartCharIndex == null ||
-        _selectionEndCharIndex == null) {
-      return [];
-    }
+  // ── Internal Access (for testing) ──
 
-    final chars = _pageChars[pageIndex];
-    if (chars == null || chars.isEmpty) return [];
+  /// Expose session for testing (internal seam).
+  PdfDocSession get session => _session;
 
-    final start = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
-    final end = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
+  /// Expose transform for testing (internal seam).
+  ViewportTransform get transform => _transform;
 
-    final List<CharInfo> selectedChars = chars.sublist(start, end + 1);
-    return mergeCharacterBoxes(selectedChars);
+  /// Expose selection for testing (internal seam).
+  TextSelectionModel get selection => _selection;
+
+  @override
+  void dispose() {
+    _session.removeListener(notifyListeners);
+    _transform.removeListener(notifyListeners);
+    _selection.removeListener(notifyListeners);
+    _session.dispose();
+    _transform.dispose();
+    _selection.dispose();
+    super.dispose();
   }
-
-  /// Groups and merges consecutive characters on the same line into a unified bounding box.
-  List<Rect> mergeCharacterBoxes(List<CharInfo> selectedChars) {
-    if (selectedChars.isEmpty) return [];
-
-    final List<Rect> mergedRects = [];
-    Rect? currentRect;
-
-    for (final char in selectedChars) {
-      final charRect = Rect.fromLTRB(
-        char.left,
-        char.top, // Note: In PDF coordinates, top > bottom
-        char.right,
-        char.bottom,
-      );
-
-      if (currentRect == null) {
-        currentRect = charRect;
-      } else {
-        // Determine if char is on a similar vertical line as currentRect
-        // Height check overlaps
-        // Wait, standard Rect coordinates are: Rect.fromLTRB(left, top, right, bottom)
-        // For PDF: Y increases upward. So top is larger than bottom.
-        // Let's check standard overlap: if character's vertical bounds overlap with currentRect's
-        final double currentMinY = min(currentRect.top, currentRect.bottom);
-        final double currentMaxY = max(currentRect.top, currentRect.bottom);
-        final double charMinY = min(charRect.top, charRect.bottom);
-        final double charMaxY = max(charRect.top, charRect.bottom);
-
-        final double overlap = min(currentMaxY, charMaxY) - max(currentMinY, charMinY);
-        final double minHeight = min(currentMaxY - currentMinY, charMaxY - charMinY);
-
-        // If vertical overlap is significant (e.g. > 50% of the character height),
-        // and they are close horizontally, we merge them.
-        final bool sameLine = overlap > (minHeight * 0.5);
-
-        if (sameLine) {
-          // Merge horizontal bounds and vertical bounds
-          currentRect = Rect.fromLTRB(
-            min(currentRect.left, charRect.left),
-            max(currentRect.top, charRect.top),
-            max(currentRect.right, charRect.right),
-            min(currentRect.bottom, charRect.bottom),
-          );
-        } else {
-          // Push old rect, start new one
-          mergedRects.add(currentRect);
-          currentRect = charRect;
-        }
-      }
-    }
-
-    if (currentRect != null) {
-      mergedRects.add(currentRect);
-    }
-
-    return mergedRects;
-  }
-
-  /// Retrieves the selected text as a string.
-  String getSelectedText() {
-    if (_selectingPageIndex == null ||
-        _selectionStartCharIndex == null ||
-        _selectionEndCharIndex == null) {
-      return '';
-    }
-
-    final chars = _pageChars[_selectingPageIndex!];
-    if (chars == null || chars.isEmpty) return '';
-
-    final start = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
-    final end = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
-
-    final buffer = StringBuffer();
-    for (int i = start; i <= end; i++) {
-      buffer.write(chars[i].text);
-    }
-    return buffer.toString();
-  }
-}
-
-/// Viewport state for persistence.
-class ViewportState {
-  final double zoom;
-  final double panOffsetX;
-  final double panOffsetY;
-
-  const ViewportState({
-    required this.zoom,
-    required this.panOffsetX,
-    required this.panOffsetY,
-  });
-
-  factory ViewportState.fromJson(Map<String, dynamic> json) {
-    return ViewportState(
-      zoom: (json['zoom'] as num?)?.toDouble() ?? 1.0,
-      panOffsetX: (json['panOffsetX'] as num?)?.toDouble() ?? 0.0,
-      panOffsetY: (json['panOffsetY'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'zoom': zoom,
-        'panOffsetX': panOffsetX,
-        'panOffsetY': panOffsetY,
-      };
 }

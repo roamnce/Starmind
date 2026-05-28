@@ -1,0 +1,19 @@
+- [x] Extend Domain & Controller
+  - [x] Update `TextSelectionModel` to add `findClosestChar`, `updateSelectionStart`, and `updateSelectionEnd`.
+  - [x] Update `PdfViewportController` to delegate new selection methods.
+- [x] Selection Handles UI
+  - [x] Implement start handle (ball at top) and end handle (ball at bottom) visual layouts in `SelectionHandlesOverlay`.
+  - [x] Implement responsive touch dragging handlers in `SelectionHandlesOverlay`.
+- [x] Floating Toolbar & Color Picker Popover
+  - [x] Redesign `PdfSelectionToolbar` in `text_selection_overlay.dart` with glassmorphic style.
+  - [x] Implement action buttons (Highlight, Underline) and 4 preset color circles with persistence.
+  - [x] Implement the Overlay-based lightweight inline Color Picker Popover.
+- [x] Rendering & Persistence Integration
+  - [x] Update `buildAnnotationRenderer` to fetch and render SQLite database annotations via `AnnotationController`.
+  - [x] Update `lib/main.dart` viewport integration:
+    - [x] Render `SelectionHandlesOverlay` dynamically.
+    - [x] Calculate topmost selection coordinates to display toolbar.
+    - [x] Integrate toolbar callbacks with SQLite DB persistence via `_annotationController`.
+- [x] Verification
+  - [x] Run `flutter analyze` to ensure code correctness.
+  - [x] Add unit tests and verify functionality.

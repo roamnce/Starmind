@@ -29,8 +29,6 @@ class TextSelectionHandler {
   int? _startCharIndex;
   int? _endCharIndex;
   bool _isSelecting = false;
-  bool _isStartHandleDragging = false;
-  bool _isEndHandleDragging = false;
 
   /// Whether currently in selection mode.
   bool get isSelecting => _isSelecting;
@@ -114,8 +112,6 @@ class TextSelectionHandler {
     _startCharIndex = charIndex;
     _endCharIndex = charIndex;
     _isSelecting = true;
-    _isStartHandleDragging = false;
-    _isEndHandleDragging = false;
   }
 
   /// Handle long press move - extend selection.
@@ -142,7 +138,6 @@ class TextSelectionHandler {
   void onStartHandleDrag(Offset newPosition) {
     if (!_isSelecting) return;
 
-    _isStartHandleDragging = true;
     final charIndex = findCharAtPosition(newPosition);
     if (charIndex != null) {
       _startCharIndex = charIndex;
@@ -153,7 +148,6 @@ class TextSelectionHandler {
   void onEndHandleDrag(Offset newPosition) {
     if (!_isSelecting) return;
 
-    _isEndHandleDragging = true;
     final charIndex = findCharAtPosition(newPosition);
     if (charIndex != null) {
       _endCharIndex = charIndex;
@@ -165,8 +159,6 @@ class TextSelectionHandler {
     _startCharIndex = null;
     _endCharIndex = null;
     _isSelecting = false;
-    _isStartHandleDragging = false;
-    _isEndHandleDragging = false;
   }
 
   /// Calculate selection rectangles from character info.

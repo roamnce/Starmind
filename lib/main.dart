@@ -3,6 +3,7 @@ library;
 
 import 'dart:math';
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,6 +11,7 @@ import 'package:starmind/src/rust/frb_generated.dart';
 import 'package:starmind/src/domain/document.dart';
 import 'package:starmind/src/domain/folder.dart';
 import 'package:starmind/src/domain/tag.dart';
+import 'package:starmind/src/domain/annotation.dart';
 import 'package:starmind/src/home/workspace_controller.dart';
 import 'package:starmind/src/home/workspace_controller_provider.dart';
 import 'package:starmind/src/home/tab_layout.dart';
@@ -22,6 +24,8 @@ import 'package:starmind/src/pdf/widgets/pdf_annotation_integration.dart';
 import 'package:starmind/src/pdf/widgets/interactive_canvas_viewer.dart';
 import 'package:starmind/src/pdf/annotation_controller.dart';
 import 'package:starmind/src/pdf/widgets/annotation_sidebar_panel.dart';
+import 'package:starmind/src/pdf/widgets/selection_handles_overlay.dart';
+import 'package:starmind/src/pdf/pdf_highlight.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -2622,11 +2626,12 @@ class PdfTabViewport extends StatefulWidget {
   State<PdfTabViewport> createState() => _PdfTabViewportState();
 }
 
-class _PdfTabViewportState extends State<PdfTabViewport> {
+class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStateMixin {
   final TransformationController _transformController = TransformationController();
 
   final GlobalKey _viewportKey = GlobalKey();
   final GlobalKey _pdfStackKey = GlobalKey();
+  final Map<int, GlobalKey> _pageKeys = {};
 
   bool _isExcerptsOpen = true;
   int _currentPage = 1;
@@ -2638,18 +2643,38 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
   // Ink drawing state
   InkTool _inkTool = InkTool.pen;
   final double _strokeWidth = 2.0;
+
+  // Custom long press selection state (Listener-based)
+  Timer? _longPressTimer;
+  Offset? _longPressStartPos;
+  bool _isCustomSelecting = false;
+  int? _selectingPageIndex;
   bool _palmRejectionEnabled = false;
   PointerDeviceKind? _lastPointerDeviceKind;
 
   // Annotation controller for ink drawing and annotations
   AnnotationController? _annotationController;
 
+  AnimationController? _snapBackController;
+  Animation<Offset>? _snapBackAnimation;
+  bool _isFirstLayout = true;
+  bool? _lastFreePanEnabled;
+  Timer? _inertiaTimer;
+  bool _isUpdatingTransform = false;
+
+  double get _pdfLayoutWidth => MediaQuery.of(context).size.width * 0.55;
+
   @override
   void initState() {
     super.initState();
     widget.pdfController.addListener(_onPdfChanged);
+    _transformController.addListener(_onTransformChanged);
     _initAnnotationController();
     _palmRejectionEnabled = context.workspaceController.palmRejectionEnabled;
+    _snapBackController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
   }
 
   Future<void> _initAnnotationController() async {
@@ -2657,6 +2682,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
     _annotationController = AnnotationController(
       repository: repository,
       documentId: widget.docId,
+      undoRedoStack: widget.pdfController.undoRedoStack,
     );
     await _annotationController!.loadAnnotations();
     if (mounted) setState(() {});
@@ -2665,8 +2691,12 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
   @override
   void dispose() {
     widget.pdfController.removeListener(_onPdfChanged);
+    _transformController.removeListener(_onTransformChanged);
+    _inertiaTimer?.cancel();
+    _longPressTimer?.cancel();
     _transformController.dispose();
     _annotationController?.dispose();
+    _snapBackController?.dispose();
     super.dispose();
   }
 
@@ -2678,6 +2708,116 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
     }
   }
 
+  double _getMatrixScale2D(Matrix4 matrix) {
+    final double m00 = matrix.entry(0, 0);
+    final double m10 = matrix.entry(1, 0);
+    final double m20 = matrix.entry(2, 0);
+    return sqrt(m00 * m00 + m10 * m10 + m20 * m20);
+  }
+
+  void _onTransformChanged() {
+    if (!mounted || _isUpdatingTransform) return;
+    _isUpdatingTransform = true;
+    try {
+      final matrix = _transformController.value;
+      final zoom = _getMatrixScale2D(matrix).clamp(0.1, 16.0);
+      final panX = matrix.entry(0, 3) / zoom;
+      final panY = matrix.entry(1, 3) / zoom;
+
+      final pdfCtrl = widget.pdfController;
+      
+      // Update controller state
+      if (pdfCtrl.zoom != zoom || pdfCtrl.panOffset.dx != panX || pdfCtrl.panOffset.dy != panY) {
+        pdfCtrl.setViewportState(zoom: zoom, panOffset: Offset(panX, panY));
+        _updateCurrentPage();
+      }
+
+      // Clamp translation to prevent flying off-screen (only in GoodNotes mode)
+      final freePanEnabled = context.workspaceController.freePanEnabled;
+      if (!freePanEnabled && !_isInteracting) {
+        _clampTransformValueIfNeeded();
+      }
+
+      // Detect end of inertia fling animation
+      if (!_isInteracting && (_snapBackController == null || !_snapBackController!.isAnimating)) {
+        _inertiaTimer?.cancel();
+        _inertiaTimer = Timer(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            _applyCenteringIfNeeded();
+          }
+        });
+      }
+    } finally {
+      _isUpdatingTransform = false;
+    }
+  }
+
+  void _clampTransformValueIfNeeded() {
+    final pdfCtrl = widget.pdfController;
+    final viewportSize = _viewportKey.currentContext?.size;
+    final pdfSize = pdfCtrl.pageSizes.isNotEmpty ? pdfCtrl.pageSizes.values.first : null;
+
+    if (viewportSize == null || pdfSize == null) return;
+
+    final baseScale = _pdfLayoutWidth / pdfSize.width;
+    final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
+
+    // Calculate hard boundaries
+    double minX;
+    double maxX;
+    if (pdfDisplayWidth < viewportSize.width) {
+      final centerPanX = (viewportSize.width / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+      minX = centerPanX;
+      maxX = centerPanX;
+    } else {
+      minX = (viewportSize.width - pdfDisplayWidth) / pdfCtrl.zoom;
+      maxX = 0.0;
+    }
+
+    double totalHeight = 0;
+    for (int i = 0; i < pdfCtrl.pageCount; i++) {
+      final size = pdfCtrl.pageSizes[i];
+      final double pageHeight = size?.height ?? 842.0;
+      final double pageWidth = size?.width ?? 595.0;
+      final pageBaseScale = _pdfLayoutWidth / pageWidth;
+      totalHeight += pageHeight * pageBaseScale + 16.0;
+    }
+
+    double minY;
+    double maxY;
+    final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+    if (pdfDisplayHeight < viewportSize.height) {
+      final centerPanY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+      minY = centerPanY;
+      maxY = centerPanY;
+    } else {
+      minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.zoom;
+      maxY = 0.0;
+    }
+
+    final isSnapBackActive = _snapBackController?.isAnimating ?? false;
+    final double elasticMargin = (isSnapBackActive || !_isInteracting) ? 0.0 : (120.0 / pdfCtrl.zoom);
+
+    final double allowedMinX = minX - elasticMargin;
+    final double allowedMaxX = maxX + elasticMargin;
+    final double allowedMinY = minY - elasticMargin;
+    final double allowedMaxY = maxY + elasticMargin;
+
+    double targetPanX = pdfCtrl.panOffset.dx.clamp(allowedMinX, allowedMaxX);
+    double targetPanY = pdfCtrl.panOffset.dy.clamp(allowedMinY, allowedMaxY);
+
+    if (targetPanX != pdfCtrl.panOffset.dx || targetPanY != pdfCtrl.panOffset.dy) {
+      pdfCtrl.setViewportState(
+        zoom: pdfCtrl.zoom,
+        panOffset: Offset(targetPanX, targetPanY),
+      );
+      final matrix = Matrix4.identity()
+        ..scale(pdfCtrl.zoom, pdfCtrl.zoom, 1.0)
+        ..translate(targetPanX, targetPanY, 0.0);
+      _transformController.value = matrix;
+    }
+  }
+
   void _syncTransformFromController() {
     final pdfCtrl = widget.pdfController;
     final viewportSize = _viewportKey.currentContext?.size;
@@ -2685,6 +2825,37 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
 
     final pdfSize = pdfCtrl.pageSizes.isNotEmpty ? pdfCtrl.pageSizes.values.first : null;
     if (pdfSize == null) return;
+
+    if (_isFirstLayout) {
+      _isFirstLayout = false;
+      final baseScale = _pdfLayoutWidth / pdfSize.width;
+      final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
+      
+      double panX = pdfCtrl.panOffset.dx;
+      if (pdfDisplayWidth < viewportSize.width) {
+        panX = (viewportSize.width / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+      }
+      
+      double totalHeight = 0;
+      for (int i = 0; i < pdfCtrl.pageCount; i++) {
+        final size = pdfCtrl.pageSizes[i];
+        final double pageHeight = size?.height ?? 842.0;
+        final double pageWidth = size?.width ?? 595.0;
+        final pageBaseScale = _pdfLayoutWidth / pageWidth;
+        totalHeight += pageHeight * pageBaseScale + 16.0;
+      }
+      
+      double panY = pdfCtrl.panOffset.dy;
+      final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+      if (pdfDisplayHeight < viewportSize.height) {
+        panY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+      }
+      
+      pdfCtrl.setViewportState(
+        zoom: pdfCtrl.zoom,
+        panOffset: Offset(panX, panY),
+      );
+    }
 
     final matrix = Matrix4.identity()
       ..scale(pdfCtrl.zoom, pdfCtrl.zoom, 1.0)
@@ -2698,46 +2869,104 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
   }
 
   void _onInteractionUpdate(ScaleUpdateDetails details) {
-    if (!mounted) return;
-
-    final pdfCtrl = widget.pdfController;
-    final viewportSize = _viewportKey.currentContext?.size;
-    final pdfSize = pdfCtrl.pageSizes.isNotEmpty ? pdfCtrl.pageSizes.values.first : null;
-    if (viewportSize == null || pdfSize == null) return;
-
-    final matrix = _transformController.value;
-    final zoom = matrix.getMaxScaleOnAxis().clamp(0.5, 5.0);
-
-    final panX = matrix.entry(0, 3) / zoom;
-    final panY = matrix.entry(1, 3) / zoom;
-
-    pdfCtrl.setViewportState(zoom: zoom, panOffset: Offset(panX, panY));
-    _updateCurrentPage();
+    // Handled by _onTransformChanged listener
   }
 
   void _onInteractionEnd(ScaleEndDetails details) {
     _isInteracting = false;
-    _applyCenteringIfNeeded();
+    _inertiaTimer?.cancel();
+    if (details.velocity.pixelsPerSecond.distance < 200.0) {
+      _applyCenteringIfNeeded();
+    }
+  }
+
+  void _animatePanOffset(Offset targetOffset) {
+    final pdfCtrl = widget.pdfController;
+    _snapBackController?.stop();
+    _snapBackAnimation = Tween<Offset>(
+      begin: pdfCtrl.panOffset,
+      end: targetOffset,
+    ).animate(CurvedAnimation(
+      parent: _snapBackController!,
+      curve: Curves.easeOutBack,
+    ));
+    
+    _snapBackAnimation!.addListener(() {
+      pdfCtrl.setViewportState(
+        zoom: pdfCtrl.zoom,
+        panOffset: _snapBackAnimation!.value,
+      );
+      _syncTransformFromController();
+    });
+    
+    _snapBackController!.forward(from: 0.0);
   }
 
   /// Center the PDF horizontally if it's narrower than the viewport.
-  void _applyCenteringIfNeeded() {
+  void _applyCenteringIfNeeded({double? customViewportWidth}) {
     final pdfCtrl = widget.pdfController;
     final viewportSize = _viewportKey.currentContext?.size;
     final pdfSize = pdfCtrl.pageSizes.isNotEmpty ? pdfCtrl.pageSizes.values.first : null;
 
     if (viewportSize == null || pdfSize == null) return;
 
-    final baseScale = viewportSize.width / pdfSize.width;
-
-    // If PDF display width is smaller than viewport, center it
+    final actualViewportWidth = customViewportWidth ?? viewportSize.width;
+    final baseScale = _pdfLayoutWidth / pdfSize.width;
     final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
-    if (pdfDisplayWidth < viewportSize.width) {
-      pdfCtrl.setViewportState(
-        zoom: pdfCtrl.zoom,
-        panOffset: Offset(0, pdfCtrl.panOffset.dy),
-      );
-      _syncTransformFromController();
+    final freePanEnabled = context.workspaceController.freePanEnabled;
+
+    double targetPanX = pdfCtrl.panOffset.dx;
+    final double margin = 100.0;
+
+    if (freePanEnabled) {
+      // 自由平移开启时，统一允许在可视边界内拖动（至少保留 margin 像素在屏幕内）
+      final double minX = (margin - pdfDisplayWidth) / pdfCtrl.zoom;
+      final double maxX = (actualViewportWidth - margin) / pdfCtrl.zoom;
+      targetPanX = targetPanX.clamp(minX, maxX);
+    } else {
+      // 居中模式（Goodnotes 风格）
+      if (pdfDisplayWidth < actualViewportWidth) {
+        targetPanX = (actualViewportWidth / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+      } else {
+        // 大于视口时，限制在边缘边界
+        final double minX = (actualViewportWidth - pdfDisplayWidth) / pdfCtrl.zoom;
+        final double maxX = 0.0;
+        targetPanX = targetPanX.clamp(minX, maxX);
+      }
+    }
+
+    // Calculate total height of the document pages
+    double totalHeight = 0;
+    for (int i = 0; i < pdfCtrl.pageCount; i++) {
+      final size = pdfCtrl.pageSizes[i];
+      final double pageHeight = size?.height ?? 842.0;
+      final double pageWidth = size?.width ?? 595.0;
+      final pageBaseScale = _pdfLayoutWidth / pageWidth;
+      totalHeight += pageHeight * pageBaseScale + 16.0;
+    }
+
+    double targetPanY = pdfCtrl.panOffset.dy;
+    final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+
+    if (freePanEnabled) {
+      // 自由平移开启时，垂直方向也统一允许在可视边界内拖动
+      final double minY = (margin - pdfDisplayHeight) / pdfCtrl.zoom;
+      final double maxY = (viewportSize.height - margin) / pdfCtrl.zoom;
+      targetPanY = targetPanY.clamp(minY, maxY);
+    } else {
+      // 居中模式
+      if (pdfDisplayHeight < viewportSize.height) {
+        targetPanY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+      } else {
+        // 大于视口时，限制在边缘边界
+        final double minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.zoom;
+        final double maxY = 0.0;
+        targetPanY = targetPanY.clamp(minY, maxY);
+      }
+    }
+
+    if (targetPanX != pdfCtrl.panOffset.dx || targetPanY != pdfCtrl.panOffset.dy) {
+      _animatePanOffset(Offset(targetPanX, targetPanY));
     }
   }
 
@@ -2747,8 +2976,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
     if (controller.pageCount <= 1) return;
 
     final scrollOffset = -controller.panOffset.dy;
-    final viewportBox = _viewportKey.currentContext?.findRenderObject() as RenderBox?;
-    final viewportWidth = viewportBox?.size.width ?? (MediaQuery.of(context).size.width * 0.55);
+    final double viewportWidth = _pdfLayoutWidth;
 
     double currentHeightAccumulator = 0;
     int detectedPage = 0;
@@ -2794,25 +3022,156 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
     final pdfSize = pdfCtrl.pageSizes[pageIndex];
     if (pdfSize == null) return const SizedBox.shrink();
 
-    final viewportWidth = _viewportKey.currentContext?.size?.width ?? (MediaQuery.of(context).size.width * 0.55);
+    final viewportWidth = _pdfLayoutWidth;
     final baseScale = viewportWidth / pdfSize.width;
+    final pdfHeight = pdfSize.height;
 
     return Positioned.fill(
-      child: GestureDetector(
+      child: Listener(
         behavior: HitTestBehavior.translucent,
-        onLongPressStart: (details) {
-          final pdfPoint = _screenToPdf(details.localPosition, baseScale, pdfSize.height);
-          pdfCtrl.startSelection(pageIndex, pdfPoint);
+        onPointerDown: (event) {
+          if (_activeTool != 'select') return;
+          _longPressTimer?.cancel();
+          _longPressStartPos = event.localPosition;
+          _isCustomSelecting = false;
+          _selectingPageIndex = pageIndex;
+
+          _longPressTimer = Timer(const Duration(milliseconds: 500), () {
+            _isCustomSelecting = true;
+            final pdfPoint = _screenToPdf(event.localPosition, baseScale, pdfHeight);
+            pdfCtrl.startSelection(pageIndex, pdfPoint);
+          });
         },
-        onLongPressMoveUpdate: (details) {
-          final pdfPoint = _screenToPdf(details.localPosition, baseScale, pdfSize.height);
-          pdfCtrl.updateSelection(pdfPoint);
+        onPointerMove: (event) {
+          if (_activeTool != 'select') return;
+          if (!_isCustomSelecting) {
+            if (_longPressStartPos != null) {
+              final distance = (event.localPosition - _longPressStartPos!).distance;
+              if (distance > 10.0) {
+                _longPressTimer?.cancel();
+                _longPressStartPos = null;
+              }
+            }
+          } else {
+            if (_selectingPageIndex == pageIndex) {
+              final pdfPoint = _screenToPdf(event.localPosition, baseScale, pdfHeight);
+              pdfCtrl.updateSelection(pdfPoint);
+            }
+          }
         },
-        onLongPressEnd: (details) {
-          pdfCtrl.endSelection(details.globalPosition);
+        onPointerUp: (event) {
+          if (_activeTool != 'select') return;
+          _longPressTimer?.cancel();
+          _longPressStartPos = null;
+
+          if (_isCustomSelecting) {
+            _isCustomSelecting = false;
+            final rects = pdfCtrl.getSelectionRects(pageIndex);
+            if (rects.isNotEmpty) {
+              double minY = double.infinity;
+              double left = 0;
+              for (final r in rects) {
+                final localTop = (pdfHeight - r.top) * baseScale;
+                if (localTop < minY) {
+                  minY = localTop;
+                  left = (r.left + r.width / 2) * baseScale;
+                }
+              }
+              final key = _pageKeys[pageIndex];
+              final pageBox = key?.currentContext?.findRenderObject() as RenderBox?;
+              if (pageBox != null) {
+                final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY));
+                pdfCtrl.endSelection(globalToolbarPos);
+                return;
+              }
+            }
+            pdfCtrl.endSelection(event.position);
+          }
+        },
+        onPointerCancel: (event) {
+          _longPressTimer?.cancel();
+          _longPressStartPos = null;
+          _isCustomSelecting = false;
         },
         child: Container(color: Colors.transparent),
       ),
+    );
+  }
+
+  /// Builds the interactive selection handles overlay for a page.
+  Widget _buildSelectionHandlesOverlay(int pageIndex, PdfViewportController pdfCtrl) {
+    final pdfSize = pdfCtrl.pageSizes[pageIndex];
+    if (pdfSize == null) return const SizedBox.shrink();
+
+    final viewportWidth = _pdfLayoutWidth;
+    final baseScale = viewportWidth / pdfSize.width;
+    final pdfHeight = pdfSize.height;
+
+    final startIdx = pdfCtrl.selectionStartCharIndex;
+    final endIdx = pdfCtrl.selectionEndCharIndex;
+    if (startIdx == null || endIdx == null) return const SizedBox.shrink();
+
+    final chars = pdfCtrl.session.pageCharsCache[pageIndex];
+    if (chars == null || chars.isEmpty) return const SizedBox.shrink();
+
+    final int start = min(startIdx, endIdx);
+    final int end = max(startIdx, endIdx);
+
+    // Safeguard indices
+    final int safeStart = start.clamp(0, chars.length - 1);
+    final int safeEnd = end.clamp(0, chars.length - 1);
+
+    final startChar = chars[safeStart];
+    final endChar = chars[safeEnd];
+
+    // Calculate line heights and positions in page-local space
+    final startLeft = startChar.left * baseScale;
+    final startTop = (pdfHeight - startChar.top) * baseScale;
+    final startLineHeight = (startChar.top - startChar.bottom) * baseScale;
+
+    final endRight = endChar.right * baseScale;
+    final endTop = (pdfHeight - endChar.top) * baseScale;
+    final endLineHeight = (endChar.top - endChar.bottom) * baseScale;
+
+    return SelectionHandlesOverlay(
+      startHandlePosition: Offset(startLeft, startTop),
+      startLineHeight: startLineHeight,
+      endHandlePosition: Offset(endRight, endTop),
+      endLineHeight: endLineHeight,
+      zoom: pdfCtrl.zoom,
+      onHandleDrag: (type, newLocalPos) {
+        final pdfPoint = _screenToPdf(newLocalPos, baseScale, pdfHeight);
+        final closestIdx = pdfCtrl.selection.findClosestChar(chars, pdfPoint);
+        if (closestIdx != -1) {
+          if (type == SelectionHandleType.start) {
+            pdfCtrl.updateSelectionStart(closestIdx);
+          } else {
+            pdfCtrl.updateSelectionEnd(closestIdx);
+          }
+        }
+      },
+      onDragEnd: () {
+        // Calculate new toolbar position above selection
+        final rects = pdfCtrl.getSelectionRects(pageIndex);
+        if (rects.isNotEmpty) {
+          double minY = double.infinity;
+          double left = 0;
+          for (final r in rects) {
+            final localTop = (pdfHeight - r.top) * baseScale;
+            if (localTop < minY) {
+              minY = localTop;
+              left = (r.left + r.width / 2) * baseScale;
+            }
+          }
+
+          final key = _pageKeys[pageIndex];
+          final pageBox = key?.currentContext?.findRenderObject() as RenderBox?;
+          if (pageBox != null) {
+            final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY));
+            pdfCtrl.endSelection(globalToolbarPos);
+          }
+        }
+      },
     );
   }
 
@@ -2951,7 +3310,26 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
             icon: _isExcerptsOpen ? Icons.menu_open_rounded : Icons.menu_rounded,
             tooltip: '批注列表',
             isActive: _isExcerptsOpen,
-            onTap: () => setState(() => _isExcerptsOpen = !_isExcerptsOpen),
+            onTap: () {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final viewportSize = _viewportKey.currentContext?.size;
+              double? targetWidth;
+              if (viewportSize != null) {
+                if (_isExcerptsOpen) {
+                  // Closing excerpts sidebar: viewport expands
+                  targetWidth = viewportSize.width + (screenWidth * 0.28);
+                } else {
+                  // Opening excerpts sidebar: viewport shrinks
+                  targetWidth = viewportSize.width - (screenWidth * 0.28);
+                }
+              }
+              setState(() {
+                _isExcerptsOpen = !_isExcerptsOpen;
+              });
+              if (targetWidth != null) {
+                _applyCenteringIfNeeded(customViewportWidth: targetWidth);
+              }
+            },
             isDark: isDark,
           ),
         ],
@@ -3242,6 +3620,16 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
     final isDark = context.maybeWorkspaceController?.isDarkMode ?? true;
     final pdfCtrl = widget.pdfController;
 
+    final freePanEnabled = context.workspaceController.freePanEnabled;
+    if (_lastFreePanEnabled != null && _lastFreePanEnabled != freePanEnabled) {
+      _lastFreePanEnabled = freePanEnabled;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyCenteringIfNeeded();
+      });
+    } else {
+      _lastFreePanEnabled = freePanEnabled;
+    }
+
     // Diagnostic: show loading step overlay when PDF is loading or error
     if (pdfCtrl.isLoading || pdfCtrl.loadingError != null) {
       return Column(
@@ -3291,7 +3679,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
       );
     }
 
-    final viewportWidth = MediaQuery.of(context).size.width * 0.55;
+    final viewportWidth = _pdfLayoutWidth;
 
     return Column(
       children: [
@@ -3313,13 +3701,16 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
                         },
                         child: InteractiveCanvasViewer(
                           transformationController: _transformController,
-                          minScale: 0.5,
-                          maxScale: 5.0,
+                          minScale: 0.1,
+                          maxScale: 16.0,
                           constrained: false,
                           panEnabled: true,
                           scaleEnabled: true,
+                          boundaryMargin: const EdgeInsets.all(double.infinity),
                           isDrawGesture: (details) {
-                            if (_activeTool == 'select') return false;
+                            if (_activeTool == 'select') {
+                              return details.pointerCount == 1;
+                            }
                             if (_palmRejectionEnabled && _lastPointerDeviceKind != PointerDeviceKind.stylus) {
                               return false;
                             }
@@ -3337,17 +3728,24 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
                               final double pdfWidth = size?.width ?? 595.0;
                               final baseScale = viewportWidth / pdfWidth;
 
+                              final key = _pageKeys.putIfAbsent(index, () => GlobalKey());
+
                               return Stack(
+                                key: key,
                                 children: [
                                   PdfPageWidget(
                                     pageIndex: index,
                                     controller: pdfCtrl,
                                     viewportKey: _viewportKey,
                                     viewportWidth: viewportWidth,
+                                    transformationController: _transformController,
                                   ),
                                   // Text selection gesture layer
                                   if (_activeTool == 'select')
                                     _buildTextSelectionLayer(index, pdfCtrl),
+                                  // Selection handles overlay
+                                  if (_activeTool == 'select' && pdfCtrl.selectingPageIndex == index)
+                                    _buildSelectionHandlesOverlay(index, pdfCtrl),
                                   // Ink drawing layer for handwriting
                                   if (isInkMode)
                                     buildInkDrawingLayer(
@@ -3365,6 +3763,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
                                     controller: pdfCtrl,
                                     pageIndex: index,
                                     scale: baseScale,
+                                    annotationController: _annotationController,
                                   ),
                                 ],
                               );
@@ -3380,42 +3779,63 @@ class _PdfTabViewportState extends State<PdfTabViewport> {
                           return PdfSelectionToolbar(
                             position: pos,
                             onDismiss: () => pdfCtrl.clearSelection(),
-                            onHighlight: (color) {
+                            onHighlight: (color) async {
                               final pageIndex = pdfCtrl.selectingPageIndex!;
                               final start = min(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
                               final end = max(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
                               final text = pdfCtrl.getSelectedText();
                               final rects = pdfCtrl.getSelectionRects(pageIndex);
 
-                              final highlight = PdfHighlight(
-                                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                pageIndex: pageIndex,
-                                startCharIndex: start,
-                                endCharIndex: end,
-                                color: color,
-                                rects: rects,
-                                text: text,
-                              );
-                              pdfCtrl.addHighlight(highlight);
+                              if (_annotationController != null) {
+                                await _annotationController!.createHighlight(
+                                  pageIndex: pageIndex,
+                                  startCharIndex: start,
+                                  endCharIndex: end,
+                                  selectedText: text,
+                                  rects: rects.map((r) => AnnotationRect(
+                                    left: r.left,
+                                    top: r.top,
+                                    right: r.right,
+                                    bottom: r.bottom,
+                                  )).toList(),
+                                  colorHex: '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+                                );
+                              } else {
+                                final highlight = PdfHighlight(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  pageIndex: pageIndex,
+                                  startCharIndex: start,
+                                  endCharIndex: end,
+                                  color: color,
+                                  rects: rects,
+                                  text: text,
+                                );
+                                pdfCtrl.addHighlight(highlight);
+                              }
                               pdfCtrl.clearSelection();
                             },
-                            onExcerpt: () {
+                            onUnderline: (color) async {
                               final pageIndex = pdfCtrl.selectingPageIndex!;
                               final start = min(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
                               final end = max(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
                               final text = pdfCtrl.getSelectedText();
                               final rects = pdfCtrl.getSelectionRects(pageIndex);
 
-                              final highlight = PdfHighlight(
-                                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                pageIndex: pageIndex,
-                                startCharIndex: start,
-                                endCharIndex: end,
-                                color: const Color(0xFFFFC800),
-                                rects: rects,
-                                text: text,
-                              );
-                              pdfCtrl.addHighlight(highlight);
+                              if (_annotationController != null) {
+                                await _annotationController!.createUnderline(
+                                  pageIndex: pageIndex,
+                                  startCharIndex: start,
+                                  endCharIndex: end,
+                                  selectedText: text,
+                                  rects: rects.map((r) => AnnotationRect(
+                                    left: r.left,
+                                    top: r.top,
+                                    right: r.right,
+                                    bottom: r.bottom,
+                                  )).toList(),
+                                  colorHex: '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+                                );
+                              }
                               pdfCtrl.clearSelection();
                             },
                           );

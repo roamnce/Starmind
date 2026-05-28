@@ -10,13 +10,16 @@ void main() {
   group('AnnotationController', () {
     late InMemoryStorageRepository repository;
     late AnnotationController controller;
+    late UndoRedoStack undoStack;
 
     setUp(() async {
       repository = InMemoryStorageRepository();
       await repository.initialize('', '');
+      undoStack = UndoRedoStack();
       controller = AnnotationController(
         repository: repository,
         documentId: 'test-doc',
+        undoRedoStack: undoStack,
       );
     });
 
@@ -192,13 +195,16 @@ void main() {
   group('AnnotationController Undo/Redo', () {
     late InMemoryStorageRepository repository;
     late AnnotationController controller;
+    late UndoRedoStack undoStack;
 
     setUp(() async {
       repository = InMemoryStorageRepository();
       await repository.initialize('', '');
+      undoStack = UndoRedoStack();
       controller = AnnotationController(
         repository: repository,
         documentId: 'test-doc',
+        undoRedoStack: undoStack,
       );
     });
 
