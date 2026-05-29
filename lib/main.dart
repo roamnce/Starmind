@@ -20,12 +20,14 @@ import 'package:starmind/src/pdf/pdf_viewport_controller.dart';
 import 'package:starmind/src/pdf/widgets/pdf_viewport_widget.dart';
 import 'package:starmind/src/pdf/widgets/text_selection_overlay.dart';
 import 'package:starmind/src/pdf/widgets/ink_toolbar.dart';
-import 'package:starmind/src/pdf/widgets/pdf_annotation_integration.dart';
+import 'package:starmind/src/pdf/widgets/ink_canvas_layer.dart';
+import 'package:starmind/src/pdf/widgets/annotation_renderer.dart';
 import 'package:starmind/src/pdf/widgets/interactive_canvas_viewer.dart';
 import 'package:starmind/src/pdf/annotation_controller.dart';
 import 'package:starmind/src/pdf/widgets/annotation_sidebar_panel.dart';
 import 'package:starmind/src/pdf/widgets/selection_handles_overlay.dart';
 import 'package:starmind/src/pdf/pdf_highlight.dart';
+import 'package:vector_math/vector_math_64.dart' show Quad, Matrix4;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,8 +63,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFFFFC800), // Vibrant saber gold
               brightness: isDark ? Brightness.dark : Brightness.light,
-              background: isDark ? const Color(0xFF0C0A07) : const Color(0xFFFAF9F6),
-              surface: isDark ? const Color(0xFF141008) : const Color(0xFFF0EDE5),
+              surface: isDark ? const Color(0xFF0C0A07) : const Color(0xFFFAF9F6),
             ),
             useMaterial3: true,
             fontFamily: 'AtkinsonHyperlegibleNext',
@@ -359,7 +360,7 @@ void _showGlassContextMenu({
                       border: Border.all(color: const Color(0x33FFDC8C), width: 1),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -470,7 +471,7 @@ class OrbBackground extends StatelessWidget {
               height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF6B3A08).withOpacity(0.18),
+                color: const Color(0xFF6B3A08).withValues(alpha: 0.18),
               ),
             ),
           ),
@@ -485,7 +486,7 @@ class OrbBackground extends StatelessWidget {
               height: 360,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF3D1F02).withOpacity(0.22),
+                color: const Color(0xFF3D1F02).withValues(alpha: 0.22),
               ),
             ),
           ),
@@ -500,7 +501,7 @@ class OrbBackground extends StatelessWidget {
               height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A2820).withOpacity(0.15),
+                color: const Color(0xFF1A2820).withValues(alpha: 0.15),
               ),
             ),
           ),
@@ -1433,7 +1434,7 @@ void _showCreateTagDialog(BuildContext context, String? parentId) {
                               ? Border.all(color: Colors.white, width: 2)
                               : null,
                           boxShadow: isSelected
-                              ? [BoxShadow(color: colorVal.withOpacity(0.5), blurRadius: 6, spreadRadius: 2)]
+                              ? [BoxShadow(color: colorVal.withValues(alpha: 0.5), blurRadius: 6, spreadRadius: 2)]
                               : null,
                         ),
                       ),
@@ -2400,7 +2401,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ? null
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -2447,7 +2448,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             height: 1.3,
                           ),
                         ),
@@ -2644,11 +2645,6 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   InkTool _inkTool = InkTool.pen;
   final double _strokeWidth = 2.0;
 
-  // Custom long press selection state (Listener-based)
-  Timer? _longPressTimer;
-  Offset? _longPressStartPos;
-  bool _isCustomSelecting = false;
-  int? _selectingPageIndex;
   bool _palmRejectionEnabled = false;
   PointerDeviceKind? _lastPointerDeviceKind;
 
@@ -2693,7 +2689,6 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     widget.pdfController.removeListener(_onPdfChanged);
     _transformController.removeListener(_onTransformChanged);
     _inertiaTimer?.cancel();
-    _longPressTimer?.cancel();
     _transformController.dispose();
     _annotationController?.dispose();
     _snapBackController?.dispose();
@@ -2701,11 +2696,12 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   }
 
   void _onPdfChanged() {
-    if (mounted && !_isInteracting) {
+    if (!mounted) return;
+    if (!_isInteracting) {
       _syncTransformFromController();
       _updateCurrentPage();
-      setState(() {});
     }
+    setState(() {});
   }
 
   double _getMatrixScale2D(Matrix4 matrix) {
@@ -2727,8 +2723,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
       final pdfCtrl = widget.pdfController;
       
       // Update controller state
-      if (pdfCtrl.zoom != zoom || pdfCtrl.panOffset.dx != panX || pdfCtrl.panOffset.dy != panY) {
-        pdfCtrl.setViewportState(zoom: zoom, panOffset: Offset(panX, panY));
+      if (pdfCtrl.transform.zoom != zoom || pdfCtrl.transform.panOffset.dx != panX || pdfCtrl.transform.panOffset.dy != panY) {
+        pdfCtrl.transform.setViewportState(zoom: zoom, panOffset: Offset(panX, panY));
         _updateCurrentPage();
       }
 
@@ -2760,17 +2756,17 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     if (viewportSize == null || pdfSize == null) return;
 
     final baseScale = _pdfLayoutWidth / pdfSize.width;
-    final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
+    final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.transform.zoom;
 
     // Calculate hard boundaries
     double minX;
     double maxX;
     if (pdfDisplayWidth < viewportSize.width) {
-      final centerPanX = (viewportSize.width / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+      final centerPanX = (viewportSize.width / pdfCtrl.transform.zoom - pdfSize.width * baseScale) / 2;
       minX = centerPanX;
       maxX = centerPanX;
     } else {
-      minX = (viewportSize.width - pdfDisplayWidth) / pdfCtrl.zoom;
+      minX = (viewportSize.width - pdfDisplayWidth) / pdfCtrl.transform.zoom;
       maxX = 0.0;
     }
 
@@ -2785,34 +2781,34 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
 
     double minY;
     double maxY;
-    final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+    final pdfDisplayHeight = totalHeight * pdfCtrl.transform.zoom;
     if (pdfDisplayHeight < viewportSize.height) {
-      final centerPanY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+      final centerPanY = (viewportSize.height / pdfCtrl.transform.zoom - totalHeight) / 2;
       minY = centerPanY;
       maxY = centerPanY;
     } else {
-      minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.zoom;
+      minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.transform.zoom;
       maxY = 0.0;
     }
 
     final isSnapBackActive = _snapBackController?.isAnimating ?? false;
-    final double elasticMargin = (isSnapBackActive || !_isInteracting) ? 0.0 : (120.0 / pdfCtrl.zoom);
+    final double elasticMargin = (isSnapBackActive || !_isInteracting) ? 0.0 : (120.0 / pdfCtrl.transform.zoom);
 
     final double allowedMinX = minX - elasticMargin;
     final double allowedMaxX = maxX + elasticMargin;
     final double allowedMinY = minY - elasticMargin;
     final double allowedMaxY = maxY + elasticMargin;
 
-    double targetPanX = pdfCtrl.panOffset.dx.clamp(allowedMinX, allowedMaxX);
-    double targetPanY = pdfCtrl.panOffset.dy.clamp(allowedMinY, allowedMaxY);
+    double targetPanX = pdfCtrl.transform.panOffset.dx.clamp(allowedMinX, allowedMaxX);
+    double targetPanY = pdfCtrl.transform.panOffset.dy.clamp(allowedMinY, allowedMaxY);
 
-    if (targetPanX != pdfCtrl.panOffset.dx || targetPanY != pdfCtrl.panOffset.dy) {
-      pdfCtrl.setViewportState(
-        zoom: pdfCtrl.zoom,
+    if (targetPanX != pdfCtrl.transform.panOffset.dx || targetPanY != pdfCtrl.transform.panOffset.dy) {
+      pdfCtrl.transform.setViewportState(
+        zoom: pdfCtrl.transform.zoom,
         panOffset: Offset(targetPanX, targetPanY),
       );
       final matrix = Matrix4.identity()
-        ..scale(pdfCtrl.zoom, pdfCtrl.zoom, 1.0)
+        ..scale(pdfCtrl.transform.zoom, pdfCtrl.transform.zoom, 1.0)
         ..translate(targetPanX, targetPanY, 0.0);
       _transformController.value = matrix;
     }
@@ -2829,11 +2825,11 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     if (_isFirstLayout) {
       _isFirstLayout = false;
       final baseScale = _pdfLayoutWidth / pdfSize.width;
-      final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
+      final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.transform.zoom;
       
-      double panX = pdfCtrl.panOffset.dx;
+      double panX = pdfCtrl.transform.panOffset.dx;
       if (pdfDisplayWidth < viewportSize.width) {
-        panX = (viewportSize.width / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+        panX = (viewportSize.width / pdfCtrl.transform.zoom - pdfSize.width * baseScale) / 2;
       }
       
       double totalHeight = 0;
@@ -2845,21 +2841,21 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
         totalHeight += pageHeight * pageBaseScale + 16.0;
       }
       
-      double panY = pdfCtrl.panOffset.dy;
-      final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+      double panY = pdfCtrl.transform.panOffset.dy;
+      final pdfDisplayHeight = totalHeight * pdfCtrl.transform.zoom;
       if (pdfDisplayHeight < viewportSize.height) {
-        panY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+        panY = (viewportSize.height / pdfCtrl.transform.zoom - totalHeight) / 2;
       }
       
-      pdfCtrl.setViewportState(
-        zoom: pdfCtrl.zoom,
+      pdfCtrl.transform.setViewportState(
+        zoom: pdfCtrl.transform.zoom,
         panOffset: Offset(panX, panY),
       );
     }
 
     final matrix = Matrix4.identity()
-      ..scale(pdfCtrl.zoom, pdfCtrl.zoom, 1.0)
-      ..translate(pdfCtrl.panOffset.dx, pdfCtrl.panOffset.dy, 0.0);
+      ..scale(pdfCtrl.transform.zoom, pdfCtrl.transform.zoom, 1.0)
+      ..translate(pdfCtrl.transform.panOffset.dx, pdfCtrl.transform.panOffset.dy, 0.0);
 
     _transformController.value = matrix;
   }
@@ -2884,7 +2880,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final pdfCtrl = widget.pdfController;
     _snapBackController?.stop();
     _snapBackAnimation = Tween<Offset>(
-      begin: pdfCtrl.panOffset,
+      begin: pdfCtrl.transform.panOffset,
       end: targetOffset,
     ).animate(CurvedAnimation(
       parent: _snapBackController!,
@@ -2892,8 +2888,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     ));
     
     _snapBackAnimation!.addListener(() {
-      pdfCtrl.setViewportState(
-        zoom: pdfCtrl.zoom,
+      pdfCtrl.transform.setViewportState(
+        zoom: pdfCtrl.transform.zoom,
         panOffset: _snapBackAnimation!.value,
       );
       _syncTransformFromController();
@@ -2912,24 +2908,24 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
 
     final actualViewportWidth = customViewportWidth ?? viewportSize.width;
     final baseScale = _pdfLayoutWidth / pdfSize.width;
-    final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.zoom;
+    final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.transform.zoom;
     final freePanEnabled = context.workspaceController.freePanEnabled;
 
-    double targetPanX = pdfCtrl.panOffset.dx;
+    double targetPanX = pdfCtrl.transform.panOffset.dx;
     final double margin = 100.0;
 
     if (freePanEnabled) {
       // 自由平移开启时，统一允许在可视边界内拖动（至少保留 margin 像素在屏幕内）
-      final double minX = (margin - pdfDisplayWidth) / pdfCtrl.zoom;
-      final double maxX = (actualViewportWidth - margin) / pdfCtrl.zoom;
+      final double minX = (margin - pdfDisplayWidth) / pdfCtrl.transform.zoom;
+      final double maxX = (actualViewportWidth - margin) / pdfCtrl.transform.zoom;
       targetPanX = targetPanX.clamp(minX, maxX);
     } else {
       // 居中模式（Goodnotes 风格）
       if (pdfDisplayWidth < actualViewportWidth) {
-        targetPanX = (actualViewportWidth / pdfCtrl.zoom - pdfSize.width * baseScale) / 2;
+        targetPanX = (actualViewportWidth / pdfCtrl.transform.zoom - pdfSize.width * baseScale) / 2;
       } else {
         // 大于视口时，限制在边缘边界
-        final double minX = (actualViewportWidth - pdfDisplayWidth) / pdfCtrl.zoom;
+        final double minX = (actualViewportWidth - pdfDisplayWidth) / pdfCtrl.transform.zoom;
         final double maxX = 0.0;
         targetPanX = targetPanX.clamp(minX, maxX);
       }
@@ -2945,27 +2941,27 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
       totalHeight += pageHeight * pageBaseScale + 16.0;
     }
 
-    double targetPanY = pdfCtrl.panOffset.dy;
-    final pdfDisplayHeight = totalHeight * pdfCtrl.zoom;
+    double targetPanY = pdfCtrl.transform.panOffset.dy;
+    final pdfDisplayHeight = totalHeight * pdfCtrl.transform.zoom;
 
     if (freePanEnabled) {
       // 自由平移开启时，垂直方向也统一允许在可视边界内拖动
-      final double minY = (margin - pdfDisplayHeight) / pdfCtrl.zoom;
-      final double maxY = (viewportSize.height - margin) / pdfCtrl.zoom;
+      final double minY = (margin - pdfDisplayHeight) / pdfCtrl.transform.zoom;
+      final double maxY = (viewportSize.height - margin) / pdfCtrl.transform.zoom;
       targetPanY = targetPanY.clamp(minY, maxY);
     } else {
       // 居中模式
       if (pdfDisplayHeight < viewportSize.height) {
-        targetPanY = (viewportSize.height / pdfCtrl.zoom - totalHeight) / 2;
+        targetPanY = (viewportSize.height / pdfCtrl.transform.zoom - totalHeight) / 2;
       } else {
         // 大于视口时，限制在边缘边界
-        final double minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.zoom;
+        final double minY = (viewportSize.height - pdfDisplayHeight) / pdfCtrl.transform.zoom;
         final double maxY = 0.0;
         targetPanY = targetPanY.clamp(minY, maxY);
       }
     }
 
-    if (targetPanX != pdfCtrl.panOffset.dx || targetPanY != pdfCtrl.panOffset.dy) {
+    if (targetPanX != pdfCtrl.transform.panOffset.dx || targetPanY != pdfCtrl.transform.panOffset.dy) {
       _animatePanOffset(Offset(targetPanX, targetPanY));
     }
   }
@@ -2975,7 +2971,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final controller = widget.pdfController;
     if (controller.pageCount <= 1) return;
 
-    final scrollOffset = -controller.panOffset.dy;
+    final scrollOffset = -controller.transform.panOffset.dy;
     final double viewportWidth = _pdfLayoutWidth;
 
     double currentHeightAccumulator = 0;
@@ -3011,10 +3007,10 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   }
 
   Offset? _getToolbarLocalPosition() {
-    if (widget.pdfController.selectionToolbarPosition == null) return null;
+    if (widget.pdfController.selection.selectionToolbarPosition == null) return null;
     final RenderBox? stackBox = _pdfStackKey.currentContext?.findRenderObject() as RenderBox?;
     if (stackBox == null) return null;
-    return stackBox.globalToLocal(widget.pdfController.selectionToolbarPosition!);
+    return stackBox.globalToLocal(widget.pdfController.selection.selectionToolbarPosition!);
   }
 
   /// Builds the text selection gesture layer for a page.
@@ -3026,47 +3022,29 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final baseScale = viewportWidth / pdfSize.width;
     final pdfHeight = pdfSize.height;
 
-    return Positioned.fill(
-      child: Listener(
+    return Positioned(
+      top: PdfPageWidget.pageVerticalMargin,
+      bottom: PdfPageWidget.pageVerticalMargin,
+      left: 0.0,
+      right: 0.0,
+      child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (event) {
+        onLongPressStart: (details) {
           if (_activeTool != 'select') return;
-          _longPressTimer?.cancel();
-          _longPressStartPos = event.localPosition;
-          _isCustomSelecting = false;
-          _selectingPageIndex = pageIndex;
-
-          _longPressTimer = Timer(const Duration(milliseconds: 500), () {
-            _isCustomSelecting = true;
-            final pdfPoint = _screenToPdf(event.localPosition, baseScale, pdfHeight);
-            pdfCtrl.startSelection(pageIndex, pdfPoint);
-          });
+          final pdfPoint = _screenToPdf(details.localPosition, baseScale, pdfHeight);
+          pdfCtrl.selection.startSelection(pageIndex, pdfPoint, pdfCtrl.session.getPageChars);
         },
-        onPointerMove: (event) {
+        onLongPressMoveUpdate: (details) {
           if (_activeTool != 'select') return;
-          if (!_isCustomSelecting) {
-            if (_longPressStartPos != null) {
-              final distance = (event.localPosition - _longPressStartPos!).distance;
-              if (distance > 10.0) {
-                _longPressTimer?.cancel();
-                _longPressStartPos = null;
-              }
-            }
-          } else {
-            if (_selectingPageIndex == pageIndex) {
-              final pdfPoint = _screenToPdf(event.localPosition, baseScale, pdfHeight);
-              pdfCtrl.updateSelection(pdfPoint);
-            }
+          if (pdfCtrl.selection.selectingPageIndex == pageIndex) {
+            final pdfPoint = _screenToPdf(details.localPosition, baseScale, pdfHeight);
+            pdfCtrl.selection.updateSelection(pdfPoint, pdfCtrl.session.getPageChars);
           }
         },
-        onPointerUp: (event) {
+        onLongPressEnd: (details) {
           if (_activeTool != 'select') return;
-          _longPressTimer?.cancel();
-          _longPressStartPos = null;
-
-          if (_isCustomSelecting) {
-            _isCustomSelecting = false;
-            final rects = pdfCtrl.getSelectionRects(pageIndex);
+          if (pdfCtrl.selection.selectingPageIndex == pageIndex) {
+            final rects = pdfCtrl.selection.getSelectionRects(pageIndex, pdfCtrl.session.getCachedPageChars(pageIndex));
             if (rects.isNotEmpty) {
               double minY = double.infinity;
               double left = 0;
@@ -3080,18 +3058,18 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
               final key = _pageKeys[pageIndex];
               final pageBox = key?.currentContext?.findRenderObject() as RenderBox?;
               if (pageBox != null) {
-                final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY));
-                pdfCtrl.endSelection(globalToolbarPos);
+                final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY + PdfPageWidget.pageVerticalMargin));
+                pdfCtrl.selection.endSelection(globalToolbarPos);
                 return;
               }
             }
-            pdfCtrl.endSelection(event.position);
+            pdfCtrl.selection.endSelection(details.globalPosition);
           }
         },
-        onPointerCancel: (event) {
-          _longPressTimer?.cancel();
-          _longPressStartPos = null;
-          _isCustomSelecting = false;
+        onTap: () {
+          if (_activeTool == 'select') {
+            pdfCtrl.selection.clearSelection();
+          }
         },
         child: Container(color: Colors.transparent),
       ),
@@ -3107,8 +3085,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final baseScale = viewportWidth / pdfSize.width;
     final pdfHeight = pdfSize.height;
 
-    final startIdx = pdfCtrl.selectionStartCharIndex;
-    final endIdx = pdfCtrl.selectionEndCharIndex;
+    final startIdx = pdfCtrl.selection.selectionStartCharIndex;
+    final endIdx = pdfCtrl.selection.selectionEndCharIndex;
     if (startIdx == null || endIdx == null) return const SizedBox.shrink();
 
     final chars = pdfCtrl.session.pageCharsCache[pageIndex];
@@ -3138,21 +3116,21 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
       startLineHeight: startLineHeight,
       endHandlePosition: Offset(endRight, endTop),
       endLineHeight: endLineHeight,
-      zoom: pdfCtrl.zoom,
+      zoom: pdfCtrl.transform.zoom,
       onHandleDrag: (type, newLocalPos) {
         final pdfPoint = _screenToPdf(newLocalPos, baseScale, pdfHeight);
         final closestIdx = pdfCtrl.selection.findClosestChar(chars, pdfPoint);
         if (closestIdx != -1) {
           if (type == SelectionHandleType.start) {
-            pdfCtrl.updateSelectionStart(closestIdx);
+            pdfCtrl.selection.updateSelectionStart(closestIdx);
           } else {
-            pdfCtrl.updateSelectionEnd(closestIdx);
+            pdfCtrl.selection.updateSelectionEnd(closestIdx);
           }
         }
       },
       onDragEnd: () {
         // Calculate new toolbar position above selection
-        final rects = pdfCtrl.getSelectionRects(pageIndex);
+        final rects = pdfCtrl.selection.getSelectionRects(pageIndex, pdfCtrl.session.getCachedPageChars(pageIndex));
         if (rects.isNotEmpty) {
           double minY = double.infinity;
           double left = 0;
@@ -3167,8 +3145,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
           final key = _pageKeys[pageIndex];
           final pageBox = key?.currentContext?.findRenderObject() as RenderBox?;
           if (pageBox != null) {
-            final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY));
-            pdfCtrl.endSelection(globalToolbarPos);
+            final globalToolbarPos = pageBox.localToGlobal(Offset(left, minY + PdfPageWidget.pageVerticalMargin));
+            pdfCtrl.selection.endSelection(globalToolbarPos);
           }
         }
       },
@@ -3180,6 +3158,43 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final pdfX = localPos.dx / baseScale;
     final pdfY = pdfHeight - (localPos.dy / baseScale);
     return Offset(pdfX, pdfY);
+  }
+
+  /// Builds annotations list for a page (persistent + temporary highlights).
+  List<Annotation> _buildPageAnnotations(
+    int pageIndex,
+    PdfViewportController pdfCtrl,
+    AnnotationController? annotationController,
+  ) {
+    final annotations = <Annotation>[];
+
+    // 1. Load persistent annotations from SQLite DB
+    if (annotationController != null) {
+      annotations.addAll(annotationController.annotationsForPage(pageIndex));
+    }
+
+    // 2. Load temporary highlights from controller, excluding duplicates
+    final persistentIds = annotations.map((a) => a.id).toSet();
+    final tempAnnotations = pdfCtrl.highlights
+        .where((h) => h.pageIndex == pageIndex && !persistentIds.contains(h.id))
+        .map((h) => Annotation.highlight(
+              id: h.id,
+              documentId: 'current-doc',
+              pageIndex: h.pageIndex,
+              startCharIndex: h.startCharIndex,
+              endCharIndex: h.endCharIndex,
+              selectedText: h.text,
+              rects: h.rects.map((r) => AnnotationRect(
+                    left: r.left,
+                    top: r.top,
+                    right: r.right,
+                    bottom: r.bottom,
+                  )).toList(),
+              colorHex: '#${(h.color.toARGB32() & 0x00FFFFFF).toRadixString(16).toUpperCase().padLeft(6, '0')}',
+            ));
+    annotations.addAll(tempAnnotations);
+
+    return annotations;
   }
 
   Widget _buildTopToolbar(BuildContext context, bool isDark, PdfViewportController pdfCtrl) {
@@ -3402,13 +3417,13 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                     icon: Icon(Icons.remove_circle_outline_rounded,
                         size: 14,
                         color: isDark ? Colors.white54 : Colors.black54),
-                    onPressed: () => pdfCtrl.setZoom(pdfCtrl.zoom - 0.5),
+                    onPressed: () => pdfCtrl.transform.setZoom(pdfCtrl.transform.zoom - 0.5),
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(4),
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${(pdfCtrl.zoom * 100).round()}%',
+                    '${(pdfCtrl.transform.zoom * 100).round()}%',
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.bold,
@@ -3420,7 +3435,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                     icon: Icon(Icons.add_circle_outline_rounded,
                         size: 14,
                         color: isDark ? Colors.white54 : Colors.black54),
-                    onPressed: () => pdfCtrl.setZoom(pdfCtrl.zoom + 0.5),
+                    onPressed: () => pdfCtrl.transform.setZoom(pdfCtrl.transform.zoom + 0.5),
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(4),
                   ),
@@ -3548,7 +3563,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                           side: BorderSide(
-                            color: item.color.withOpacity(0.3),
+                            color: item.color.withValues(alpha: 0.3),
                             width: 1.0,
                           ),
                         ),
@@ -3593,7 +3608,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                                         Text(
                                           item.text,
                                           style: TextStyle(
-                                            color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
+                                            color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
                                             fontSize: 12.5,
                                             height: 1.35,
                                           ),
@@ -3699,18 +3714,14 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                         onPointerDown: (event) {
                           _lastPointerDeviceKind = event.kind;
                         },
-                        child: InteractiveCanvasViewer(
+                        child: InteractiveCanvasViewer.builder(
                           transformationController: _transformController,
                           minScale: 0.1,
                           maxScale: 16.0,
-                          constrained: false,
                           panEnabled: true,
                           scaleEnabled: true,
                           boundaryMargin: const EdgeInsets.all(double.infinity),
                           isDrawGesture: (details) {
-                            if (_activeTool == 'select') {
-                              return details.pointerCount == 1;
-                            }
                             if (_palmRejectionEnabled && _lastPointerDeviceKind != PointerDeviceKind.stylus) {
                               return false;
                             }
@@ -3720,71 +3731,40 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                           onInteractionStart: _onInteractionStart,
                           onInteractionUpdate: _onInteractionUpdate,
                           onInteractionEnd: _onInteractionEnd,
-                          child: Column(
-                            children: List.generate(pdfCtrl.pageCount, (index) {
-                              final isInkMode = _activeTool == 'pen' || _activeTool == 'highlight' || _activeTool == 'eraser';
-                              final colorHex = '#${_activeColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-                              final size = pdfCtrl.pageSizes[index];
-                              final double pdfWidth = size?.width ?? 595.0;
-                              final baseScale = viewportWidth / pdfWidth;
-
-                              final key = _pageKeys.putIfAbsent(index, () => GlobalKey());
-
-                              return Stack(
-                                key: key,
-                                children: [
-                                  PdfPageWidget(
-                                    pageIndex: index,
-                                    controller: pdfCtrl,
-                                    viewportKey: _viewportKey,
-                                    viewportWidth: viewportWidth,
-                                    transformationController: _transformController,
-                                  ),
-                                  // Text selection gesture layer
-                                  if (_activeTool == 'select')
-                                    _buildTextSelectionLayer(index, pdfCtrl),
-                                  // Selection handles overlay
-                                  if (_activeTool == 'select' && pdfCtrl.selectingPageIndex == index)
-                                    _buildSelectionHandlesOverlay(index, pdfCtrl),
-                                  // Ink drawing layer for handwriting
-                                  if (isInkMode)
-                                    buildInkDrawingLayer(
-                                      controller: pdfCtrl,
-                                      pageIndex: index,
-                                      isInkMode: isInkMode,
-                                      currentTool: _inkTool,
-                                      currentColor: colorHex,
-                                      strokeWidth: _strokeWidth,
-                                      scale: baseScale,
-                                      annotationController: _annotationController,
-                                    ),
-                                  // Annotation renderer for highlights, underlines, etc.
-                                  buildAnnotationRenderer(
-                                    controller: pdfCtrl,
-                                    pageIndex: index,
-                                    scale: baseScale,
-                                    annotationController: _annotationController,
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
+                          builder: (BuildContext context, Quad viewport) {
+                            return _PdfTabPagesContainer(
+                              controller: pdfCtrl,
+                              viewport: viewport,
+                              viewportKey: _viewportKey,
+                              viewportWidth: viewportWidth,
+                              transformationController: _transformController,
+                              activeTool: _activeTool,
+                              activeColor: _activeColor,
+                              inkTool: _inkTool,
+                              strokeWidth: _strokeWidth,
+                              annotationController: _annotationController,
+                              textSelectionLayerBuilder: (index) => _buildTextSelectionLayer(index, pdfCtrl),
+                              selectionHandlesOverlayBuilder: (index) => _buildSelectionHandlesOverlay(index, pdfCtrl),
+                              pageAnnotationsBuilder: (index) => _buildPageAnnotations(index, pdfCtrl, _annotationController),
+                              pageKeys: _pageKeys,
+                            );
+                          },
                         ),
                       ),
                     ),
-                    if (pdfCtrl.selectionToolbarPosition != null)
+                    if (pdfCtrl.selection.selectionToolbarPosition != null)
                       () {
                         final pos = _getToolbarLocalPosition();
                         if (pos != null) {
                           return PdfSelectionToolbar(
                             position: pos,
-                            onDismiss: () => pdfCtrl.clearSelection(),
+                            onDismiss: () => pdfCtrl.selection.clearSelection(),
                             onHighlight: (color) async {
-                              final pageIndex = pdfCtrl.selectingPageIndex!;
-                              final start = min(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
-                              final end = max(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
-                              final text = pdfCtrl.getSelectedText();
-                              final rects = pdfCtrl.getSelectionRects(pageIndex);
+                              final pageIndex = pdfCtrl.selection.selectingPageIndex!;
+                              final start = min(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
+                              final end = max(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
+                              final text = pdfCtrl.selection.getSelectedText(pdfCtrl.session.getCachedPageChars(pageIndex));
+                              final rects = pdfCtrl.selection.getSelectionRects(pageIndex, pdfCtrl.session.getCachedPageChars(pageIndex));
 
                               if (_annotationController != null) {
                                 await _annotationController!.createHighlight(
@@ -3812,14 +3792,14 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                                 );
                                 pdfCtrl.addHighlight(highlight);
                               }
-                              pdfCtrl.clearSelection();
+                              pdfCtrl.selection.clearSelection();
                             },
                             onUnderline: (color) async {
-                              final pageIndex = pdfCtrl.selectingPageIndex!;
-                              final start = min(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
-                              final end = max(pdfCtrl.selectionStartCharIndex!, pdfCtrl.selectionEndCharIndex!).toInt();
-                              final text = pdfCtrl.getSelectedText();
-                              final rects = pdfCtrl.getSelectionRects(pageIndex);
+                              final pageIndex = pdfCtrl.selection.selectingPageIndex!;
+                              final start = min(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
+                              final end = max(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
+                              final text = pdfCtrl.selection.getSelectedText(pdfCtrl.session.getCachedPageChars(pageIndex));
+                              final rects = pdfCtrl.selection.getSelectionRects(pageIndex, pdfCtrl.session.getCachedPageChars(pageIndex));
 
                               if (_annotationController != null) {
                                 await _annotationController!.createUnderline(
@@ -3836,7 +3816,7 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                                   colorHex: '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
                                 );
                               }
-                              pdfCtrl.clearSelection();
+                              pdfCtrl.selection.clearSelection();
                             },
                           );
                         }
@@ -3874,3 +3854,220 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     );
   }
 }
+
+class _PdfTabPagesContainer extends StatelessWidget {
+  final PdfViewportController controller;
+  final Quad viewport;
+  final GlobalKey viewportKey;
+  final double viewportWidth;
+  final TransformationController transformationController;
+  final String activeTool;
+  final Color activeColor;
+  final InkTool inkTool;
+  final double strokeWidth;
+  final AnnotationController? annotationController;
+  final Widget Function(int pageIndex) textSelectionLayerBuilder;
+  final Widget Function(int pageIndex) selectionHandlesOverlayBuilder;
+  final List<Annotation> Function(int pageIndex) pageAnnotationsBuilder;
+  final Map<int, GlobalKey> pageKeys;
+
+  const _PdfTabPagesContainer({
+    required this.controller,
+    required this.viewport,
+    required this.viewportKey,
+    required this.viewportWidth,
+    required this.transformationController,
+    required this.activeTool,
+    required this.activeColor,
+    required this.inkTool,
+    required this.strokeWidth,
+    required this.annotationController,
+    required this.textSelectionLayerBuilder,
+    required this.selectionHandlesOverlayBuilder,
+    required this.pageAnnotationsBuilder,
+    required this.pageKeys,
+  });
+
+  double _getMatrixScale2D(Matrix4 matrix) {
+    final double m00 = matrix.entry(0, 0);
+    final double m10 = matrix.entry(1, 0);
+    final double m20 = matrix.entry(2, 0);
+    return sqrt(m00 * m00 + m10 * m10 + m20 * m20);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pageCount = controller.pageCount;
+    if (pageCount == 0) return const SizedBox.shrink();
+
+    final matrix = transformationController.value;
+    final scale = _getMatrixScale2D(matrix);
+    final translation = matrix.getTranslation();
+
+    final viewportSize = MediaQuery.of(context).size;
+    final viewportHeight = viewportSize.height;
+
+    // Calculate visible Y range in Flutter coordinates (before transform)
+    final visibleTop = -translation.y / scale;
+    final visibleBottom = (viewportHeight - translation.y) / scale;
+
+    int firstVisible = -1;
+    int lastVisible = -1;
+    double currentHeightAccumulator = 0.0;
+
+    for (int i = 0; i < pageCount; i++) {
+      final size = controller.pageSizes[i];
+      double pageHeight = 842.0;
+      if (size != null) {
+        pageHeight = size.height;
+      } else if (controller.pageSizes.isNotEmpty) {
+        pageHeight = controller.pageSizes.values.first.height;
+      }
+
+      final double pdfWidth = size?.width ?? 595.0;
+      final baseScale = viewportWidth / pdfWidth;
+      final logicalHeight = pageHeight * baseScale + 16.0;
+
+      final pageTop = currentHeightAccumulator;
+      final pageBottom = currentHeightAccumulator + logicalHeight;
+
+      if (firstVisible == -1 && pageBottom >= visibleTop) {
+        firstVisible = i;
+      }
+      if (pageTop <= visibleBottom) {
+        lastVisible = i;
+      }
+
+      currentHeightAccumulator += logicalHeight;
+    }
+
+    if (firstVisible == -1) firstVisible = 0;
+    if (lastVisible == -1) lastVisible = pageCount - 1;
+
+    // Apply 1-page buffer
+    const int pageBuffer = 1;
+    firstVisible = (firstVisible - pageBuffer).clamp(0, pageCount - 1);
+    lastVisible = (lastVisible + pageBuffer).clamp(0, pageCount - 1);
+
+    final children = <Widget>[];
+
+    // Top placeholder
+    double topPlaceholderHeight = 0.0;
+    for (int i = 0; i < firstVisible; i++) {
+      final size = controller.pageSizes[i];
+      double pageHeight = 842.0;
+      if (size != null) {
+        pageHeight = size.height;
+      } else if (controller.pageSizes.isNotEmpty) {
+        pageHeight = controller.pageSizes.values.first.height;
+      }
+      final double pdfWidth = size?.width ?? 595.0;
+      final baseScale = viewportWidth / pdfWidth;
+      topPlaceholderHeight += pageHeight * baseScale + 16.0;
+    }
+    if (topPlaceholderHeight > 0) {
+      children.add(SizedBox(
+        height: topPlaceholderHeight,
+        child: const SizedBox.shrink(),
+      ));
+    }
+
+    // Visible pages
+    for (int i = firstVisible; i <= lastVisible; i++) {
+      final isInkMode = activeTool == 'pen' || activeTool == 'highlight' || activeTool == 'eraser';
+      final colorHex = '#${activeColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+      final size = controller.pageSizes[i];
+      final double pdfWidth = size?.width ?? 595.0;
+      final baseScale = viewportWidth / pdfWidth;
+
+      final key = pageKeys.putIfAbsent(i, () => GlobalKey());
+
+      children.add(Stack(
+        key: key,
+        children: [
+          PdfPageWidget(
+            pageIndex: i,
+            controller: controller,
+            viewport: viewport,
+            viewportKey: viewportKey,
+            viewportWidth: viewportWidth,
+            transformationController: transformationController,
+            isInkMode: isInkMode,
+          ),
+          if (activeTool == 'select')
+            textSelectionLayerBuilder(i),
+          if (activeTool == 'select' && controller.selection.selectingPageIndex == i)
+            Positioned(
+              top: PdfPageWidget.pageVerticalMargin,
+              bottom: PdfPageWidget.pageVerticalMargin,
+              left: 0.0,
+              right: 0.0,
+              child: selectionHandlesOverlayBuilder(i),
+            ),
+          if (isInkMode)
+            Positioned(
+              top: PdfPageWidget.pageVerticalMargin,
+              bottom: PdfPageWidget.pageVerticalMargin,
+              left: 0.0,
+              right: 0.0,
+              child: InkCanvasLayer(
+                annotationController: annotationController ?? AnnotationController.nullController,
+                pageIndex: i,
+                isInkMode: isInkMode,
+                palmRejectionEnabled: controller.transform.palmRejectionEnabled,
+                currentTool: inkTool,
+                currentColor: colorHex,
+                strokeWidth: strokeWidth,
+                scale: baseScale,
+                pdfWidth: pdfWidth,
+                pdfHeight: size?.height ?? 842.0,
+              ),
+            ),
+          Positioned(
+            top: PdfPageWidget.pageVerticalMargin,
+            bottom: PdfPageWidget.pageVerticalMargin,
+            left: 0.0,
+            right: 0.0,
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: AnnotationRenderer(
+                  annotations: pageAnnotationsBuilder(i),
+                  scale: baseScale,
+                  pdfWidth: pdfWidth,
+                  pdfHeight: size?.height ?? 842.0,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ));
+    }
+
+    // Bottom placeholder
+    double bottomPlaceholderHeight = 0.0;
+    for (int i = lastVisible + 1; i < pageCount; i++) {
+      final size = controller.pageSizes[i];
+      double pageHeight = 842.0;
+      if (size != null) {
+        pageHeight = size.height;
+      } else if (controller.pageSizes.isNotEmpty) {
+        pageHeight = controller.pageSizes.values.first.height;
+      }
+      final double pdfWidth = size?.width ?? 595.0;
+      final baseScale = viewportWidth / pdfWidth;
+      bottomPlaceholderHeight += pageHeight * baseScale + 16.0;
+    }
+    if (bottomPlaceholderHeight > 0) {
+      children.add(SizedBox(
+        height: bottomPlaceholderHeight,
+        child: const SizedBox.shrink(),
+      ));
+    }
+
+    return Column(
+      key: viewportKey,
+      children: children,
+    );
+  }
+}
+

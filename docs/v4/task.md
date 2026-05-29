@@ -1,0 +1,10 @@
+- [x] **Task 1: Fix High-Resolution Tile Coordinate Mapping**
+  - [x] Step 1: Update high-resolution tile loading logic in `pdf_viewport_widget.dart`
+  - [x] Step 2: Verify compile correctness using `flutter analyze`
+- [x] **Task 2: Implement Page Virtualization in main.dart**
+  - [x] Step 1: Define `_PdfTabPagesContainer` inside `lib/main.dart`
+  - [x] Step 2: Update `PdfTabViewport` builder layout in `lib/main.dart` to use `InteractiveCanvasViewer.builder`
+  - [x] Step 3: Verify static analysis and compilation using `flutter analyze`
+- [x] **Task 3: Automated & Manual Verification**
+  - [x] Step 1: Run all unit tests using `flutter test`
+  - [x] Step 2: Verify scroll performance, rendering stability, and zoom resolution manually
