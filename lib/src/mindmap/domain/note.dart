@@ -171,7 +171,7 @@ class Note {
     String? title,
     NoteContent? content,
     List<String>? childIds,
-    String? parentId,
+    Object? parentId = _unset,
     double? positionX,
     double? positionY,
     DateTime? updatedAt,
@@ -179,7 +179,7 @@ class Note {
     return Note(
       id: id,
       topicId: topicId,
-      parentId: parentId ?? this.parentId,
+      parentId: parentId == _unset ? this.parentId : (parentId as String?),
       title: title ?? this.title,
       content: content ?? this.content,
       childIds: childIds ?? this.childIds,
@@ -201,3 +201,5 @@ class Note {
     );
   }
 }
+
+class _unset {}
