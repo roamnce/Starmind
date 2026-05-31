@@ -6,6 +6,7 @@ pub use crate::storage::folders::FolderNode;
 pub use crate::storage::tags::TagNode;
 pub use crate::storage::documents::DocumentInfo;
 pub use crate::storage::annotations::{AnnotationRecord, AnnotationType, AnnotationRect, InkPoint, InkStroke};
+pub use crate::storage::mindmap::{Topic, Note};
 
 static SANDBOX_DIR: OnceCell<String> = OnceCell::new();
 
@@ -167,4 +168,80 @@ pub fn delete_annotation(id: String) -> Result<(), String> {
 /// Deletes all annotations for a document.
 pub fn delete_annotations_for_document(document_id: String) -> Result<(), String> {
     crate::storage::annotations::delete_annotations_for_document(document_id)
+}
+
+// ==================== MindMap FFI Functions ====================
+
+/// Creates a mindmap topic (notebook)
+pub fn mindmap_create_topic(title: String, author: Option<String>) -> Result<String, String> {
+    crate::storage::mindmap::create_topic(title, author)
+}
+
+/// Gets a topic by ID
+pub fn mindmap_get_topic(id: String) -> Result<Option<Topic>, String> {
+    crate::storage::mindmap::get_topic_by_id(id)
+}
+
+/// Updates a topic
+pub fn mindmap_update_topic(topic: Topic) -> Result<(), String> {
+    crate::storage::mindmap::update_topic(topic)
+}
+
+/// Soft deletes a topic
+pub fn mindmap_trash_topic(id: String) -> Result<(), String> {
+    crate::storage::mindmap::trash_topic(id)
+}
+
+/// Gets all topics
+pub fn mindmap_get_all_topics() -> Result<Vec<Topic>, String> {
+    crate::storage::mindmap::get_all_topics()
+}
+
+/// Creates a mindmap note (node)
+pub fn mindmap_create_note(
+    topic_id: String,
+    title: String,
+    parent_id: Option<String>,
+) -> Result<String, String> {
+    crate::storage::mindmap::create_note(topic_id, title, parent_id)
+}
+
+/// Gets a note by ID
+pub fn mindmap_get_note(id: String) -> Result<Option<Note>, String> {
+    crate::storage::mindmap::get_note_by_id(id)
+}
+
+/// Updates a note
+pub fn mindmap_update_note(note: Note) -> Result<(), String> {
+    crate::storage::mindmap::update_note(note)
+}
+
+/// Deletes a note
+pub fn mindmap_delete_note(id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_note(id)
+}
+
+/// Adds a child to a note (pipe-separated append)
+pub fn mindmap_add_child(parent_id: String, child_id: String) -> Result<(), String> {
+    crate::storage::mindmap::add_child_to_note(parent_id, child_id)
+}
+
+/// Removes a child from a note
+pub fn mindmap_remove_child(parent_id: String, child_id: String) -> Result<(), String> {
+    crate::storage::mindmap::remove_child_from_note(parent_id, child_id)
+}
+
+/// Gets children of a note
+pub fn mindmap_get_children(parent_id: String) -> Result<Vec<Note>, String> {
+    crate::storage::mindmap::get_note_children(parent_id)
+}
+
+/// Gets notes by PDF ID
+pub fn mindmap_get_notes_by_pdf(pdf_id: String) -> Result<Vec<Note>, String> {
+    crate::storage::mindmap::get_notes_by_pdf(pdf_id)
+}
+
+/// Gets notes by topic ID
+pub fn mindmap_get_notes_by_topic(topic_id: String) -> Result<Vec<Note>, String> {
+    crate::storage::mindmap::get_notes_by_topic(topic_id)
 }
