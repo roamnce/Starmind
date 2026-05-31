@@ -8,8 +8,10 @@ import 'tree_layout.dart';
 import 'canvas_painter.dart';
 import 'mindmap_sidebar.dart';
 import 'bottom_action_bar.dart';
+import 'lasso_painter.dart';
 import '../service/mindmap_service.dart' show NoteTreeNode;
 import '../domain/note.dart';
+
 
 
 /// MindMap canvas page.
@@ -34,6 +36,11 @@ class _MindMapPageState extends State<MindMapPage> {
   late final TextEditingController _noteTextEditingController;
   late final FocusNode _noteFocusNode;
   String? _lastNoteId;
+
+  Offset? _lassoStart;
+  Offset? _lassoCurrent;
+  Rect? _lassoScreenRect;
+
 
   @override
   void initState() {
@@ -256,6 +263,8 @@ class _MindMapPageState extends State<MindMapPage> {
                 minScale: MindMapController.minScale,
                 maxScale: MindMapController.maxScale,
                 boundaryMargin: const EdgeInsets.all(500),
+                scaleEnabled: widget.controller.interactMode != CanvasInteractMode.lasso,
+                panEnabled: widget.controller.interactMode != CanvasInteractMode.lasso,
                 child: Container(
                   width: bounds.width + 1000,
                   height: bounds.height + 1000,
@@ -308,6 +317,8 @@ class _MindMapPageState extends State<MindMapPage> {
                   ),
                 ),
               ),
+              if (widget.controller.interactMode == CanvasInteractMode.lasso)
+                _buildLassoGestureOverlay(),
               Positioned(
                 bottom: 24,
                 left: 0,
@@ -325,6 +336,92 @@ class _MindMapPageState extends State<MindMapPage> {
       }
     );
   }
+
+  Widget _buildLassoGestureOverlay() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanStart: (details) {
+        setState(() {
+          _lassoStart = details.localPosition;
+          _lassoCurrent = details.localPosition;
+          _lassoScreenRect = Rect.fromPoints(_lassoStart!, _lassoCurrent!);
+        });
+      },
+      onPanUpdate: (details) {
+        if (_lassoStart == null) return;
+        setState(() {
+          _lassoCurrent = details.localPosition;
+          _lassoScreenRect = Rect.fromPoints(_lassoStart!, _lassoCurrent!);
+        });
+      },
+      onPanEnd: (details) {
+        if (_lassoScreenRect != null) {
+          _performLassoSelection(_lassoScreenRect!);
+        }
+        setState(() {
+          _lassoStart = null;
+          _lassoCurrent = null;
+          _lassoScreenRect = null;
+        });
+      },
+      child: CustomPaint(
+        painter: LassoPainter(selectionRect: _lassoScreenRect),
+        size: Size.infinite,
+      ),
+    );
+  }
+
+  void _performLassoSelection(Rect selectionRect) {
+    final matrix = _transformationController.value;
+    final scale = matrix.getMaxScaleOnAxis();
+    final tx = matrix.entry(0, 3);
+    final ty = matrix.entry(1, 3);
+
+    final canvasLeft = (selectionRect.left - tx) / scale;
+    final canvasTop = (selectionRect.top - ty) / scale;
+    final canvasRight = (selectionRect.right - tx) / scale;
+    final canvasBottom = (selectionRect.bottom - ty) / scale;
+    final canvasSelectionRect = Rect.fromLTRB(canvasLeft, canvasTop, canvasRight, canvasBottom);
+
+    // Retrieve layouts
+    final layout = TreeLayout(direction: widget.controller.layoutDirection);
+    final positions = <String, Offset>{};
+    for (final root in widget.controller.noteTree) {
+      positions.addAll(layout.calculate(root));
+    }
+
+    final selectedIds = <String>{};
+    for (final entry in positions.entries) {
+      final noteId = entry.key;
+      final pos = entry.value;
+      final size = layout.nodeSizes[noteId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+
+      // Align with stack offsets: A node's bounding box inside the Stack is Rect.fromLTWH(...)
+      final nodeBounds = Rect.fromLTWH(
+        pos.dx - size.width / 2 + 500,
+        pos.dy + 500,
+        size.width,
+        size.height,
+      );
+
+      if (canvasSelectionRect.overlaps(nodeBounds)) {
+        selectedIds.add(noteId);
+      }
+    }
+
+    widget.controller.setSelectedNotes(selectedIds);
+
+    if (selectedIds.isNotEmpty) {
+      final primaryId = selectedIds.first;
+      final primaryNote = _findNote(widget.controller.noteTree, primaryId);
+      if (primaryNote != null) {
+        widget.controller.selectNote(primaryNote);
+      }
+    } else {
+      widget.controller.selectNote(null);
+    }
+  }
+
 
   /// Calculate bounding box for all nodes
   Rect _calculateBounds(Map<String, Offset> positions, TreeLayout layout) {
