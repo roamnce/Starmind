@@ -105,6 +105,102 @@ pub fn init_db(db_path: &str) -> Result<(), String> {
         [],
     ).map_err(|e| format!("Failed to create annotations page index: {}", e))?;
 
+    // MindMap Topics table
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS mindmap_topics (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            author TEXT,
+            pdf_ids TEXT,
+            root_note_ids TEXT,
+            thumbnail_path TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            last_visit_at INTEGER,
+            is_trashed INTEGER DEFAULT 0,
+            sync_version INTEGER DEFAULT 0
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create mindmap_topics table: {}", e))?;
+
+    // MindMap Notes table
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS mindmap_notes (
+            id TEXT PRIMARY KEY,
+            topic_id TEXT NOT NULL,
+            parent_id TEXT,
+            title TEXT NOT NULL,
+            content_json TEXT,
+            child_ids TEXT,
+            pdf_id TEXT,
+            start_page INTEGER,
+            end_page INTEGER,
+            start_pos TEXT,
+            end_pos TEXT,
+            highlight_text TEXT,
+            highlight_style TEXT,
+            media_ids TEXT,
+            position_x REAL,
+            position_y REAL,
+            z_index INTEGER DEFAULT 0,
+            is_collapsed INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            sync_version INTEGER DEFAULT 0,
+            FOREIGN KEY (topic_id) REFERENCES mindmap_topics(id)
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create mindmap_notes table: {}", e))?;
+
+    // Create indexes for mindmap_notes
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_topic ON mindmap_notes(topic_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_notes_topic index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_parent ON mindmap_notes(parent_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_notes_parent index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_pdf ON mindmap_notes(pdf_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_notes_pdf index: {}", e))?;
+
+    // Media Assets table
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS media_assets (
+            id TEXT PRIMARY KEY,
+            data BLOB NOT NULL,
+            thumbnail BLOB,
+            media_type TEXT DEFAULT 'image/png',
+            created_at INTEGER NOT NULL
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create media_assets table: {}", e))?;
+
+    // PDF Configs table
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS pdf_configs (
+            md5 TEXT PRIMARY KEY,
+            title TEXT,
+            page_count INTEGER,
+            pages_json TEXT,
+            current_page INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create pdf_configs table: {}", e))?;
+
     *db_guard = Some(conn);
     Ok(())
 }
