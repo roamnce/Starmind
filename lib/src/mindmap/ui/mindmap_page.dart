@@ -7,8 +7,10 @@ import 'node_widget.dart';
 import 'tree_layout.dart';
 import 'canvas_painter.dart';
 import 'mindmap_sidebar.dart';
+import 'bottom_action_bar.dart';
 import '../service/mindmap_service.dart' show NoteTreeNode;
 import '../domain/note.dart';
+
 
 /// MindMap canvas page.
 ///
@@ -108,6 +110,7 @@ class _MindMapPageState extends State<MindMapPage> {
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
+        if (widget.controller.isLocked) return KeyEventResult.ignored;
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.tab) {
             _showAddNodeDialog(context, isChild: true);
@@ -164,7 +167,13 @@ class _MindMapPageState extends State<MindMapPage> {
                     ],
                   ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _showAddNodeDialog(context, isChild: true),
+          onPressed: () {
+            if (widget.controller.isLocked) {
+              _showLockMessage(context);
+              return;
+            }
+            _showAddNodeDialog(context, isChild: true);
+          },
           child: const Icon(Icons.add),
         ),
       ),
@@ -239,63 +248,78 @@ class _MindMapPageState extends State<MindMapPage> {
 
         return Container(
           color: widget.controller.canvasBgColor,
-          child: InteractiveViewer(
-            transformationController: _transformationController,
-            constrained: false,
-            minScale: MindMapController.minScale,
-            maxScale: MindMapController.maxScale,
-            boundaryMargin: const EdgeInsets.all(500),
-            child: Container(
-              width: bounds.width + 1000,
-              height: bounds.height + 1000,
-              color: widget.controller.canvasBgColor,
-              child: Stack(
-                children: [
-                  // Connection layer (RepaintBoundary optimized)
-                  RepaintBoundary(
-                    child: CustomPaint(
-                      painter: MindMapCanvasPainter(
-                        connections: connections,
-                        lineColor: Theme.of(context).colorScheme.outline,
-                        lineWidth: 2,
-                        showGrid: widget.controller.showGrid,
-                        gridSize: widget.controller.gridSize,
-                        gridColor: widget.controller.gridColor,
-                      ),
-                      size: Size(bounds.width + 1000, bounds.height + 1000),
-                    ),
-                  ),
-                  // Node layer with Viewport Culling
-                  ...positions.entries.map((entry) {
-                    final noteId = entry.key;
-                    final pos = entry.value;
-                    final note = _findNote(widget.controller.noteTree, noteId);
-
-                    if (note == null) return const SizedBox.shrink();
-
-                    final size = layout.nodeSizes[noteId] ?? Size(layout.nodeWidth, layout.nodeHeight);
-                    final visible = _isNodeVisible(visibleRect, pos, size);
-                    if (!visible) return const SizedBox.shrink();
-
-                    return Positioned(
-                      left: pos.dx - size.width / 2 + 500,
-                      top: pos.dy + 500,
-                      child: RepaintBoundary(
-                        child: NodeWidget(
-                          note: note,
-                          isSelected: widget.controller.selectedNote?.id == noteId,
-                          onTap: () => widget.controller.selectNote(note),
-                          onLongPress: () => _showNodeContextMenu(context, note),
-                          onToggleCollapse: () => widget.controller.toggleNodeCollapse(note.id),
-                          customSize: size,
-                          controller: widget.controller,
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                transformationController: _transformationController,
+                constrained: false,
+                minScale: MindMapController.minScale,
+                maxScale: MindMapController.maxScale,
+                boundaryMargin: const EdgeInsets.all(500),
+                child: Container(
+                  width: bounds.width + 1000,
+                  height: bounds.height + 1000,
+                  color: widget.controller.canvasBgColor,
+                  child: Stack(
+                    children: [
+                      // Connection layer (RepaintBoundary optimized)
+                      RepaintBoundary(
+                        child: CustomPaint(
+                          painter: MindMapCanvasPainter(
+                            connections: connections,
+                            lineColor: Theme.of(context).colorScheme.outline,
+                            lineWidth: 2,
+                            showGrid: widget.controller.showGrid,
+                            gridSize: widget.controller.gridSize,
+                            gridColor: widget.controller.gridColor,
+                          ),
+                          size: Size(bounds.width + 1000, bounds.height + 1000),
                         ),
                       ),
-                    );
-                  }),
-                ],
+                      // Node layer with Viewport Culling
+                      ...positions.entries.map((entry) {
+                        final noteId = entry.key;
+                        final pos = entry.value;
+                        final note = _findNote(widget.controller.noteTree, noteId);
+
+                        if (note == null) return const SizedBox.shrink();
+
+                        final size = layout.nodeSizes[noteId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+                        final visible = _isNodeVisible(visibleRect, pos, size);
+                        if (!visible) return const SizedBox.shrink();
+
+                        return Positioned(
+                          left: pos.dx - size.width / 2 + 500,
+                          top: pos.dy + 500,
+                          child: RepaintBoundary(
+                            child: NodeWidget(
+                              note: note,
+                              isSelected: widget.controller.selectedNote?.id == noteId,
+                              onTap: () => widget.controller.selectNote(note),
+                              onLongPress: () => _showNodeContextMenu(context, note),
+                              onToggleCollapse: () => widget.controller.toggleNodeCollapse(note.id),
+                              customSize: size,
+                              controller: widget.controller,
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              Positioned(
+                bottom: 24,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: BottomActionBar(
+                    controller: widget.controller,
+                    onFitToScreen: () => _fitToScreen(context),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       }
@@ -422,6 +446,36 @@ class _MindMapPageState extends State<MindMapPage> {
       if (found != null) return found;
     }
     return null;
+  }
+
+  void _showLockMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.lock_rounded, color: Colors.redAccent, size: 20),
+            SizedBox(width: 8),
+            Text(
+              '思维导图已锁定，无法编辑',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1C222B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0x1F2A3547), width: 1),
+        ),
+        duration: const Duration(seconds: 1),
+        margin: const EdgeInsets.only(bottom: 84, left: 16, right: 16),
+      ),
+    );
   }
 
   void _fitToScreen(BuildContext context) {
