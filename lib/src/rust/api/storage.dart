@@ -7,6 +7,7 @@ import '../frb_generated.dart';
 import '../storage/annotations.dart';
 import '../storage/documents.dart';
 import '../storage/folders.dart';
+import '../storage/mindmap.dart';
 import '../storage/tags.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -176,3 +177,81 @@ Future<void> deleteAnnotationsForDocument({required String documentId}) =>
     RustLib.instance.api.crateApiStorageDeleteAnnotationsForDocument(
       documentId: documentId,
     );
+
+/// Creates a mindmap topic (notebook)
+Future<String> mindmapCreateTopic({required String title, String? author}) =>
+    RustLib.instance.api.crateApiStorageMindmapCreateTopic(
+      title: title,
+      author: author,
+    );
+
+/// Gets a topic by ID
+Future<Topic?> mindmapGetTopic({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetTopic(id: id);
+
+/// Updates a topic
+Future<void> mindmapUpdateTopic({required Topic topic}) =>
+    RustLib.instance.api.crateApiStorageMindmapUpdateTopic(topic: topic);
+
+/// Soft deletes a topic
+Future<void> mindmapTrashTopic({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapTrashTopic(id: id);
+
+/// Gets all topics
+Future<List<Topic>> mindmapGetAllTopics() =>
+    RustLib.instance.api.crateApiStorageMindmapGetAllTopics();
+
+/// Creates a mindmap note (node)
+Future<String> mindmapCreateNote({
+  required String topicId,
+  required String title,
+  String? parentId,
+}) => RustLib.instance.api.crateApiStorageMindmapCreateNote(
+  topicId: topicId,
+  title: title,
+  parentId: parentId,
+);
+
+/// Gets a note by ID
+Future<Note?> mindmapGetNote({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetNote(id: id);
+
+/// Updates a note
+Future<void> mindmapUpdateNote({required Note note}) =>
+    RustLib.instance.api.crateApiStorageMindmapUpdateNote(note: note);
+
+/// Deletes a note
+Future<void> mindmapDeleteNote({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapDeleteNote(id: id);
+
+/// Adds a child to a note (pipe-separated append)
+Future<void> mindmapAddChild({
+  required String parentId,
+  required String childId,
+}) => RustLib.instance.api.crateApiStorageMindmapAddChild(
+  parentId: parentId,
+  childId: childId,
+);
+
+/// Removes a child from a note
+Future<void> mindmapRemoveChild({
+  required String parentId,
+  required String childId,
+}) => RustLib.instance.api.crateApiStorageMindmapRemoveChild(
+  parentId: parentId,
+  childId: childId,
+);
+
+/// Gets children of a note
+Future<List<Note>> mindmapGetChildren({required String parentId}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetChildren(parentId: parentId);
+
+/// Gets notes by PDF ID
+Future<List<Note>> mindmapGetNotesByPdf({required String pdfId}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetNotesByPdf(pdfId: pdfId);
+
+/// Gets notes by topic ID
+Future<List<Note>> mindmapGetNotesByTopic({required String topicId}) => RustLib
+    .instance
+    .api
+    .crateApiStorageMindmapGetNotesByTopic(topicId: topicId);

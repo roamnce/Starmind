@@ -15,6 +15,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'storage/annotations.dart';
 import 'storage/documents.dart';
 import 'storage/folders.dart';
+import 'storage/mindmap.dart';
 import 'storage/tags.dart';
 
 /// Main entrypoint of the Rust API
@@ -70,7 +71,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -991283304;
+  int get rustContentHash => 1362578036;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -188,6 +189,53 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<String> crateApiPdfLoadDocument({required String filePath});
+
+  Future<void> crateApiStorageMindmapAddChild({
+    required String parentId,
+    required String childId,
+  });
+
+  Future<String> crateApiStorageMindmapCreateNote({
+    required String topicId,
+    required String title,
+    String? parentId,
+  });
+
+  Future<String> crateApiStorageMindmapCreateTopic({
+    required String title,
+    String? author,
+  });
+
+  Future<void> crateApiStorageMindmapDeleteNote({required String id});
+
+  Future<List<Topic>> crateApiStorageMindmapGetAllTopics();
+
+  Future<List<Note>> crateApiStorageMindmapGetChildren({
+    required String parentId,
+  });
+
+  Future<Note?> crateApiStorageMindmapGetNote({required String id});
+
+  Future<List<Note>> crateApiStorageMindmapGetNotesByPdf({
+    required String pdfId,
+  });
+
+  Future<List<Note>> crateApiStorageMindmapGetNotesByTopic({
+    required String topicId,
+  });
+
+  Future<Topic?> crateApiStorageMindmapGetTopic({required String id});
+
+  Future<void> crateApiStorageMindmapRemoveChild({
+    required String parentId,
+    required String childId,
+  });
+
+  Future<void> crateApiStorageMindmapTrashTopic({required String id});
+
+  Future<void> crateApiStorageMindmapUpdateNote({required Note note});
+
+  Future<void> crateApiStorageMindmapUpdateTopic({required Topic topic});
 
   Future<void> crateApiStorageRemoveTagFromDocument({
     required String docId,
@@ -1069,6 +1117,445 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "load_document", argNames: ["filePath"]);
 
   @override
+  Future<void> crateApiStorageMindmapAddChild({
+    required String parentId,
+    required String childId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(parentId, serializer);
+          sse_encode_String(childId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 26,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapAddChildConstMeta,
+        argValues: [parentId, childId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapAddChildConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_add_child",
+        argNames: ["parentId", "childId"],
+      );
+
+  @override
+  Future<String> crateApiStorageMindmapCreateNote({
+    required String topicId,
+    required String title,
+    String? parentId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          sse_encode_String(title, serializer);
+          sse_encode_opt_String(parentId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 27,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapCreateNoteConstMeta,
+        argValues: [topicId, title, parentId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapCreateNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_create_note",
+        argNames: ["topicId", "title", "parentId"],
+      );
+
+  @override
+  Future<String> crateApiStorageMindmapCreateTopic({
+    required String title,
+    String? author,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(title, serializer);
+          sse_encode_opt_String(author, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 28,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapCreateTopicConstMeta,
+        argValues: [title, author],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapCreateTopicConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_create_topic",
+        argNames: ["title", "author"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteNote({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteNoteConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteNoteConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_delete_note", argNames: ["id"]);
+
+  @override
+  Future<List<Topic>> crateApiStorageMindmapGetAllTopics() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 30,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_topic,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetAllTopicsConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetAllTopicsConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_get_all_topics", argNames: []);
+
+  @override
+  Future<List<Note>> crateApiStorageMindmapGetChildren({
+    required String parentId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(parentId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 31,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_note,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetChildrenConstMeta,
+        argValues: [parentId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetChildrenConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_get_children",
+        argNames: ["parentId"],
+      );
+
+  @override
+  Future<Note?> crateApiStorageMindmapGetNote({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 32,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_note,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetNoteConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetNoteConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_get_note", argNames: ["id"]);
+
+  @override
+  Future<List<Note>> crateApiStorageMindmapGetNotesByPdf({
+    required String pdfId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(pdfId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 33,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_note,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetNotesByPdfConstMeta,
+        argValues: [pdfId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetNotesByPdfConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_get_notes_by_pdf",
+        argNames: ["pdfId"],
+      );
+
+  @override
+  Future<List<Note>> crateApiStorageMindmapGetNotesByTopic({
+    required String topicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 34,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_note,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetNotesByTopicConstMeta,
+        argValues: [topicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetNotesByTopicConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_get_notes_by_topic",
+        argNames: ["topicId"],
+      );
+
+  @override
+  Future<Topic?> crateApiStorageMindmapGetTopic({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 35,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_topic,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetTopicConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetTopicConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_get_topic", argNames: ["id"]);
+
+  @override
+  Future<void> crateApiStorageMindmapRemoveChild({
+    required String parentId,
+    required String childId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(parentId, serializer);
+          sse_encode_String(childId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 36,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapRemoveChildConstMeta,
+        argValues: [parentId, childId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapRemoveChildConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_remove_child",
+        argNames: ["parentId", "childId"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapTrashTopic({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 37,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapTrashTopicConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapTrashTopicConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_trash_topic", argNames: ["id"]);
+
+  @override
+  Future<void> crateApiStorageMindmapUpdateNote({required Note note}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_note(note, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 38,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapUpdateNoteConstMeta,
+        argValues: [note],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapUpdateNoteConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_update_note", argNames: ["note"]);
+
+  @override
+  Future<void> crateApiStorageMindmapUpdateTopic({required Topic topic}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_topic(topic, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 39,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapUpdateTopicConstMeta,
+        argValues: [topic],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapUpdateTopicConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_update_topic",
+        argNames: ["topic"],
+      );
+
+  @override
   Future<void> crateApiStorageRemoveTagFromDocument({
     required String docId,
     required String tagId,
@@ -1082,7 +1569,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 40,
             port: port_,
           );
         },
@@ -1117,7 +1604,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1152,7 +1639,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 42,
             port: port_,
           );
         },
@@ -1180,7 +1667,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 43,
             port: port_,
           );
         },
@@ -1212,7 +1699,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 44,
             port: port_,
           );
         },
@@ -1293,9 +1780,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
   int dco_decode_box_autoadd_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_i_64(raw);
+  }
+
+  @protected
+  Note dco_decode_box_autoadd_note(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_note(raw);
+  }
+
+  @protected
+  Topic dco_decode_box_autoadd_topic(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_topic(raw);
   }
 
   @protected
@@ -1338,6 +1849,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   double dco_decode_f_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  double dco_decode_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
   }
@@ -1399,6 +1916,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Note> dco_decode_list_note(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_note).toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
@@ -1417,6 +1940,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Topic> dco_decode_list_topic(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_topic).toList();
+  }
+
+  @protected
+  Note dco_decode_note(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 21)
+      throw Exception('unexpected arr length: expect 21 but see ${arr.length}');
+    return Note(
+      id: dco_decode_String(arr[0]),
+      topicId: dco_decode_String(arr[1]),
+      parentId: dco_decode_opt_String(arr[2]),
+      title: dco_decode_String(arr[3]),
+      contentJson: dco_decode_opt_String(arr[4]),
+      childIds: dco_decode_opt_String(arr[5]),
+      pdfId: dco_decode_opt_String(arr[6]),
+      startPage: dco_decode_opt_box_autoadd_i_32(arr[7]),
+      endPage: dco_decode_opt_box_autoadd_i_32(arr[8]),
+      startPos: dco_decode_opt_String(arr[9]),
+      endPos: dco_decode_opt_String(arr[10]),
+      highlightText: dco_decode_opt_String(arr[11]),
+      highlightStyle: dco_decode_opt_String(arr[12]),
+      mediaIds: dco_decode_opt_String(arr[13]),
+      positionX: dco_decode_opt_box_autoadd_f_64(arr[14]),
+      positionY: dco_decode_opt_box_autoadd_f_64(arr[15]),
+      zIndex: dco_decode_i_32(arr[16]),
+      isCollapsed: dco_decode_bool(arr[17]),
+      createdAt: dco_decode_i_64(arr[18]),
+      updatedAt: dco_decode_i_64(arr[19]),
+      syncVersion: dco_decode_i_64(arr[20]),
+    );
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
@@ -1429,9 +1989,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_f_64(raw);
+  }
+
+  @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_32(raw);
+  }
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
+  }
+
+  @protected
+  Note? dco_decode_opt_box_autoadd_note(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_note(raw);
+  }
+
+  @protected
+  Topic? dco_decode_opt_box_autoadd_topic(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_topic(raw);
   }
 
   @protected
@@ -1466,6 +2050,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       children: dco_decode_list_tag_node(arr[2]),
       colorHex: dco_decode_opt_String(arr[3]),
       documentCount: dco_decode_u_32(arr[4]),
+    );
+  }
+
+  @protected
+  Topic dco_decode_topic(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    return Topic(
+      id: dco_decode_String(arr[0]),
+      title: dco_decode_String(arr[1]),
+      author: dco_decode_opt_String(arr[2]),
+      pdfIds: dco_decode_opt_String(arr[3]),
+      rootNoteIds: dco_decode_opt_String(arr[4]),
+      thumbnailPath: dco_decode_opt_String(arr[5]),
+      createdAt: dco_decode_i_64(arr[6]),
+      updatedAt: dco_decode_i_64(arr[7]),
+      lastVisitAt: dco_decode_opt_box_autoadd_i_64(arr[8]),
+      isTrashed: dco_decode_bool(arr[9]),
+      syncVersion: dco_decode_i_64(arr[10]),
     );
   }
 
@@ -1580,9 +2185,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_f_64(deserializer));
+  }
+
+  @protected
   int sse_decode_box_autoadd_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_i_32(deserializer));
+  }
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
+  Note sse_decode_box_autoadd_note(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_note(deserializer));
+  }
+
+  @protected
+  Topic sse_decode_box_autoadd_topic(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_topic(deserializer));
   }
 
   @protected
@@ -1635,6 +2264,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   double sse_decode_f_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getFloat32();
+  }
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
   }
 
   @protected
@@ -1729,6 +2364,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Note> sse_decode_list_note(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Note>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_note(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -1762,6 +2409,67 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Topic> sse_decode_list_topic(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Topic>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_topic(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  Note sse_decode_note(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_topicId = sse_decode_String(deserializer);
+    var var_parentId = sse_decode_opt_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_contentJson = sse_decode_opt_String(deserializer);
+    var var_childIds = sse_decode_opt_String(deserializer);
+    var var_pdfId = sse_decode_opt_String(deserializer);
+    var var_startPage = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_endPage = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_startPos = sse_decode_opt_String(deserializer);
+    var var_endPos = sse_decode_opt_String(deserializer);
+    var var_highlightText = sse_decode_opt_String(deserializer);
+    var var_highlightStyle = sse_decode_opt_String(deserializer);
+    var var_mediaIds = sse_decode_opt_String(deserializer);
+    var var_positionX = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_positionY = sse_decode_opt_box_autoadd_f_64(deserializer);
+    var var_zIndex = sse_decode_i_32(deserializer);
+    var var_isCollapsed = sse_decode_bool(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    var var_syncVersion = sse_decode_i_64(deserializer);
+    return Note(
+      id: var_id,
+      topicId: var_topicId,
+      parentId: var_parentId,
+      title: var_title,
+      contentJson: var_contentJson,
+      childIds: var_childIds,
+      pdfId: var_pdfId,
+      startPage: var_startPage,
+      endPage: var_endPage,
+      startPos: var_startPos,
+      endPos: var_endPos,
+      highlightText: var_highlightText,
+      highlightStyle: var_highlightStyle,
+      mediaIds: var_mediaIds,
+      positionX: var_positionX,
+      positionY: var_positionY,
+      zIndex: var_zIndex,
+      isCollapsed: var_isCollapsed,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+      syncVersion: var_syncVersion,
+    );
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1784,11 +2492,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_f_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_i_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_note(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Topic? sse_decode_opt_box_autoadd_topic(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_topic(deserializer));
     } else {
       return null;
     }
@@ -1826,6 +2578,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       children: var_children,
       colorHex: var_colorHex,
       documentCount: var_documentCount,
+    );
+  }
+
+  @protected
+  Topic sse_decode_topic(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_author = sse_decode_opt_String(deserializer);
+    var var_pdfIds = sse_decode_opt_String(deserializer);
+    var var_rootNoteIds = sse_decode_opt_String(deserializer);
+    var var_thumbnailPath = sse_decode_opt_String(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    var var_lastVisitAt = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_isTrashed = sse_decode_bool(deserializer);
+    var var_syncVersion = sse_decode_i_64(deserializer);
+    return Topic(
+      id: var_id,
+      title: var_title,
+      author: var_author,
+      pdfIds: var_pdfIds,
+      rootNoteIds: var_rootNoteIds,
+      thumbnailPath: var_thumbnailPath,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+      lastVisitAt: var_lastVisitAt,
+      isTrashed: var_isTrashed,
+      syncVersion: var_syncVersion,
     );
   }
 
@@ -1934,9 +2715,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_note(Note self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_note(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_topic(Topic self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_topic(self, serializer);
   }
 
   @protected
@@ -1974,6 +2782,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_f_32(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putFloat32(self);
+  }
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
   }
 
   @protected
@@ -2055,6 +2869,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_note(List<Note> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_note(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -2086,6 +2909,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_topic(List<Topic> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_topic(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_note(Note self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.topicId, serializer);
+    sse_encode_opt_String(self.parentId, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_opt_String(self.contentJson, serializer);
+    sse_encode_opt_String(self.childIds, serializer);
+    sse_encode_opt_String(self.pdfId, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.startPage, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.endPage, serializer);
+    sse_encode_opt_String(self.startPos, serializer);
+    sse_encode_opt_String(self.endPos, serializer);
+    sse_encode_opt_String(self.highlightText, serializer);
+    sse_encode_opt_String(self.highlightStyle, serializer);
+    sse_encode_opt_String(self.mediaIds, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.positionX, serializer);
+    sse_encode_opt_box_autoadd_f_64(self.positionY, serializer);
+    sse_encode_i_32(self.zIndex, serializer);
+    sse_encode_bool(self.isCollapsed, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
+    sse_encode_i_64(self.syncVersion, serializer);
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2106,12 +2964,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_f_64(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_i_32(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_note(Note? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_note(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_topic(Topic? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_topic(self, serializer);
     }
   }
 
@@ -2143,6 +3044,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_list_tag_node(self.children, serializer);
     sse_encode_opt_String(self.colorHex, serializer);
     sse_encode_u_32(self.documentCount, serializer);
+  }
+
+  @protected
+  void sse_encode_topic(Topic self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_opt_String(self.author, serializer);
+    sse_encode_opt_String(self.pdfIds, serializer);
+    sse_encode_opt_String(self.rootNoteIds, serializer);
+    sse_encode_opt_String(self.thumbnailPath, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.lastVisitAt, serializer);
+    sse_encode_bool(self.isTrashed, serializer);
+    sse_encode_i_64(self.syncVersion, serializer);
   }
 
   @protected

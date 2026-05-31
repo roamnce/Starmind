@@ -16,6 +16,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 import 'storage/annotations.dart';
 import 'storage/documents.dart';
 import 'storage/folders.dart';
+import 'storage/mindmap.dart';
 import 'storage/tags.dart';
 
 abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
@@ -45,7 +46,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_box_autoadd_f_32(dynamic raw);
 
   @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  Note dco_decode_box_autoadd_note(dynamic raw);
+
+  @protected
+  Topic dco_decode_box_autoadd_topic(dynamic raw);
 
   @protected
   ViewportRequest dco_decode_box_autoadd_viewport_request(dynamic raw);
@@ -58,6 +71,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double dco_decode_f_32(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
 
   @protected
   FolderNode dco_decode_folder_node(dynamic raw);
@@ -84,6 +100,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<FolderNode> dco_decode_list_folder_node(dynamic raw);
 
   @protected
+  List<Note> dco_decode_list_note(dynamic raw);
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
@@ -93,13 +112,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<TagNode> dco_decode_list_tag_node(dynamic raw);
 
   @protected
+  List<Topic> dco_decode_list_topic(dynamic raw);
+
+  @protected
+  Note dco_decode_note(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
   double? dco_decode_opt_box_autoadd_f_32(dynamic raw);
 
   @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
+
+  @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  Note? dco_decode_opt_box_autoadd_note(dynamic raw);
+
+  @protected
+  Topic? dco_decode_opt_box_autoadd_topic(dynamic raw);
 
   @protected
   (double, double) dco_decode_record_f_32_f_32(dynamic raw);
@@ -109,6 +146,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   TagNode dco_decode_tag_node(dynamic raw);
+
+  @protected
+  Topic dco_decode_topic(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -145,7 +185,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_box_autoadd_f_32(SseDeserializer deserializer);
 
   @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_box_autoadd_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  Note sse_decode_box_autoadd_note(SseDeserializer deserializer);
+
+  @protected
+  Topic sse_decode_box_autoadd_topic(SseDeserializer deserializer);
 
   @protected
   ViewportRequest sse_decode_box_autoadd_viewport_request(
@@ -160,6 +212,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double sse_decode_f_32(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
   FolderNode sse_decode_folder_node(SseDeserializer deserializer);
@@ -190,6 +245,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<FolderNode> sse_decode_list_folder_node(SseDeserializer deserializer);
 
   @protected
+  List<Note> sse_decode_list_note(SseDeserializer deserializer);
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
@@ -201,13 +259,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<TagNode> sse_decode_list_tag_node(SseDeserializer deserializer);
 
   @protected
+  List<Topic> sse_decode_list_topic(SseDeserializer deserializer);
+
+  @protected
+  Note sse_decode_note(SseDeserializer deserializer);
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
   double? sse_decode_opt_box_autoadd_f_32(SseDeserializer deserializer);
 
   @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer);
+
+  @protected
+  Topic? sse_decode_opt_box_autoadd_topic(SseDeserializer deserializer);
 
   @protected
   (double, double) sse_decode_record_f_32_f_32(SseDeserializer deserializer);
@@ -219,6 +295,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   TagNode sse_decode_tag_node(SseDeserializer deserializer);
+
+  @protected
+  Topic sse_decode_topic(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -260,7 +339,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_f_32(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_note(Note self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_topic(Topic self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_viewport_request(
@@ -276,6 +370,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_f_32(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
   void sse_encode_folder_node(FolderNode self, SseSerializer serializer);
@@ -311,6 +408,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_note(List<Note> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -326,13 +426,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_tag_node(List<TagNode> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_topic(List<Topic> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_note(Note self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_f_32(double? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_note(Note? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_topic(Topic? self, SseSerializer serializer);
 
   @protected
   void sse_encode_record_f_32_f_32(
@@ -348,6 +469,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_tag_node(TagNode self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic(Topic self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
