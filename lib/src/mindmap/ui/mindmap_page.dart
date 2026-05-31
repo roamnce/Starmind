@@ -11,6 +11,9 @@ import 'bottom_action_bar.dart';
 import 'lasso_painter.dart';
 import '../service/mindmap_service.dart' show NoteTreeNode;
 import '../domain/note.dart';
+import 'info_statistics_modal.dart';
+import 'navigation_radar.dart';
+
 
 
 
@@ -40,6 +43,7 @@ class _MindMapPageState extends State<MindMapPage> {
   Offset? _lassoStart;
   Offset? _lassoCurrent;
   Rect? _lassoScreenRect;
+  bool _showInfoModal = false;
 
 
   @override
@@ -253,6 +257,20 @@ class _MindMapPageState extends State<MindMapPage> {
           visibleRect = Rect.largest;
         }
 
+        // Radar visible rect (exact screen viewport in layout coordinates, without buffer or offset)
+        final Rect radarVisibleRect;
+        if (scale > 0) {
+          final tx = matrix.entry(0, 3);
+          final ty = matrix.entry(1, 3);
+          final screenLeft = -tx / scale - 500.0;
+          final screenTop = -ty / scale - 500.0;
+          final screenWidth = constraints.maxWidth / scale;
+          final screenHeight = constraints.maxHeight / scale;
+          radarVisibleRect = Rect.fromLTWH(screenLeft, screenTop, screenWidth, screenHeight);
+        } else {
+          radarVisibleRect = Rect.largest;
+        }
+
         return Container(
           color: widget.controller.canvasBgColor,
           child: Stack(
@@ -327,9 +345,55 @@ class _MindMapPageState extends State<MindMapPage> {
                   child: BottomActionBar(
                     controller: widget.controller,
                     onFitToScreen: () => _fitToScreen(context),
+                    onShowInfo: () => setState(() => _showInfoModal = true),
                   ),
                 ),
               ),
+              Positioned(
+                bottom: 84,
+                right: 76,
+                child: NavigationRadar(
+                  controller: widget.controller,
+                  visibleRect: radarVisibleRect,
+                  contentBounds: bounds,
+                  nodePositions: positions,
+                  connections: connections,
+                  onPanCanvas: (delta) {
+                    final matrix = _transformationController.value;
+                    final scale = matrix.getMaxScaleOnAxis();
+                    if (scale <= 0) return;
+                    final tx = matrix.entry(0, 3);
+                    final ty = matrix.entry(1, 3);
+
+                    final newTx = tx - (delta.dx * scale);
+                    final newTy = ty - (delta.dy * scale);
+
+                    _transformationController.value = Matrix4.identity()
+                      ..scale(scale)
+                      ..translate(newTx / scale, newTy / scale);
+                    _onTransformationChanged();
+                  },
+                ),
+              ),
+              if (_showInfoModal)
+                Positioned.fill(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showInfoModal = false),
+                          child: Container(
+                            color: Colors.black26,
+                          ),
+                        ),
+                      ),
+                      InfoStatisticsModal(
+                        controller: widget.controller,
+                        onClose: () => setState(() => _showInfoModal = false),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         );
