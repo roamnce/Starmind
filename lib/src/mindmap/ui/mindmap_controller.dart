@@ -1,10 +1,12 @@
-// lib/src/mindmap/ui/mindmap_controller.dart
-
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../domain/topic.dart';
 import '../domain/note.dart';
 import '../service/mindmap_service.dart';
+import 'tree_layout.dart';
+
+enum SidebarTab { note, style, icon }
+enum CanvasInteractMode { drag, lasso }
 
 /// MindMap UI 状态管理 Controller。
 ///
@@ -13,8 +15,9 @@ import '../service/mindmap_service.dart';
 /// 遵循项目现有的 WorkspaceController 模式。
 class MindMapController extends ChangeNotifier {
   final MindMapService _service;
+  final String? _initialTopicId;
 
-  MindMapController(this._service);
+  MindMapController(this._service, [this._initialTopicId]);
 
   // ==================== 状态 ====================
 
@@ -38,6 +41,43 @@ class MindMapController extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  // ==================== UI & 主题状态 ====================
+
+  bool _isSidebarExpanded = false;
+  bool get isSidebarExpanded => _isSidebarExpanded;
+
+  SidebarTab _activeSidebarTab = SidebarTab.note;
+  SidebarTab get activeSidebarTab => _activeSidebarTab;
+
+  CanvasInteractMode _interactMode = CanvasInteractMode.drag;
+  CanvasInteractMode get interactMode => _interactMode;
+
+  bool _isLocked = false;
+  bool get isLocked => _isLocked;
+
+  final Set<String> _selectedNoteIds = {};
+  Set<String> get selectedNoteIds => _selectedNoteIds;
+
+  Color _canvasBgColor = const Color(0xFF0C0A07);
+  Color get canvasBgColor => _canvasBgColor;
+
+  Color _gridColor = const Color(0x05FAD278);
+  Color get gridColor => _gridColor;
+
+  bool _showGrid = true;
+  bool get showGrid => _showGrid;
+
+  double _gridSize = 40.0;
+  double get gridSize => _gridSize;
+
+  void _resetThemeToDefaults() {
+    _canvasBgColor = const Color(0xFF0C0A07);
+    _gridColor = const Color(0x05FAD278);
+    _showGrid = true;
+    _gridSize = 40.0;
+  }
+
+
   // ==================== 视口状态 ====================
 
   /// 视口缩放比例
@@ -47,6 +87,15 @@ class MindMapController extends ChangeNotifier {
   /// 视口偏移
   Offset _viewportOffset = Offset.zero;
   Offset get viewportOffset => _viewportOffset;
+
+  /// 布局方向
+  LayoutDirection _layoutDirection = LayoutDirection.bothSides;
+  LayoutDirection get layoutDirection => _layoutDirection;
+
+  void changeLayoutDirection(LayoutDirection dir) {
+    _layoutDirection = dir;
+    notifyListeners();
+  }
 
   /// 缩放限制
   static const double minScale = 0.1;
@@ -68,6 +117,50 @@ class MindMapController extends ChangeNotifier {
     }
   }
 
+  /// Load a specific topic by ID (for tab-based navigation)
+  Future<void> loadTopic() async {
+    if (_initialTopicId == null) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final topic = await _service.getTopic(_initialTopicId);
+      if (topic != null) {
+        _selectedTopic = topic;
+        _topics = [topic]; // Single topic mode
+        if (topic.thumbnailPath != null && topic.thumbnailPath!.startsWith('{"theme":')) {
+          loadThemeFromJson(topic.thumbnailPath);
+        } else {
+          _resetThemeToDefaults();
+        }
+        await _loadNoteTree(topic.id);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add a node to the current topic (simplified API for UI)
+  Future<void> addNode(String title) async {
+    if (_selectedTopic == null) return;
+
+    final note = await _service.createNote(
+      topicId: _selectedTopic!.id,
+      title: title,
+    );
+
+    // Add as root node
+    await _service.addRootNote(
+      topicId: _selectedTopic!.id,
+      noteId: note.id,
+    );
+
+    // Refresh tree
+    await _loadNoteTree(_selectedTopic!.id);
+  }
+
   /// 创建笔记本
   Future<Topic> createTopic(String title, {String? author}) async {
     final topic = await _service.createTopic(title, author: author);
@@ -84,9 +177,15 @@ class MindMapController extends ChangeNotifier {
     notifyListeners();
 
     if (topic != null) {
+      if (topic.thumbnailPath != null && topic.thumbnailPath!.startsWith('{"theme":')) {
+        loadThemeFromJson(topic.thumbnailPath);
+      } else {
+        _resetThemeToDefaults();
+      }
       _loadNoteTree(topic.id);
     } else {
       _noteTree = [];
+      _resetThemeToDefaults();
       notifyListeners();
     }
   }
@@ -148,6 +247,52 @@ class MindMapController extends ChangeNotifier {
     return note;
   }
 
+  /// 创建子节点 (Tab)
+  Future<Note?> createChildNode({required String title}) async {
+    if (_selectedNote == null || _selectedTopic == null) return null;
+    final parentId = _selectedNote!.id;
+
+    final childNote = await _service.createNote(
+      topicId: _selectedTopic!.id,
+      title: title,
+      parentId: parentId,
+    );
+
+    await _service.addChild(parentId: parentId, childId: childNote.id);
+    await _loadNoteTree(_selectedTopic!.id);
+    
+    // 选中新节点
+    selectNote(childNote);
+    return childNote;
+  }
+
+  /// 创建同级节点 (Enter)
+  Future<Note?> createSiblingNode({required String title}) async {
+    if (_selectedNote == null || _selectedTopic == null) return null;
+    final parentId = _selectedNote!.parentId; // 同级拥有相同的父 ID
+
+    final siblingNote = await _service.createNote(
+      topicId: _selectedTopic!.id,
+      title: title,
+      parentId: parentId,
+    );
+
+    if (parentId == null) {
+      await _service.addRootNote(
+        topicId: _selectedTopic!.id,
+        noteId: siblingNote.id,
+      );
+    } else {
+      await _service.addChild(parentId: parentId, childId: siblingNote.id);
+    }
+
+    await _loadNoteTree(_selectedTopic!.id);
+    
+    // 选中新节点
+    selectNote(siblingNote);
+    return siblingNote;
+  }
+
   /// 选择节点
   void selectNote(Note? note) {
     _selectedNote = note;
@@ -161,6 +306,41 @@ class MindMapController extends ChangeNotifier {
 
     final updatedNote = note.copyWith(
       title: newTitle,
+      updatedAt: DateTime.now(),
+    );
+    await _service.updateNote(updatedNote);
+
+    // 刷新节点树
+    if (_selectedTopic != null) {
+      await _loadNoteTree(_selectedTopic!.id);
+    }
+  }
+
+  /// 切换节点折叠状态
+  Future<void> toggleNodeCollapse(String noteId) async {
+    final note = await _service.getNote(noteId);
+    if (note == null) return;
+
+    final updatedNote = note.copyWith(
+      isCollapsed: !note.isCollapsed,
+      updatedAt: DateTime.now(),
+    );
+    await _service.updateNote(updatedNote);
+
+    // 刷新节点树
+    if (_selectedTopic != null) {
+      await _loadNoteTree(_selectedTopic!.id);
+    }
+  }
+
+  /// 切换嵌套卡片组容器状态
+  Future<void> toggleNestedCard(String noteId) async {
+    final note = await _service.getNote(noteId);
+    if (note == null) return;
+
+    final isNested = note.highlightStyle == 'nestedCard';
+    final updatedNote = note.copyWith(
+      highlightStyle: isNested ? '' : 'nestedCard',
       updatedAt: DateTime.now(),
     );
     await _service.updateNote(updatedNote);
@@ -239,6 +419,123 @@ class MindMapController extends ChangeNotifier {
     );
 
     notifyListeners();
+  }
+
+  void toggleSidebar(SidebarTab tab) {
+    if (_isSidebarExpanded && _activeSidebarTab == tab) {
+      _isSidebarExpanded = false;
+    } else {
+      _isSidebarExpanded = true;
+      _activeSidebarTab = tab;
+    }
+    notifyListeners();
+  }
+
+  void setInteractMode(CanvasInteractMode mode) {
+    _interactMode = mode;
+    if (mode == CanvasInteractMode.drag) {
+      _selectedNoteIds.clear();
+    }
+    notifyListeners();
+  }
+
+  void toggleLock() {
+    _isLocked = !_isLocked;
+    notifyListeners();
+  }
+
+  void setSelectedNotes(Set<String> noteIds) {
+    _selectedNoteIds.clear();
+    _selectedNoteIds.addAll(noteIds);
+    notifyListeners();
+  }
+
+  void loadThemeFromJson(String? jsonStr) {
+    if (jsonStr == null || !jsonStr.startsWith('{"theme":')) return;
+    try {
+      final data = jsonDecode(jsonStr);
+      final theme = data['theme'];
+      if (theme != null) {
+        if (theme['canvasBg'] != null) {
+          _canvasBgColor = _parseColor(theme['canvasBg']);
+        }
+        if (theme['gridColor'] != null) {
+          _gridColor = _parseColor(theme['gridColor']);
+        }
+        if (theme['gridShow'] != null) {
+          _showGrid = theme['gridShow'] as bool;
+        }
+        if (theme['gridSize'] != null) {
+          _gridSize = (theme['gridSize'] as num).toDouble();
+        }
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  String exportThemeToJson() {
+    final themeData = {
+      'theme': {
+        'canvasBg': _colorToHex(_canvasBgColor),
+        'gridColor': _colorToRgba(_gridColor),
+        'gridShow': _showGrid,
+        'gridSize': _gridSize,
+      }
+    };
+    return jsonEncode(themeData);
+  }
+
+  Future<void> updateTheme({
+    Color? canvasBgColor,
+    Color? gridColor,
+    bool? showGrid,
+    double? gridSize,
+  }) async {
+    if (canvasBgColor != null) _canvasBgColor = canvasBgColor;
+    if (gridColor != null) _gridColor = gridColor;
+    if (showGrid != null) _showGrid = showGrid;
+    if (gridSize != null) _gridSize = gridSize;
+
+    notifyListeners();
+
+    if (_selectedTopic != null) {
+      final themeJson = exportThemeToJson();
+      final updatedTopic = _selectedTopic!.copyWith(thumbnailPath: themeJson);
+      _selectedTopic = updatedTopic;
+      await _service.updateTopic(updatedTopic);
+
+      // Also update the topic list if it exists
+      final index = _topics.indexWhere((t) => t.id == updatedTopic.id);
+      if (index != -1) {
+        _topics[index] = updatedTopic;
+      }
+      notifyListeners();
+    }
+  }
+
+  Color _parseColor(String colorStr) {
+    if (colorStr.startsWith('#')) {
+      final hex = colorStr.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } else if (colorStr.startsWith('rgba')) {
+      final matches = RegExp(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)').firstMatch(colorStr);
+      if (matches != null) {
+        final r = int.parse(matches.group(1)!);
+        final g = int.parse(matches.group(2)!);
+        final b = int.parse(matches.group(3)!);
+        final a = (double.parse(matches.group(4)!) * 255).toInt();
+        return Color.fromARGB(a, r, g, b);
+      }
+    }
+    return Colors.transparent;
+  }
+
+  String _colorToHex(Color color) {
+    return '#${color.value.toRadixString(16).substring(2).padLeft(6, "0")}';
+  }
+
+  String _colorToRgba(Color color) {
+    return 'rgba(${color.red}, ${color.green}, ${color.blue}, ${(color.alpha / 255).toStringAsFixed(2)})';
   }
 }
 
