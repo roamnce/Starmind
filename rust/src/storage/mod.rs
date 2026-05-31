@@ -4,3 +4,6 @@ pub mod folders;
 pub mod tags;
 pub mod documents;
 pub mod annotations;
+pub mod mindmap;
+
+pub use mindmap::*;
