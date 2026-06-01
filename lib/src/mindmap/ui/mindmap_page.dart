@@ -1,18 +1,28 @@
 // lib/src/mindmap/ui/mindmap_page.dart
 
+import 'dart:math' show min, max;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'mindmap_controller.dart';
 import 'node_widget.dart';
 import 'tree_layout.dart';
+import 'framework_layout.dart';
 import 'canvas_painter.dart';
 import 'mindmap_sidebar.dart';
 import 'bottom_action_bar.dart';
-import 'lasso_painter.dart';
-import '../service/mindmap_service.dart' show NoteTreeNode;
+import 'floating_zoom_bar.dart';
 import '../domain/note.dart';
 import 'info_statistics_modal.dart';
 import 'navigation_radar.dart';
+import '../../home/workspace_controller_provider.dart';
+import '../../home/tab_layout.dart';
+import 'mixins/tree_traversal.dart';
+import 'dialogs/add_node_dialog.dart';
+import 'dialogs/rename_dialog.dart';
+import 'dialogs/split_screen_menu.dart';
+import 'dialogs/shortcuts_modal.dart';
+import 'components/vertical_tab_bar.dart';
+import 'components/lasso_overlay.dart';
 
 
 
@@ -26,15 +36,15 @@ class MindMapPage extends StatefulWidget {
   final MindMapController controller;
 
   const MindMapPage({
-    key,
+    super.key,
     required this.controller,
-  }) : super(key: key);
+  });
 
   @override
   State<MindMapPage> createState() => _MindMapPageState();
 }
 
-class _MindMapPageState extends State<MindMapPage> {
+class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   late final TransformationController _transformationController;
   late final TextEditingController _noteTextEditingController;
   late final FocusNode _noteFocusNode;
@@ -44,6 +54,9 @@ class _MindMapPageState extends State<MindMapPage> {
   Offset? _lassoCurrent;
   Rect? _lassoScreenRect;
   bool _showInfoModal = false;
+  bool _showShortcutsModal = false;
+  bool _isLocalSplitMode = false;
+  bool _isStarred = true;
 
 
   @override
@@ -78,9 +91,16 @@ class _MindMapPageState extends State<MindMapPage> {
 
   void _syncFromController() {
     if (!mounted) return;
+
+    // 确保 viewportScale 在有效范围内，避免 InteractiveViewer 的 scale != 0.0 断言错误
+    final scale = widget.controller.viewportScale.clamp(
+      MindMapController.minScale,
+      MindMapController.maxScale,
+    );
+
     final matrix = Matrix4.identity()
       ..translate(widget.controller.viewportOffset.dx, widget.controller.viewportOffset.dy)
-      ..scale(widget.controller.viewportScale);
+      ..scale(scale);
     _transformationController.value = matrix;
 
     // Note text synchronization
@@ -121,62 +141,157 @@ class _MindMapPageState extends State<MindMapPage> {
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
-        if (widget.controller.isLocked) return KeyEventResult.ignored;
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.tab) {
-            _showAddNodeDialog(context, isChild: true);
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-            _showAddNodeDialog(context, isChild: false);
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.delete ||
-                     event.logicalKey == LogicalKeyboardKey.backspace) {
-            _handleDeleteSelected(context);
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+        final isCtrl = HardwareKeyboard.instance.isControlPressed;
+        final isAlt = HardwareKeyboard.instance.isAltPressed;
+        final isShift = HardwareKeyboard.instance.isShiftPressed;
+
+        // Alt + Q -> 锁定/解锁编辑画布 (MUST be before lock check!)
+        if (isAlt && event.logicalKey == LogicalKeyboardKey.keyQ) {
+          widget.controller.toggleLock();
+          return KeyEventResult.handled;
+        }
+
+        // If locked, ignore all other key events
+        if (widget.controller.isLocked) {
+          return KeyEventResult.ignored;
+        }
+
+        // Tab -> create child node dialog
+        if (event.logicalKey == LogicalKeyboardKey.tab) {
+          _showAddNodeDialog(context, isChild: true);
+          return KeyEventResult.handled;
+        }
+
+        // Enter -> create sibling node dialog
+        if (event.logicalKey == LogicalKeyboardKey.enter) {
+          _showAddNodeDialog(context, isChild: false);
+          return KeyEventResult.handled;
+        }
+
+        // Delete / Backspace -> delete selected node
+        if (event.logicalKey == LogicalKeyboardKey.delete ||
+            event.logicalKey == LogicalKeyboardKey.backspace) {
+          _handleDeleteSelected(context);
+          return KeyEventResult.handled;
+        }
+
+        // Space -> Toggle collapse of selected node
+        if (event.logicalKey == LogicalKeyboardKey.space) {
+          final selectedNote = widget.controller.selectedNote;
+          if (selectedNote != null) {
+            widget.controller.toggleNodeCollapse(selectedNote.id);
             return KeyEventResult.handled;
           }
         }
+
+        // F2 -> Rename selected node dialog
+        if (event.logicalKey == LogicalKeyboardKey.f2) {
+          final selectedNote = widget.controller.selectedNote;
+          if (selectedNote != null) {
+            _showRenameDialog(context, selectedNote);
+            return KeyEventResult.handled;
+          }
+        }
+
+        // Ctrl + Shift + E -> 自适应全屏
+        if (isCtrl && isShift && event.logicalKey == LogicalKeyboardKey.keyE) {
+          _fitToScreen(context);
+          return KeyEventResult.handled;
+        }
+
+        // Ctrl + Alt + [ -> WorkspaceController.setSidebarOpen(false)
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.bracketLeft) {
+          context.maybeWorkspaceController?.setSidebarOpen(false);
+          return KeyEventResult.handled;
+        }
+
+        // Ctrl + Alt + ] -> controller.toggleSidebar(SidebarTab.note)
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.bracketRight) {
+          widget.controller.toggleSidebar(SidebarTab.note);
+          return KeyEventResult.handled;
+        }
+
+        // Ctrl + Alt + \ -> 循环切换布局方式
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.backslash) {
+          final currentDir = widget.controller.layoutDirection;
+          final nextDir = currentDir == LayoutDirection.bothSides
+              ? LayoutDirection.left
+              : currentDir == LayoutDirection.left
+                  ? LayoutDirection.horizontal
+                  : LayoutDirection.bothSides;
+          widget.controller.changeLayoutDirection(nextDir);
+          return KeyEventResult.handled;
+        }
+
+        // Ctrl + Alt + S -> 局部分屏模式切换
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.keyS) {
+          setState(() {
+            _isLocalSplitMode = !_isLocalSplitMode;
+          });
+          return KeyEventResult.handled;
+        }
+
+        // Ctrl + W -> close tab
+        if (isCtrl && event.logicalKey == LogicalKeyboardKey.keyW) {
+          final workspace = context.maybeWorkspaceController;
+          if (workspace != null) {
+            final leaf = workspace.rootLayoutNode as LeafNode;
+            final topicId = widget.controller.selectedTopic?.id;
+            if (topicId != null) {
+              final idx = leaf.tabs.indexWhere((t) => t.id == topicId && t.type == TabType.mindmap);
+              if (idx != -1) {
+                workspace.closeTab(idx);
+              }
+            }
+          }
+          return KeyEventResult.handled;
+        }
+
         return KeyEventResult.ignored;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.controller.selectedTopic?.title ?? 'MindMap'),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.zoom_out),
-              onPressed: widget.controller.zoomOut,
-              tooltip: 'Zoom out',
-            ),
-            IconButton(
-              icon: const Icon(Icons.zoom_in),
-              onPressed: widget.controller.zoomIn,
-              tooltip: 'Zoom in',
-            ),
-            IconButton(
-              icon: const Icon(Icons.fit_screen),
-              onPressed: () => _fitToScreen(context),
-              tooltip: 'Fit to screen',
+        body: Column(
+          children: [
+            _buildBreadcrumbBar(context),
+            Expanded(
+              child: widget.controller.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : widget.controller.noteTree.isEmpty
+                      ? _buildEmptyState(context)
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: _buildCanvas(context),
+                            ),
+                            if (_isLocalSplitMode)
+                              const VerticalDivider(width: 1, color: Color(0x1F2A3547)),
+                            if (_isLocalSplitMode)
+                              Expanded(
+                                child: Container(
+                                  color: const Color(0xFF141B24),
+                                  child: const Center(
+                                    child: Text(
+                                      '关联 PDF 矢量双向分屏视口\n(防闪退局部分屏)',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.white54, height: 1.4),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (widget.controller.isSidebarExpanded)
+                              MindMapSidebar(
+                                controller: widget.controller,
+                                textController: _noteTextEditingController,
+                                focusNode: _noteFocusNode,
+                              ),
+                            _buildVerticalTabBar(),
+                          ],
+                        ),
             ),
           ],
         ),
-        body: widget.controller.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : widget.controller.noteTree.isEmpty
-                ? _buildEmptyState(context)
-                : Row(
-                    children: [
-                      Expanded(
-                        child: _buildCanvas(context),
-                      ),
-                      if (widget.controller.isSidebarExpanded)
-                        MindMapSidebar(
-                          controller: widget.controller,
-                          textController: _noteTextEditingController,
-                          focusNode: _noteFocusNode,
-                        ),
-                      _buildVerticalTabBar(),
-                    ],
-                  ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             if (widget.controller.isLocked) {
@@ -224,19 +339,38 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   Widget _buildCanvas(BuildContext context) {
-    final layout = TreeLayout(direction: widget.controller.layoutDirection);
+    // 检测是否有框架式节点
+    final useFrameworkLayout = widget.controller.noteTree.any(
+      (root) => root.note.layoutStyle == 'framework',
+    );
+
+    // 节点尺寸缓存（用于后续 viewport culling）
+    final nodeSizes = <String, Size>{};
 
     // Calculate all node positions
     final positions = <String, Offset>{};
     final connections = <Connection>[];
 
-    for (final root in widget.controller.noteTree) {
-      positions.addAll(layout.calculate(root));
-      connections.addAll(layout.calculateConnections(root, positions));
+    if (useFrameworkLayout) {
+      // 框架式布局
+      final layout = FrameworkLayout();
+      for (final root in widget.controller.noteTree) {
+        positions.addAll(layout.calculate(root, Offset.zero));
+        connections.addAll(layout.calculateConnections(root, positions));
+      }
+      nodeSizes.addAll(layout.nodeSizes);
+    } else {
+      // 树形布局
+      final layout = TreeLayout(direction: widget.controller.layoutDirection);
+      for (final root in widget.controller.noteTree) {
+        positions.addAll(layout.calculate(root));
+        connections.addAll(layout.calculateConnections(root, positions));
+      }
+      nodeSizes.addAll(layout.nodeSizes);
     }
 
     // Calculate bounding box
-    final bounds = _calculateBounds(positions, layout);
+    final bounds = _calculateBounds(positions, nodeSizes);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -290,10 +424,16 @@ class _MindMapPageState extends State<MindMapPage> {
                   child: Stack(
                     children: [
                       // Connection layer (RepaintBoundary optimized)
+                      // 连线坐标需要与节点位置同步，应用相同的 +500 偏移
                       RepaintBoundary(
                         child: CustomPaint(
                           painter: MindMapCanvasPainter(
-                            connections: connections,
+                            connections: connections.map((conn) => Connection(
+                              fromId: conn.fromId,
+                              toId: conn.toId,
+                              start: Offset(conn.start.dx + 500, conn.start.dy + 500),
+                              end: Offset(conn.end.dx + 500, conn.end.dy + 500),
+                            )).toList(),
                             lineColor: Theme.of(context).colorScheme.outline,
                             lineWidth: 2,
                             showGrid: widget.controller.showGrid,
@@ -307,11 +447,11 @@ class _MindMapPageState extends State<MindMapPage> {
                       ...positions.entries.map((entry) {
                         final noteId = entry.key;
                         final pos = entry.value;
-                        final note = _findNote(widget.controller.noteTree, noteId);
+                        final note = findNoteInTree(widget.controller.noteTree, noteId);
 
                         if (note == null) return const SizedBox.shrink();
 
-                        final size = layout.nodeSizes[noteId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+                        final size = nodeSizes[noteId] ?? const Size(120, 40);
                         final visible = _isNodeVisible(visibleRect, pos, size);
                         if (!visible) return const SizedBox.shrink();
 
@@ -322,7 +462,10 @@ class _MindMapPageState extends State<MindMapPage> {
                             child: NodeWidget(
                               note: note,
                               isSelected: widget.controller.selectedNote?.id == noteId,
-                              onTap: () => widget.controller.selectNote(note),
+                              onTap: () {
+                                widget.controller.selectNote(note);
+                                _centerOnNode(noteId, pos, size);
+                              },
                               onLongPress: () => _showNodeContextMenu(context, note),
                               onToggleCollapse: () => widget.controller.toggleNodeCollapse(note.id),
                               customSize: size,
@@ -337,6 +480,14 @@ class _MindMapPageState extends State<MindMapPage> {
               ),
               if (widget.controller.interactMode == CanvasInteractMode.lasso)
                 _buildLassoGestureOverlay(),
+              // 左下角浮动缩放条
+              FloatingZoomBar(
+                controller: widget.controller,
+                onShowInfo: () => setState(() => _showInfoModal = true),
+                onShowShortcuts: () => setState(() => _showShortcutsModal = true),
+                onToggleMinimap: widget.controller.toggleMinimap,
+              ),
+              // 底部操作栏
               Positioned(
                 bottom: 24,
                 left: 0,
@@ -345,36 +496,41 @@ class _MindMapPageState extends State<MindMapPage> {
                   child: BottomActionBar(
                     controller: widget.controller,
                     onFitToScreen: () => _fitToScreen(context),
-                    onShowInfo: () => setState(() => _showInfoModal = true),
+                    onShowAddChildDialog: () => _showAddNodeDialog(context, isChild: true),
+                    onShowAddSiblingDialog: () => _showAddNodeDialog(context, isChild: false),
+                    onAddNote: () => widget.controller.toggleSidebar(SidebarTab.note),
                   ),
                 ),
               ),
-              Positioned(
-                bottom: 84,
-                right: 76,
-                child: NavigationRadar(
-                  controller: widget.controller,
-                  visibleRect: radarVisibleRect,
-                  contentBounds: bounds,
-                  nodePositions: positions,
-                  connections: connections,
-                  onPanCanvas: (delta) {
-                    final matrix = _transformationController.value;
-                    final scale = matrix.getMaxScaleOnAxis();
-                    if (scale <= 0) return;
-                    final tx = matrix.entry(0, 3);
-                    final ty = matrix.entry(1, 3);
+              // 导航雷达 (根据 isMinimapVisible 控制显示)
+              if (widget.controller.isMinimapVisible)
+                Positioned(
+                  bottom: 24,
+                  right: 24,
+                  child: NavigationRadar(
+                    controller: widget.controller,
+                    visibleRect: radarVisibleRect,
+                    contentBounds: bounds,
+                    nodePositions: positions,
+                    connections: connections,
+                    onPanCanvas: (delta) {
+                      final matrix = _transformationController.value;
+                      final scale = matrix.getMaxScaleOnAxis();
+                      if (scale <= 0) return;
+                      final tx = matrix.entry(0, 3);
+                      final ty = matrix.entry(1, 3);
 
-                    final newTx = tx - (delta.dx * scale);
-                    final newTy = ty - (delta.dy * scale);
+                      final newTx = tx - (delta.dx * scale);
+                      final newTy = ty - (delta.dy * scale);
 
-                    _transformationController.value = Matrix4.identity()
-                      ..scale(scale)
-                      ..translate(newTx / scale, newTy / scale);
-                    _onTransformationChanged();
-                  },
+                      _transformationController.value = Matrix4.identity()
+                        ..scale(scale)
+                        ..translate(newTx / scale, newTy / scale);
+                      _onTransformationChanged();
+                    },
+                  ),
                 ),
-              ),
+              // 关于导图弹窗
               if (_showInfoModal)
                 Positioned.fill(
                   child: Stack(
@@ -394,6 +550,19 @@ class _MindMapPageState extends State<MindMapPage> {
                     ],
                   ),
                 ),
+              // 快捷键弹窗
+              if (_showShortcutsModal)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showShortcutsModal = false),
+                    child: Container(
+                      color: Colors.black45,
+                      child: ShortcutsModal(
+                        onClose: () => setState(() => _showShortcutsModal = false),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -402,23 +571,22 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   Widget _buildLassoGestureOverlay() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanStart: (details) {
+    return LassoOverlay(
+      onPanStart: (localPosition) {
         setState(() {
-          _lassoStart = details.localPosition;
-          _lassoCurrent = details.localPosition;
+          _lassoStart = localPosition;
+          _lassoCurrent = localPosition;
           _lassoScreenRect = Rect.fromPoints(_lassoStart!, _lassoCurrent!);
         });
       },
-      onPanUpdate: (details) {
+      onPanUpdate: (localPosition) {
         if (_lassoStart == null) return;
         setState(() {
-          _lassoCurrent = details.localPosition;
+          _lassoCurrent = localPosition;
           _lassoScreenRect = Rect.fromPoints(_lassoStart!, _lassoCurrent!);
         });
       },
-      onPanEnd: (details) {
+      onPanEnd: () {
         if (_lassoScreenRect != null) {
           _performLassoSelection(_lassoScreenRect!);
         }
@@ -428,10 +596,7 @@ class _MindMapPageState extends State<MindMapPage> {
           _lassoScreenRect = null;
         });
       },
-      child: CustomPaint(
-        painter: LassoPainter(selectionRect: _lassoScreenRect),
-        size: Size.infinite,
-      ),
+      selectionRect: _lassoScreenRect,
     );
   }
 
@@ -477,9 +642,15 @@ class _MindMapPageState extends State<MindMapPage> {
 
     if (selectedIds.isNotEmpty) {
       final primaryId = selectedIds.first;
-      final primaryNote = _findNote(widget.controller.noteTree, primaryId);
+      final primaryNote = findNoteInTree(widget.controller.noteTree, primaryId);
       if (primaryNote != null) {
         widget.controller.selectNote(primaryNote);
+        // 居中显示第一个选中的节点
+        final primaryPos = positions[primaryId];
+        final primarySize = layout.nodeSizes[primaryId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+        if (primaryPos != null) {
+          _centerOnNode(primaryId, primaryPos, primarySize);
+        }
       }
     } else {
       widget.controller.selectNote(null);
@@ -488,7 +659,7 @@ class _MindMapPageState extends State<MindMapPage> {
 
 
   /// Calculate bounding box for all nodes
-  Rect _calculateBounds(Map<String, Offset> positions, TreeLayout layout) {
+  Rect _calculateBounds(Map<String, Offset> positions, Map<String, Size> nodeSizes) {
     if (positions.isEmpty) {
       return Rect.fromLTWH(0, 0, 400, 400);
     }
@@ -501,12 +672,12 @@ class _MindMapPageState extends State<MindMapPage> {
     for (final entry in positions.entries) {
       final id = entry.key;
       final pos = entry.value;
-      final size = layout.nodeSizes[id] ?? Size(layout.nodeWidth, layout.nodeHeight);
+      final size = nodeSizes[id] ?? const Size(120, 40);
 
-      minX = _min(minX, pos.dx - size.width / 2);
-      maxX = _max(maxX, pos.dx + size.width / 2);
-      minY = _min(minY, pos.dy);
-      maxY = _max(maxY, pos.dy + size.height);
+      minX = min(minX, pos.dx - size.width / 2);
+      maxX = max(maxX, pos.dx + size.width / 2);
+      minY = min(minY, pos.dy);
+      maxY = max(maxY, pos.dy + size.height);
     }
 
     return Rect.fromLTWH(minX, minY, maxX - minX, maxY - minY);
@@ -561,52 +732,11 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   Future<void> _showRenameDialog(BuildContext context, Note note) async {
-    final textController = TextEditingController(text: note.title);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename Node'),
-        content: TextField(
-          controller: textController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter new title',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, textController.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+    final result = await RenameDialog.show(context, initialTitle: note.title);
 
     if (result != null && result.isNotEmpty) {
       await widget.controller.updateNoteTitle(note.id, result);
     }
-  }
-
-  /// Find note in tree
-  Note? _findNote(List<NoteTreeNode> roots, String id) {
-    for (final root in roots) {
-      final found = _findNoteInTree(root, id);
-      if (found != null) return found;
-    }
-    return null;
-  }
-
-  Note? _findNoteInTree(NoteTreeNode node, String id) {
-    if (node.note.id == id) return node.note;
-    for (final child in node.children) {
-      final found = _findNoteInTree(child, id);
-      if (found != null) return found;
-    }
-    return null;
   }
 
   void _showLockMessage(BuildContext context) {
@@ -640,17 +770,62 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   void _fitToScreen(BuildContext context) {
-    final layout = const TreeLayout();
-    final positions = <String, Offset>{};
+    // 检测是否有框架式节点
+    final useFrameworkLayout = widget.controller.noteTree.any(
+      (root) => root.note.layoutStyle == 'framework',
+    );
 
-    for (final root in widget.controller.noteTree) {
-      positions.addAll(layout.calculate(root));
+    final positions = <String, Offset>{};
+    final nodeSizes = <String, Size>{};
+
+    if (useFrameworkLayout) {
+      final layout = FrameworkLayout();
+      for (final root in widget.controller.noteTree) {
+        positions.addAll(layout.calculate(root, Offset.zero));
+      }
+      nodeSizes.addAll(layout.nodeSizes);
+    } else {
+      final layout = const TreeLayout();
+      for (final root in widget.controller.noteTree) {
+        positions.addAll(layout.calculate(root));
+      }
+      nodeSizes.addAll(layout.nodeSizes);
     }
 
-    final bounds = _calculateBounds(positions, layout);
+    final bounds = _calculateBounds(positions, nodeSizes);
     final screenSize = MediaQuery.of(context).size;
 
     widget.controller.fitToScreen(screenSize, bounds);
+  }
+
+  /// 将指定节点居中显示在视口中
+  void _centerOnNode(String noteId, Offset nodePos, Size nodeSize) {
+    final matrix = _transformationController.value;
+    var scale = matrix.getMaxScaleOnAxis();
+
+    // 确保缩放比例在有效范围内
+    if (scale <= 0) {
+      scale = 1.0;
+    }
+    scale = scale.clamp(MindMapController.minScale, MindMapController.maxScale);
+
+    // 获取屏幕尺寸
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final screenSize = renderBox.size;
+
+    // 计算节点在 Stack 中的中心位置（需要 +500 偏移）
+    final nodeCenterX = nodePos.dx + 500;
+    final nodeCenterY = nodePos.dy + 500 + nodeSize.height / 2;
+
+    // 计算新的偏移量，使节点居中
+    final newTx = screenSize.width / 2 - nodeCenterX * scale;
+    final newTy = screenSize.height / 2 - nodeCenterY * scale;
+
+    _transformationController.value = Matrix4.identity()
+      ..scale(scale)
+      ..translate(newTx / scale, newTy / scale);
+    _onTransformationChanged();
   }
 
   Future<void> _handleDeleteSelected(BuildContext context) async {
@@ -660,32 +835,7 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   Future<void> _showAddNodeDialog(BuildContext context, {bool isChild = true}) async {
-    final textController = TextEditingController();
-    final titleText = isChild ? 'Create Child Node' : 'Create Sibling Node';
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(titleText),
-        content: TextField(
-          controller: textController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter node title',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, textController.text),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
+    final result = await AddNodeDialog.show(context, isChild: isChild);
 
     if (result != null && result.isNotEmpty) {
       if (isChild) {
@@ -697,67 +847,176 @@ class _MindMapPageState extends State<MindMapPage> {
   }
 
   Widget _buildVerticalTabBar() {
+    return VerticalTabBar(controller: widget.controller);
+  }
+
+  Widget _buildBreadcrumbBar(BuildContext context) {
     return Container(
-      width: 52,
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF141921),
+        color: Color(0xFF100D08),
         border: Border(
-          left: BorderSide(color: Color(0x1F2A3547), width: 1),
+          bottom: BorderSide(color: Color(0x1F2A3547), width: 1),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          const SizedBox(height: 16),
-          _buildVerticalTabButton(SidebarTab.note, Icons.send_rounded, '节点笔记'),
-          _buildVerticalTabButton(SidebarTab.style, Icons.push_pin_rounded, '导图主题'),
-          _buildVerticalTabButton(SidebarTab.icon, Icons.sentiment_satisfied_alt_rounded, '节点图标'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
+                tooltip: '后退',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                onPressed: () {},
+                tooltip: '前进',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: Icon(
+                  _isStarred ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: _isStarred ? const Color(0xFFE0A92E) : Colors.white60,
+                  size: 16,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isStarred = !_isStarred;
+                  });
+                },
+                tooltip: '收藏',
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.home_outlined, size: 14, color: Colors.white60),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.controller.selectedTopic?.title ?? 'AI配音',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           const Spacer(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.undo_rounded, size: 16),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('撤销成功'), duration: Duration(milliseconds: 500)),
+                  );
+                },
+                tooltip: '撤销',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: const Icon(Icons.redo_rounded, size: 16),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('重做成功'), duration: Duration(milliseconds: 500)),
+                  );
+                },
+                tooltip: '重做',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: Icon(
+                  widget.controller.splitType != null
+                      ? Icons.splitscreen_rounded
+                      : Icons.vertical_split_rounded,
+                  size: 16,
+                  color: widget.controller.splitType != null ? const Color(0xFF1862C6) : Colors.white60,
+                ),
+                onPressed: () => _showSplitScreenMenu(context),
+                tooltip: '分屏',
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: const Icon(Icons.format_list_bulleted_rounded, size: 16),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('切换到大纲模式'), duration: Duration(milliseconds: 500)),
+                  );
+                },
+                tooltip: '切换到大纲模式',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_horiz_rounded, size: 16),
+                onPressed: () {},
+                tooltip: '更多操作',
+                color: Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              IconButton(
+                icon: const Icon(Icons.view_sidebar_outlined, size: 16),
+                onPressed: () {
+                  widget.controller.toggleSidebar(widget.controller.activeSidebarTab);
+                },
+                tooltip: '切换侧边栏',
+                color: widget.controller.isSidebarExpanded ? const Color(0xFF1862C6) : Colors.white60,
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildVerticalTabButton(SidebarTab tab, IconData icon, String tooltip) {
-    final isActive = widget.controller.isSidebarExpanded && widget.controller.activeSidebarTab == tab;
+  void _showSplitScreenMenu(BuildContext context) async {
+    final workspaceCtrl = context.maybeWorkspaceController;
+    if (workspaceCtrl == null) return;
 
-    return Tooltip(
-      message: tooltip,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: InkWell(
-          onTap: () => widget.controller.toggleSidebar(tab),
-          borderRadius: BorderRadius.circular(8),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isActive ? const Color(0xFF1862C6) : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF1862C6).withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      )
-                    ]
-                  : null,
-            ),
-            child: Transform.rotate(
-              angle: tab == SidebarTab.note ? -0.5 : 0.0,
-              child: Icon(
-                icon,
-                color: isActive ? Colors.white : Colors.white60,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      ),
+    await SplitScreenMenu.show(
+      context,
+      controller: widget.controller,
+      pdfDocs: workspaceCtrl.documents,
+      getMindmaps: () => widget.controller.getAllTopics(),
     );
   }
 }
-
-double _min(double a, double b) => a < b ? a : b;
-double _max(double a, double b) => a > b ? a : b;

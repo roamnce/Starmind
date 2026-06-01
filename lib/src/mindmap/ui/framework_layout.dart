@@ -3,7 +3,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../service/mindmap_service.dart';
-import 'framework_child_position.dart';
+import 'tree_layout.dart' show Connection; // 复用 TreeLayout 的 Connection 类
 
 /// 框架式布局算法
 ///
@@ -220,19 +220,4 @@ class FrameworkLayout {
 
     return connections;
   }
-}
-
-/// 连线数据
-class Connection {
-  final String fromId;
-  final String toId;
-  final Offset start;
-  final Offset end;
-
-  const Connection({
-    required this.fromId,
-    required this.toId,
-    required this.start,
-    required this.end,
-  });
 }
