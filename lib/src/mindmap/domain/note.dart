@@ -74,6 +74,9 @@ class Note {
   /// 同步版本号
   final int syncVersion;
 
+  /// 布局样式（'normal' 或 'framework'）
+  final String layoutStyle;
+
   const Note({
     required this.id,
     required this.topicId,
@@ -96,6 +99,7 @@ class Note {
     required this.createdAt,
     required this.updatedAt,
     this.syncVersion = 0,
+    this.layoutStyle = 'normal',
   });
 
   /// 从数据库 Map 创建
@@ -132,6 +136,7 @@ class Note {
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       syncVersion: (map['sync_version'] as int?) ?? 0,
+      layoutStyle: map['layout_style'] as String? ?? 'normal',
     );
   }
 
@@ -158,6 +163,7 @@ class Note {
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
         'sync_version': syncVersion,
+        'layout_style': layoutStyle,
       };
 
   /// 解析管道分隔字符串
@@ -174,6 +180,9 @@ class Note {
     Object? parentId = _unset,
     double? positionX,
     double? positionY,
+    bool? isCollapsed,
+    String? highlightStyle,
+    String? layoutStyle,
     DateTime? updatedAt,
   }) {
     return Note(
@@ -189,15 +198,16 @@ class Note {
       startPosJson: startPosJson,
       endPosJson: endPosJson,
       highlightText: highlightText,
-      highlightStyle: highlightStyle,
+      highlightStyle: highlightStyle ?? this.highlightStyle,
       mediaIds: mediaIds,
       positionX: positionX ?? this.positionX,
       positionY: positionY ?? this.positionY,
       zIndex: zIndex,
-      isCollapsed: isCollapsed,
+      isCollapsed: isCollapsed ?? this.isCollapsed,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncVersion: syncVersion,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
     );
   }
 }
