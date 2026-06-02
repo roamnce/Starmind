@@ -118,6 +118,8 @@ class FrameworkLayout {
   }
 
   /// 计算框架式节点的子节点位置
+  ///
+  /// 返回的 positions 是节点顶部中心坐标（与 TreeLayout 一致）
   Map<String, Offset> calculateChildPositions(
     NoteTreeNode node,
     Offset frameworkOrigin,
@@ -131,7 +133,9 @@ class FrameworkLayout {
     final grid = arrangeGrid(node.children);
     final frameworkSize = _nodeSizes[node.note.id] ?? calculateFrameworkSize(node);
 
-    final innerTop = frameworkOrigin.dy - frameworkSize.height / 2 + headerHeight + nodeHeight;
+    // 框架内部起始位置（考虑 padding 和 header）
+    // frameworkOrigin 是框架顶部中心坐标
+    final innerTop = frameworkOrigin.dy + headerHeight + nodeHeight;
     final innerLeft = frameworkOrigin.dx - frameworkSize.width / 2 + containerPadding;
 
     double currentY = innerTop;
@@ -146,10 +150,11 @@ class FrameworkLayout {
       for (final child in row) {
         final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
-        final childCenterX = currentX + childSize.width / 2;
-        final childCenterY = currentY + rowHeight / 2;
+        // 返回节点顶部中心坐标（与 TreeLayout 一致）
+        final childTopX = currentX + childSize.width / 2;
+        final childTopY = currentY;
 
-        positions[child.note.id] = Offset(childCenterX, childCenterY);
+        positions[child.note.id] = Offset(childTopX, childTopY);
 
         currentX += childSize.width + nodeSpacing;
       }
@@ -183,6 +188,8 @@ class FrameworkLayout {
   }
 
   /// 计算框架内部的连线
+  ///
+  /// positions 存储的是节点顶部中心坐标
   List<Connection> calculateConnections(
     NoteTreeNode node,
     Map<String, Offset> positions,
@@ -198,7 +205,9 @@ class FrameworkLayout {
 
     final parentSize = _nodeSizes[node.note.id] ?? calculateFrameworkSize(node);
 
-    final anchorY = parentPos.dy - parentSize.height / 2 + headerHeight + nodeHeight;
+    // 父节点连线锚点：标题栏底部中心
+    // parentPos.dy 是框架顶部，anchorY = top + headerHeight + nodeHeight
+    final anchorY = parentPos.dy + headerHeight + nodeHeight;
 
     for (final child in node.children) {
       final childPos = positions[child.note.id];
@@ -206,11 +215,12 @@ class FrameworkLayout {
 
       final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
+      // 锚点 Y = top + height/2（节点中心）
       connections.add(Connection(
         fromId: node.note.id,
         toId: child.note.id,
         start: Offset(parentPos.dx, anchorY),
-        end: Offset(childPos.dx, childPos.dy - childSize.height / 2),
+        end: Offset(childPos.dx, childPos.dy + childSize.height / 2),
       ));
 
       if (child.note.layoutStyle == 'framework') {
