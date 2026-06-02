@@ -42,9 +42,10 @@ void main() {
       final rootSize = layout.nodeSizes['1-root'] ?? const Size(120, 40);
       final childSize = layout.nodeSizes['1-child'] ?? const Size(120, 40);
 
-      // Verify anchor points are at node edge center (Y = nodeCenter, not nodeCenter + height/2)
-      expect(conn.start.dy, equals(rootPos.dy));
-      expect(conn.end.dy, equals(childPos.dy));
+      // Verify anchor points are at node edge center
+      // positions 存储的是节点顶部中心坐标，锚点 Y 应该是 top + height/2
+      expect(conn.start.dy, equals(rootPos.dy + rootSize.height / 2));
+      expect(conn.end.dy, equals(childPos.dy + childSize.height / 2));
 
       // Verify anchor X at node edge
       expect(conn.start.dx, equals(rootPos.dx + rootSize.width / 2));
@@ -87,9 +88,9 @@ void main() {
       expect(conn.start.dx, equals(rootPos.dx - rootSize.width / 2));
       // end 应该是子节点右边缘
       expect(conn.end.dx, equals(childPos.dx + childSize.width / 2));
-      // Y 坐标应该是节点中心
-      expect(conn.start.dy, equals(rootPos.dy));
-      expect(conn.end.dy, equals(childPos.dy));
+      // Y 坐标应该是节点中心（top + height/2）
+      expect(conn.start.dy, equals(rootPos.dy + rootSize.height / 2));
+      expect(conn.end.dy, equals(childPos.dy + childSize.height / 2));
     });
   });
 }

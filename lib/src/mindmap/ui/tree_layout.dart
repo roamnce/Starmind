@@ -276,19 +276,23 @@ class TreeLayout {
         final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
         // 连线锚点连接到节点边缘中心点
-        // parentPos/childPos 是节点中心坐标，不需要 +500 偏移（偏移仅在 Stack 定位时使用）
+        // parentPos/childPos 是节点顶部中心坐标（Y 是顶部，不是中心）
+        // 需要加上 height/2 得到节点中心 Y，再加 width/2 或减 width/2 得到边缘锚点
         final isRightSide = childPos.dx > parentPos.dx;
+
+        // 节点中心 Y = top + height / 2
+        final parentCenterY = parentPos.dy + parentSize.height / 2;
+        final childCenterY = childPos.dy + childSize.height / 2;
 
         Offset start, end;
         if (isRightSide) {
           // 子节点在右侧：从父节点右边缘中心连到子节点左边缘中心
-          // parentPos/childPos 是节点中心坐标，Y 不需要再加 height/2
-          start = Offset(parentPos.dx + parentSize.width / 2, parentPos.dy);
-          end = Offset(childPos.dx - childSize.width / 2, childPos.dy);
+          start = Offset(parentPos.dx + parentSize.width / 2, parentCenterY);
+          end = Offset(childPos.dx - childSize.width / 2, childCenterY);
         } else {
           // 子节点在左侧：从父节点左边缘中心连到子节点右边缘中心
-          start = Offset(parentPos.dx - parentSize.width / 2, parentPos.dy);
-          end = Offset(childPos.dx + childSize.width / 2, childPos.dy);
+          start = Offset(parentPos.dx - parentSize.width / 2, parentCenterY);
+          end = Offset(childPos.dx + childSize.width / 2, childCenterY);
         }
 
         connections.add(Connection(
