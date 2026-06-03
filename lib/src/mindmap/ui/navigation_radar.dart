@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'mindmap_controller.dart';
 import 'tree_layout.dart';
-import '../service/mindmap_service.dart' show NoteTreeNode;
 
 /// A mini-map radar widget that displays an overview of the mindmap
 /// and allows smooth bi-directional panning by dragging.
@@ -28,10 +27,11 @@ class NavigationRadar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const radarW = 200.0;
-    const radarH = 150.0;
+    // 按原型调整尺寸为 170x120
+    const radarW = 170.0;
+    const radarH = 120.0;
 
-    // Calculate scale factor to adaptively fit all nodes inside the 200x150 radar map box,
+    // Calculate scale factor to adaptively fit all nodes inside the radar map box,
     // with 8px margin/padding on the borders (total 16px).
     final double boundsW = contentBounds.width <= 0 ? 1.0 : contentBounds.width;
     final double boundsH = contentBounds.height <= 0 ? 1.0 : contentBounds.height;
@@ -51,12 +51,19 @@ class NavigationRadar extends StatelessWidget {
       width: radarW,
       height: radarH,
       decoration: BoxDecoration(
-        color: const Color(0xCC1C222B),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1F2A3547), width: 1.0),
+        color: const Color(0xCC14100C),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x1AFFDC8C), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
             // Render the minified mindmap nodes and connections

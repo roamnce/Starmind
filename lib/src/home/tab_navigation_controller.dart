@@ -46,6 +46,30 @@ class TabNavigationController extends ChangeNotifier {
     }
   }
 
+  /// Opens a MindMap in a new tab or switches to it if already open.
+  void openMindMap(String topicId, String title) {
+    if (_rootLayoutNode is LeafNode) {
+      final leaf = _rootLayoutNode as LeafNode;
+      final existingIndex = leaf.tabs.indexWhere((t) => t.id == topicId && t.type == TabType.mindmap);
+
+      if (existingIndex != -1) {
+        _rootLayoutNode = leaf.copyWith(activeIndex: existingIndex);
+      } else {
+        final updatedTabs = List<TabItem>.from(leaf.tabs)
+          ..add(TabItem(
+            id: topicId,
+            type: TabType.mindmap,
+            title: title,
+          ));
+        _rootLayoutNode = leaf.copyWith(
+          tabs: updatedTabs,
+          activeIndex: updatedTabs.length - 1,
+        );
+      }
+      notifyListeners();
+    }
+  }
+
   void closeTab(int index) {
     if (_rootLayoutNode is LeafNode) {
       final leaf = _rootLayoutNode as LeafNode;

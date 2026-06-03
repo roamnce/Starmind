@@ -12,6 +12,7 @@ import 'mindmap_sidebar.dart';
 import 'bottom_action_bar.dart';
 import 'floating_zoom_bar.dart';
 import '../domain/note.dart';
+import '../layout/layout_result.dart';
 import 'info_statistics_modal.dart';
 import 'navigation_radar.dart';
 import '../../home/workspace_controller_provider.dart';
@@ -351,7 +352,23 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     final positions = <String, Offset>{};
     final connections = <Connection>[];
 
-    if (useFrameworkLayout) {
+    // 优先使用新布局引擎的结果
+    final layoutResult = widget.controller.layoutResult;
+
+    if (layoutResult != null && widget.controller.useNewLayoutEngine) {
+      // 新架构：使用 LayoutResult
+      positions.addAll(layoutResult.nodePositions);
+      nodeSizes.addAll(layoutResult.nodeSizes);
+      // NavigationRadar 仍需要 Connection 对象（临时兼容）
+      for (final conn in layoutResult.connections) {
+        connections.add(Connection(
+          fromId: conn.fromId,
+          toId: conn.toId,
+          start: conn.startPoint,
+          end: conn.endPoint,
+        ));
+      }
+    } else if (useFrameworkLayout) {
       // 框架式布局
       final layout = FrameworkLayout();
       for (final root in widget.controller.noteTree) {
@@ -428,17 +445,24 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                       RepaintBoundary(
                         child: CustomPaint(
                           painter: MindMapCanvasPainter(
-                            connections: connections.map((conn) => Connection(
-                              fromId: conn.fromId,
-                              toId: conn.toId,
-                              start: Offset(conn.start.dx + 500, conn.start.dy + 500),
-                              end: Offset(conn.end.dx + 500, conn.end.dy + 500),
-                            )).toList(),
+                            layoutResult: layoutResult != null && widget.controller.useNewLayoutEngine
+                                ? _offsetLayoutResult(layoutResult, 500)
+                                : null,
+                            connections: layoutResult == null || !widget.controller.useNewLayoutEngine
+                                ? connections.map((conn) => Connection(
+                                    fromId: conn.fromId,
+                                    toId: conn.toId,
+                                    start: Offset(conn.start.dx + 500, conn.start.dy + 500),
+                                    end: Offset(conn.end.dx + 500, conn.end.dy + 500),
+                                  )).toList()
+                                : null,
+                            connectionStyle: widget.controller.connectionStyle,
                             lineColor: Theme.of(context).colorScheme.outline,
                             lineWidth: 2,
                             showGrid: widget.controller.showGrid,
                             gridSize: widget.controller.gridSize,
                             gridColor: widget.controller.gridColor,
+                            isRainbowBranch: widget.controller.isRainbowBranch,
                           ),
                           size: Size(bounds.width + 1000, bounds.height + 1000),
                         ),
@@ -612,18 +636,29 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     final canvasBottom = (selectionRect.bottom - ty) / scale;
     final canvasSelectionRect = Rect.fromLTRB(canvasLeft, canvasTop, canvasRight, canvasBottom);
 
-    // Retrieve layouts
-    final layout = TreeLayout(direction: widget.controller.layoutDirection);
-    final positions = <String, Offset>{};
-    for (final root in widget.controller.noteTree) {
-      positions.addAll(layout.calculate(root));
+    // 优先使用新布局引擎的结果
+    final layoutResult = widget.controller.layoutResult;
+    Map<String, Offset> positions;
+    Map<String, Size> nodeSizes;
+
+    if (layoutResult != null && widget.controller.useNewLayoutEngine) {
+      positions = layoutResult.nodePositions;
+      nodeSizes = layoutResult.nodeSizes;
+    } else {
+      // Fallback: 使用 TreeLayout
+      final layout = TreeLayout(direction: widget.controller.layoutDirection);
+      positions = <String, Offset>{};
+      for (final root in widget.controller.noteTree) {
+        positions.addAll(layout.calculate(root));
+      }
+      nodeSizes = layout.nodeSizes;
     }
 
     final selectedIds = <String>{};
     for (final entry in positions.entries) {
       final noteId = entry.key;
       final pos = entry.value;
-      final size = layout.nodeSizes[noteId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+      final size = nodeSizes[noteId] ?? const Size(120, 40);
 
       // Align with stack offsets: A node's bounding box inside the Stack is Rect.fromLTWH(...)
       final nodeBounds = Rect.fromLTWH(
@@ -647,7 +682,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
         widget.controller.selectNote(primaryNote);
         // 居中显示第一个选中的节点
         final primaryPos = positions[primaryId];
-        final primarySize = layout.nodeSizes[primaryId] ?? Size(layout.nodeWidth, layout.nodeHeight);
+        final primarySize = nodeSizes[primaryId] ?? const Size(120, 40);
         if (primaryPos != null) {
           _centerOnNode(primaryId, primaryPos, primarySize);
         }
@@ -770,26 +805,36 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   }
 
   void _fitToScreen(BuildContext context) {
-    // 检测是否有框架式节点
-    final useFrameworkLayout = widget.controller.noteTree.any(
-      (root) => root.note.layoutStyle == 'framework',
-    );
+    // 优先使用新布局引擎的结果
+    final layoutResult = widget.controller.layoutResult;
+    Map<String, Offset> positions;
+    Map<String, Size> nodeSizes;
 
-    final positions = <String, Offset>{};
-    final nodeSizes = <String, Size>{};
-
-    if (useFrameworkLayout) {
-      final layout = FrameworkLayout();
-      for (final root in widget.controller.noteTree) {
-        positions.addAll(layout.calculate(root, Offset.zero));
-      }
-      nodeSizes.addAll(layout.nodeSizes);
+    if (layoutResult != null && widget.controller.useNewLayoutEngine) {
+      positions = layoutResult.nodePositions;
+      nodeSizes = layoutResult.nodeSizes;
     } else {
-      final layout = const TreeLayout();
-      for (final root in widget.controller.noteTree) {
-        positions.addAll(layout.calculate(root));
+      // 检测是否有框架式节点
+      final useFrameworkLayout = widget.controller.noteTree.any(
+        (root) => root.note.layoutStyle == 'framework',
+      );
+
+      positions = <String, Offset>{};
+      nodeSizes = <String, Size>{};
+
+      if (useFrameworkLayout) {
+        final layout = FrameworkLayout();
+        for (final root in widget.controller.noteTree) {
+          positions.addAll(layout.calculate(root, Offset.zero));
+        }
+        nodeSizes.addAll(layout.nodeSizes);
+      } else {
+        final layout = const TreeLayout();
+        for (final root in widget.controller.noteTree) {
+          positions.addAll(layout.calculate(root));
+        }
+        nodeSizes.addAll(layout.nodeSizes);
       }
-      nodeSizes.addAll(layout.nodeSizes);
     }
 
     final bounds = _calculateBounds(positions, nodeSizes);
@@ -1017,6 +1062,31 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
       controller: widget.controller,
       pdfDocs: workspaceCtrl.documents,
       getMindmaps: () => widget.controller.getAllTopics(),
+    );
+  }
+
+  /// 将 LayoutResult 中的坐标偏移（用于 Stack 渲染）
+  LayoutResult _offsetLayoutResult(LayoutResult result, double offset) {
+    final offsetPositions = result.nodePositions.map(
+      (id, pos) => MapEntry(id, Offset(pos.dx + offset, pos.dy + offset)),
+    );
+
+    final offsetConnections = result.connections.map((conn) {
+      return ConnectionData(
+        fromId: conn.fromId,
+        toId: conn.toId,
+        startPoint: Offset(conn.startPoint.dx + offset, conn.startPoint.dy + offset),
+        endPoint: Offset(conn.endPoint.dx + offset, conn.endPoint.dy + offset),
+        fromCenter: Offset(conn.fromCenter.dx + offset, conn.fromCenter.dy + offset),
+        toCenter: Offset(conn.toCenter.dx + offset, conn.toCenter.dy + offset),
+      );
+    }).toList();
+
+    return LayoutResult(
+      nodePositions: offsetPositions,
+      nodeSizes: result.nodeSizes,
+      connections: offsetConnections,
+      contentBounds: result.contentBounds.shift(Offset(offset, offset)),
     );
   }
 }

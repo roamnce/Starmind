@@ -1,6 +1,7 @@
 // lib/src/mindmap/ui/markdown_editor_toolbar.dart
 
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 
 class MarkdownEditorToolbar extends StatelessWidget {
   final TextEditingController textController;
@@ -16,7 +17,7 @@ class MarkdownEditorToolbar extends StatelessWidget {
   void insertMarkdown(String prefix, [String? suffix]) {
     final text = textController.text;
     final selection = textController.selection;
-    
+
     int start = selection.start;
     int end = selection.end;
 
@@ -29,7 +30,7 @@ class MarkdownEditorToolbar extends StatelessWidget {
     final selectedText = text.substring(start, end);
     final realSuffix = suffix ?? '';
     final wrappedText = '$prefix$selectedText$realSuffix';
-    
+
     final newText = text.replaceRange(start, end, wrappedText);
 
     final TextSelection newSelection;
@@ -41,15 +42,9 @@ class MarkdownEditorToolbar extends StatelessWidget {
       );
     } else {
       // If the selection was collapsed, place cursor inside prefix and suffix
-      if (suffix != null && suffix.isNotEmpty) {
-        newSelection = TextSelection.collapsed(
-          offset: start + prefix.length,
-        );
-      } else {
-        newSelection = TextSelection.collapsed(
-          offset: start + prefix.length,
-        );
-      }
+      newSelection = TextSelection.collapsed(
+        offset: start + prefix.length,
+      );
     }
 
     textController.value = TextEditingValue(
@@ -100,7 +95,7 @@ class MarkdownEditorToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF1C222B),
         borderRadius: BorderRadius.circular(8),
@@ -114,180 +109,122 @@ class MarkdownEditorToolbar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _ToolbarButton(
+              _ToolbarTextButton(
+                text: 'H',
                 tooltip: '标题 (###)',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
                 onTap: () => insertMarkdown('### '),
-                child: Text(
-                  'H',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarTextButton(
+                text: 'B',
                 tooltip: '粗体 (**)',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
                 onTap: () => insertMarkdown('**', '**'),
-                child: Text(
-                  'B',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarTextButton(
+                text: 'I',
                 tooltip: '斜体 (*)',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold,
+                ),
                 onTap: () => insertMarkdown('*', '*'),
-                child: Text(
-                  'I',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarTextButton(
+                text: 'S',
                 tooltip: '删除线 (~~)',
-                onTap: () => insertMarkdown('~~', '~~'),
-                child: Text(
-                  'S',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    decoration: TextDecoration.lineThrough,
-                    fontWeight: FontWeight.bold,
-                  ),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 13,
+                  decoration: TextDecoration.lineThrough,
+                  fontWeight: FontWeight.bold,
                 ),
+                onTap: () => insertMarkdown('~~', '~~'),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.link_rounded,
                 tooltip: '超链接 ([]())',
                 onTap: () => insertMarkdown('[', ']()'),
-                child: Icon(
-                  Icons.link_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
               const _VerticalSeparator(),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.format_list_bulleted_rounded,
                 tooltip: '无序列表',
                 onTap: () => insertMarkdown('\n- '),
-                child: Icon(
-                  Icons.format_list_bulleted_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.format_list_numbered_rounded,
                 tooltip: '有序列表',
                 onTap: () => insertMarkdown('\n1. '),
-                child: Icon(
-                  Icons.format_list_numbered_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.check_box_outlined,
                 tooltip: '任务列表',
                 onTap: () => insertMarkdown('\n- [ ] '),
-                child: Icon(
-                  Icons.check_box_outlined,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
               const _VerticalSeparator(),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.send_rounded,
                 tooltip: '引用',
+                angle: -0.5,
                 onTap: () => insertMarkdown('\n> '),
-                child: Transform.rotate(
-                  angle: -0.5,
-                  child: Icon(
-                    Icons.send_rounded,
-                    size: 13,
-                    color: Colors.white.withOpacity(0.8),
-                  ),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.horizontal_rule_rounded,
                 tooltip: '分割线',
                 onTap: () => insertMarkdown('\n---\n'),
-                child: Icon(
-                  Icons.horizontal_rule_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           // Row 2
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.code_rounded,
                 tooltip: '代码块',
                 onTap: () => insertMarkdown('\n```\n', '\n```\n'),
-                child: Icon(
-                  Icons.code_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.terminal_rounded,
                 tooltip: '行内代码',
                 onTap: () => insertMarkdown('`', '`'),
-                child: Icon(
-                  Icons.terminal_rounded,
-                  size: 15,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
               const _VerticalSeparator(),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.cloud_upload_outlined,
                 tooltip: '云端同步',
                 onTap: () {
                   insertMarkdown('![Image](https://)');
                   _showMockToast(context, '图片占位符已插入并同步云端', Icons.cloud_done_outlined);
                 },
-                child: Icon(
-                  Icons.cloud_upload_outlined,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.grid_on_rounded,
                 tooltip: '表格',
                 onTap: () => insertMarkdown('\n| Header | Header |\n| ------ | ------ |\n| Cell   | Cell   |\n'),
-                child: Icon(
-                  Icons.grid_on_rounded,
-                  size: 15,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
               const _VerticalSeparator(),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.undo_rounded,
                 tooltip: '撤销 (Undo)',
                 onTap: () => _showMockToast(context, '撤销成功', Icons.undo_rounded),
-                child: Icon(
-                  Icons.undo_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
-              _ToolbarButton(
+              _ToolbarIconButton(
+                icon: Icons.redo_rounded,
                 tooltip: '重做 (Redo)',
                 onTap: () => _showMockToast(context, '重做成功', Icons.redo_rounded),
-                child: Icon(
-                  Icons.redo_rounded,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
               ),
             ],
           ),
@@ -297,29 +234,23 @@ class MarkdownEditorToolbar extends StatelessWidget {
   }
 }
 
-class _ToolbarButton extends StatefulWidget {
-  final Widget child;
+class _ToolbarTextButton extends StatelessWidget {
+  final String text;
   final String tooltip;
+  final TextStyle style;
   final VoidCallback onTap;
 
-  const _ToolbarButton({
-    required this.child,
+  const _ToolbarTextButton({
+    required this.text,
     required this.tooltip,
+    required this.style,
     required this.onTap,
   });
 
   @override
-  State<_ToolbarButton> createState() => _ToolbarButtonState();
-}
-
-class _ToolbarButtonState extends State<_ToolbarButton> {
-  bool _isHovered = false;
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: widget.tooltip,
+      message: tooltip,
       textStyle: const TextStyle(color: Colors.white, fontSize: 11),
       decoration: BoxDecoration(
         color: const Color(0xFF0C0A07),
@@ -327,33 +258,71 @@ class _ToolbarButtonState extends State<_ToolbarButton> {
         border: Border.all(color: const Color(0x1F2A3547), width: 1),
       ),
       waitDuration: const Duration(milliseconds: 500),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() {
-          _isHovered = false;
-          _isPressed = false;
-        }),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: widget.onTap,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            width: 25,
-            height: 25,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _isPressed
-                  ? const Color(0x25FFFFFF)
-                  : _isHovered
-                      ? const Color(0x10FFFFFF)
-                      : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        width: 25,
+        height: 25,
+        child: FButton(
+          variant: FButtonVariant.ghost,
+          size: FButtonSizeVariant.xs,
+          onPress: onTap,
+          style: const FButtonStyleDelta.delta(
+            contentStyle: FButtonContentStyleDelta.delta(
+              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+              padding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
             ),
-            child: widget.child,
           ),
+          child: Text(text, style: style),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolbarIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final double angle;
+  final VoidCallback onTap;
+
+  const _ToolbarIconButton({
+    required this.icon,
+    required this.tooltip,
+    this.angle = 0.0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = angle != 0.0
+        ? Transform.rotate(
+            angle: angle,
+            child: Icon(icon, size: 14),
+          )
+        : Icon(icon, size: 14);
+
+    return Tooltip(
+      message: tooltip,
+      textStyle: const TextStyle(color: Colors.white, fontSize: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C0A07),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0x1F2A3547), width: 1),
+      ),
+      waitDuration: const Duration(milliseconds: 500),
+      child: SizedBox(
+        width: 25,
+        height: 25,
+        child: FButton.icon(
+          variant: FButtonVariant.ghost,
+          size: FButtonSizeVariant.xs,
+          onPress: onTap,
+          style: const FButtonStyleDelta.delta(
+            iconContentStyle: FButtonIconContentStyleDelta.delta(
+              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+              padding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
+            ),
+          ),
+          child: child,
         ),
       ),
     );

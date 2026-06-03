@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:starmind/src/domain/annotation.dart';
+import 'package:starmind/src/domain/document.dart';
+import 'package:starmind/src/domain/folder.dart';
+import 'package:starmind/src/domain/tag.dart';
 import 'package:starmind/src/domain/ink_stroke.dart';
 import 'package:starmind/src/domain/storage_repository.dart';
 import 'package:starmind/src/pdf/undo_redo_stack.dart';
@@ -29,10 +32,14 @@ class AnnotationController extends ChangeNotifier {
   final UndoRedoStack undoRedoStack;
 
   AnnotationController({
-    required StorageRepository repository,
+    required this._repository,
     required this.documentId,
     required this.undoRedoStack,
-  }) : _repository = repository;
+  });
+
+  /// Null controller for use when no annotation persistence is needed.
+  /// Ignores all operations silently.
+  static final AnnotationController nullController = _NullAnnotationController();
 
   /// Get all annotations for this document.
   List<Annotation> get annotations => _annotations;
@@ -412,6 +419,182 @@ class AnnotationController extends ChangeNotifier {
 
     _rebuildPageIndex();
   }
+}
+
+/// A no-op annotation controller for use when no persistence is needed.
+/// Ignores all operations silently.
+class _NullAnnotationController extends AnnotationController {
+  _NullAnnotationController() : super(
+    repository: _NullStorageRepository(),
+    documentId: '',
+    undoRedoStack: UndoRedoStack(),
+  );
+
+  @override
+  List<Annotation> get annotations => [];
+
+  @override
+  List<Annotation> annotationsForPage(int pageIndex) => [];
+
+  @override
+  bool get canUndo => false;
+
+  @override
+  bool get canRedo => false;
+
+  @override
+  Future<void> loadAnnotations() async {}
+
+  @override
+  Future<void> createHighlight({
+    required int pageIndex,
+    required int startCharIndex,
+    required int endCharIndex,
+    required String selectedText,
+    required List<AnnotationRect> rects,
+    String colorHex = '#FFFF00',
+  }) async {}
+
+  @override
+  Future<void> createUnderline({
+    required int pageIndex,
+    required int startCharIndex,
+    required int endCharIndex,
+    required String selectedText,
+    required List<AnnotationRect> rects,
+    String colorHex = '#FFFF00',
+  }) async {}
+
+  @override
+  Future<void> createWave({
+    required int pageIndex,
+    required int startCharIndex,
+    required int endCharIndex,
+    required String selectedText,
+    required List<AnnotationRect> rects,
+    String colorHex = '#FF0000',
+  }) async {}
+
+  @override
+  Future<void> createStrikeOut({
+    required int pageIndex,
+    required int startCharIndex,
+    required int endCharIndex,
+    required String selectedText,
+    required List<AnnotationRect> rects,
+    String colorHex = '#FF0000',
+  }) async {}
+
+  @override
+  Future<void> createInk({
+    required int pageIndex,
+    required List<InkStroke> strokes,
+    String colorHex = '#000000',
+  }) async {}
+
+  @override
+  Future<void> createNote({
+    required int pageIndex,
+    required String content,
+    required AnnotationRect rect,
+    String colorHex = '#FFFF00',
+  }) async {}
+
+  @override
+  Future<void> deleteAnnotation(String id) async {}
+
+  @override
+  Future<void> updateColor(String annotationId, String newColorHex) async {}
+
+  @override
+  Future<void> updateNoteContent(String annotationId, String newContent) async {}
+
+  @override
+  Future<void> undo() async {}
+
+  @override
+  Future<void> redo() async {}
+
+  @override
+  void clearUndoRedo() {}
+}
+
+/// A no-op storage repository for _NullAnnotationController.
+class _NullStorageRepository implements StorageRepository {
+  @override
+  Future<void> initialize(String dbPath, String sandboxDir) async {}
+
+  @override
+  Future<Folder> getFolderTree() async => Folder(
+    id: '',
+    name: '',
+    children: [],
+    documentCount: 0,
+  );
+
+  @override
+  Future<String> createFolder(String name, String? parentId) async => '';
+
+  @override
+  Future<void> renameFolder(String id, String newName) async {}
+
+  @override
+  Future<void> deleteFolder(String id, {bool cascadeDelete = false}) async {}
+
+  @override
+  Future<Tag> getTagTree() async => Tag(
+    id: '',
+    name: '',
+    children: [],
+    documentCount: 0,
+  );
+
+  @override
+  Future<String> createTag(String name, String? parentId, String? colorHex) async => '';
+
+  @override
+  Future<void> renameTag(String id, String newName) async {}
+
+  @override
+  Future<void> deleteTag(String id) async {}
+
+  @override
+  Future<String> importDocument(String title, String sourcePath, String? folderId) async => '';
+
+  @override
+  Future<void> deleteDocument(String id) async {}
+
+  @override
+  Future<List<Document>> getDocuments({
+    String? folderId,
+    String? tagId,
+    String? searchQuery,
+    String sortBy = 'recent',
+  }) async => [];
+
+  @override
+  Future<void> bindTag(String docId, String tagId) async {}
+
+  @override
+  Future<void> unbindTag(String docId, String tagId) async {}
+
+  @override
+  Future<String> createAnnotation(Annotation annotation) async => '';
+
+  @override
+  Future<List<Annotation>> getAnnotations(String documentId) async => [];
+
+  @override
+  Future<List<Annotation>> getAnnotationsForPage(String documentId, int pageIndex) async => [];
+
+  @override
+  Future<void> updateAnnotationColor(String id, String colorHex) async {}
+
+  @override
+  Future<void> updateAnnotationNoteContent(String id, String content) async {}
+
+  @override
+  Future<void> deleteAnnotation(String id) async {}
 }
 
 // ── Undo/Redo Actions ──

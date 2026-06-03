@@ -80,7 +80,7 @@ void main() {
 
       final headingButton = find.text('H');
       await tester.tap(headingButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(controller.text, equals('Hello ### World'));
       expect(controller.selection.isCollapsed, isTrue);
@@ -113,7 +113,7 @@ void main() {
 
       final boldButton = find.text('B');
       await tester.tap(boldButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(controller.text, equals('Hello **World**'));
       expect(controller.selection.baseOffset, equals(8)); // start of "World" inside **World**
@@ -146,7 +146,7 @@ void main() {
 
       final strikeButton = find.text('S');
       await tester.tap(strikeButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(controller.text, equals('Hello ~~World~~'));
       expect(controller.selection.baseOffset, equals(8));
@@ -179,7 +179,7 @@ void main() {
 
       final linkButton = find.byIcon(Icons.link_rounded);
       await tester.tap(linkButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(controller.text, equals('[Google]()'));
       expect(controller.selection.baseOffset, equals(1));
@@ -212,7 +212,7 @@ void main() {
 
       final taskButton = find.byIcon(Icons.check_box_outlined);
       await tester.tap(taskButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(controller.text, equals('\n- [ ] Write code'));
       expect(controller.selection.isCollapsed, isTrue);

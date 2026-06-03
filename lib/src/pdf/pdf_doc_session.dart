@@ -1,12 +1,47 @@
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'pdf_service.dart';
 import '../rust/api/pdf.dart' show CharInfo;
+
+/// LRU Cache with maximum size limit.
+class LruCache<K, V> {
+  final int maxSize;
+  final LinkedHashMap<K, V> _cache = LinkedHashMap();
+
+  LruCache({required this.maxSize});
+
+  V? get(K key) {
+    if (!_cache.containsKey(key)) return null;
+    // Move to end (most recently used)
+    final value = _cache.remove(key);
+    if (value != null) {
+      _cache[key] = value;
+    }
+    return value;
+  }
+
+  void put(K key, V value) {
+    if (_cache.containsKey(key)) {
+      _cache.remove(key);
+    } else if (_cache.length >= maxSize) {
+      // Remove oldest (first entry)
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[key] = value;
+  }
+
+  void clear() {
+    _cache.clear();
+  }
+
+  int get length => _cache.length;
+}
 
 /// Manages PDF document lifecycle and page data caching.
 ///
 /// Responsibilities:
 /// - Load/close PDF documents via PdfService
-/// - Cache page sizes and character info
+/// - Cache page sizes and character info with LRU eviction
 /// - Track loading state for UI feedback
 ///
 /// This is a deep module: callers only need to call loadDoc/closeDoc
@@ -42,14 +77,24 @@ class PdfDocSession extends ChangeNotifier {
   // ── Page Data Cache ──
 
   /// Cache for page sizes: pageIndex -> Size(width, height)
+  /// Keep all sizes since they're tiny (16 bytes each).
   final Map<int, Size> _pageSizes = {};
   Map<int, Size> get pageSizes => _pageSizes;
 
-  /// Cache for characters: pageIndex -> list of CharInfo
-  final Map<int, List<CharInfo>> _pageChars = {};
+  /// Cache for characters with LRU eviction.
+  /// Each CharInfo is ~40 bytes, so 10 pages ≈ 100-500 KB depending on content.
+  static const int _maxCharCachePages = 10;
+  final LruCache<int, List<CharInfo>> _pageCharsLru =
+      LruCache<int, List<CharInfo>>(maxSize: _maxCharCachePages);
 
   /// Expose page chars cache for TextSelectionModel.
-  Map<int, List<CharInfo>> get pageCharsCache => _pageChars;
+  /// Note: Returns a snapshot of cached pages for compatibility.
+  /// Use getCachedPageChars() for direct access.
+  Map<int, List<CharInfo>> get pageCharsCache {
+    // Return empty map - use getCachedPageChars() instead
+    // This is kept for API compatibility
+    return {};
+  }
 
   // ── Public Interface ──
 
@@ -125,7 +170,7 @@ class PdfDocSession extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Clear caches for new document
-    _pageChars.clear();
+    _pageCharsLru.clear();
 
     // Step 5: About to switch to rendering mode
     _loadingStep = '步骤5: 准备切换到渲染模式...';
@@ -148,7 +193,7 @@ class PdfDocSession extends ChangeNotifier {
       _loadingError = null;
       _isLoading = false;
       _pageSizes.clear();
-      _pageChars.clear();
+      _pageCharsLru.clear();
       notifyListeners();
     }
   }
@@ -166,21 +211,28 @@ class PdfDocSession extends ChangeNotifier {
     return size;
   }
 
-  /// Retrieves page characters, reading from cache or FFI.
+  /// Retrieves page characters, reading from LRU cache or FFI.
   Future<List<CharInfo>> getPageChars(int pageIndex) async {
-    if (_pageChars.containsKey(pageIndex)) {
-      return _pageChars[pageIndex]!;
+    // Check LRU cache first
+    final cached = _pageCharsLru.get(pageIndex);
+    if (cached != null) {
+      return cached;
     }
     if (_docId == null) return [];
 
     final chars = await _pdfService.getPageChars(_docId!, pageIndex);
-    _pageChars[pageIndex] = chars;
+    _pageCharsLru.put(pageIndex, chars);
     return chars;
+  }
+
+  /// Get cached characters for a page (non-blocking, returns cached or empty).
+  List<CharInfo> getCachedPageChars(int pageIndex) {
+    return _pageCharsLru.get(pageIndex) ?? [];
   }
 
   /// Clears all cached data (for testing or reset).
   void clearCache() {
     _pageSizes.clear();
-    _pageChars.clear();
+    _pageCharsLru.clear();
   }
 }

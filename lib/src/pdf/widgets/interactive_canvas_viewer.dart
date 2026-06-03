@@ -1,11 +1,37 @@
 /// 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
 library;
 
-// Adapted for Saber from Flutter's InteractiveViewer class
-// https://github.com/flutter/flutter/blob/stable/packages/flutter/lib/src/widgets/interactive_viewer.dart
-// Using this commit (Flutter 3.35.0):
+// ============================================================================
+// ARCHITECTURE NOTE: Adapted Copy from Flutter SDK
+// ============================================================================
+//
+// This widget is an adapted copy of Flutter's InteractiveViewer class, used
+// in the Saber project and further adapted for Starmind PDF viewer.
+//
+// Source: Flutter SDK InteractiveViewer (commit 1cbf1a4cbf2cd0ba73850e47f4a83dd06a049e82)
 // https://github.com/flutter/flutter/blob/1cbf1a4cbf2cd0ba73850e47f4a83dd06a049e82/packages/flutter/lib/src/widgets/interactive_viewer.dart
-
+//
+// Custom Modifications for Starmind:
+// - Added `isDrawGesture` predicate to distinguish draw vs navigate gestures
+// - Added `onDrawStart`, `onDrawUpdate`, `onDrawEnd` callbacks for ink drawing
+// - Added elastic boundary support via `ElasticBoundary` for extended zoom/pan
+// - Added `onInteractionStart`, `onInteractionUpdate` for gesture lifecycle
+//
+// Why Not Extract Gesture State Machine:
+// - 17 gesture-related fields are tightly coupled to Matrix4 and animation controllers
+// - Flutter SDK updates won't propagate automatically after extraction
+// - Single caller (PdfViewportWidget) limits leverage of extracted module
+// - Flutter's InteractiveViewer is already well-tested
+//
+// Maintenance Strategy:
+// - Periodically sync with Flutter SDK updates (check Flutter releases)
+// - Keep custom modifications clearly marked
+// - Consider upstream contribution if modifications prove useful
+//
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license.
+// ============================================================================
+//
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in Flutter's LICENSE file.

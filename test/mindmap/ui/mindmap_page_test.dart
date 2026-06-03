@@ -37,16 +37,18 @@ void main() {
     });
 
     testWidgets('shows zoom controls', (tester) async {
+      await controller.createNote(title: 'Root Node');
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
           builder: (_, __) => MindMapPage(controller: controller),
         ),
       ));
+      await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.zoom_out), findsOneWidget);
-      expect(find.byIcon(Icons.zoom_in), findsOneWidget);
-      expect(find.byIcon(Icons.fit_screen), findsOneWidget);
+      expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.fit_screen_rounded), findsOneWidget);
     });
 
     testWidgets('shows nodes after creation', (tester) async {
@@ -67,16 +69,18 @@ void main() {
     });
 
     testWidgets('zoom in button increases scale', (tester) async {
+      await controller.createNote(title: 'Root Node');
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
           builder: (_, __) => MindMapPage(controller: controller),
         ),
       ));
+      await tester.pumpAndSettle();
 
       final initialScale = controller.viewportScale;
 
-      await tester.tap(find.byIcon(Icons.zoom_in));
+      await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
 
       expect(controller.viewportScale, greaterThan(initialScale));

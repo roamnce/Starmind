@@ -1,6 +1,3 @@
-/// 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
-library;
-
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
@@ -17,8 +14,8 @@ import '../annotation_controller.dart';
 import '../render_scheduler.dart';
 import '../../domain/annotation.dart';
 import 'interactive_canvas_viewer.dart';
-import 'text_selection_overlay.dart';
-import 'selection_handles_overlay.dart';
+import 'annotation_edit_toolbar.dart';
+import 'selection_ui_listener.dart';
 
 double _getMatrixScale2D(Matrix4 matrix) {
   final double m00 = matrix.entry(0, 0);
@@ -147,27 +144,52 @@ class _PdfViewportWidgetState extends State<PdfViewportWidget> {
           builder: (BuildContext context, Quad viewport) {
             return _PdfPagesContainer(
               controller: widget.controller,
-              viewport: viewport,
               viewportKey: _viewportKey,
               baseScale: baseScale,
               transformationController: _transformationController,
               isInkMode: widget.isInkMode,
+              annotationController: widget.annotationController,
             );
           },
         ),
-        // Selection Handles Overlay
-        if (widget.controller.selection.selectingPageIndex != null &&
-            !widget.controller.selection.isDraggingHandle)
-          ..._buildSelectionHandles(baseScale),
-        // Floating Toolbar (hidden when dragging handles)
-        if (widget.controller.selection.selectingPageIndex != null &&
-            widget.controller.selection.selectionToolbarPosition != null &&
-            !widget.controller.selection.isDraggingHandle)
-          PdfSelectionToolbar(
-            position: widget.controller.selection.selectionToolbarPosition!,
-            onDismiss: () => widget.controller.selection.clearSelection(),
-            onHighlight: (color) => _createHighlight(color),
-            onUnderline: (color) => _createUnderline(color),
+        // Selection UI (handles + toolbar) - uses SelectionUiListener for immediate updates
+        SelectionUiListener(
+          controller: widget.controller,
+          baseScale: baseScale,
+          annotationController: widget.annotationController,
+        ),
+        // Annotation Edit Toolbar (when an annotation is selected)
+        if (widget.controller.selectedAnnotationId != null &&
+            widget.controller.annotationToolbarPosition != null)
+          Builder(
+            builder: (context) {
+              final annotationId = widget.controller.selectedAnnotationId;
+              if (annotationId == null || widget.annotationController == null) {
+                return const SizedBox.shrink();
+              }
+
+              final annotation = widget.annotationController!.annotations.firstWhere(
+                (a) => a.id == annotationId,
+                orElse: () => throw StateError('Annotation not found'),
+              );
+
+              final position = widget.controller.annotationToolbarPosition!;
+              final mediaQuery = MediaQuery.of(context);
+
+              return AnnotationEditToolbar(
+                annotation: annotation,
+                annotationCenter: position,
+                annotationTop: position.dy - 20,
+                annotationBottom: position.dy + 20,
+                screenWidth: mediaQuery.size.width,
+                screenHeight: mediaQuery.size.height,
+                onDelete: () => _deleteAnnotation(annotation),
+                onColorChange: annotation.type != AnnotationType.note
+                    ? () => _showAnnotationColorPicker(annotation)
+                    : null,
+                onClose: () => widget.controller.deselectAnnotation(),
+              );
+            },
           ),
       ],
     );
@@ -195,146 +217,19 @@ class _PdfViewportWidgetState extends State<PdfViewportWidget> {
     );
   }
 
-  /// Build selection handles for the current selection.
-  List<Widget> _buildSelectionHandles(double baseScale) {
-    final pageIndex = widget.controller.selection.selectingPageIndex;
-    if (pageIndex == null) return [];
-
-    final pdfSize = widget.controller.pageSizes[pageIndex];
-    if (pdfSize == null) return [];
-
-    final scale = baseScale * widget.controller.transform.zoom;
-
-    // Get handle positions in PDF coordinates
-    final startPdfPos = widget.controller.selection.getStartHandlePdfPosition(
-      widget.controller.session.getCachedPageChars(pageIndex),
-    );
-    final endPdfPos = widget.controller.selection.getEndHandlePdfPosition(
-      widget.controller.session.getCachedPageChars(pageIndex),
-    );
-    final startLineHeight = widget.controller.selection.getStartHandleLineHeight(
-      widget.controller.session.getCachedPageChars(pageIndex),
-    );
-    final endLineHeight = widget.controller.selection.getEndHandleLineHeight(
-      widget.controller.session.getCachedPageChars(pageIndex),
-    );
-
-    if (startPdfPos == null || endPdfPos == null) return [];
-
-    // Convert to screen coordinates (with pan offset)
-    final panOffset = widget.controller.transform.panOffset;
-
-    Offset pdfToScreen(Offset pdfPos) {
-      // PDF Y is from bottom, screen Y is from top
-      final screenX = pdfPos.dx * scale + panOffset.dx;
-      final screenY = (pdfSize.height - pdfPos.dy) * scale + panOffset.dy;
-      return Offset(screenX, screenY);
-    }
-
-    return [
-      SelectionHandlesOverlay(
-        startHandlePosition: pdfToScreen(startPdfPos),
-        startLineHeight: startLineHeight * scale,
-        endHandlePosition: pdfToScreen(endPdfPos),
-        endLineHeight: endLineHeight * scale,
-        zoom: widget.controller.transform.zoom,
-        onHandleDrag: (handleType, newPosition) {
-          widget.controller.selection.startHandleDrag();
-          // Convert screen position back to PDF and find char
-          final coords = PdfCoordinates(pdfWidth: pdfSize.width, pdfHeight: pdfSize.height);
-          final pdfPos = coords.screenToPdf(newPosition, scale, panOffset);
-          final chars = widget.controller.session.getCachedPageChars(pageIndex);
-          if (chars.isNotEmpty) {
-            final charIndex = widget.controller.selection.findClosestChar(chars, pdfPos);
-            if (charIndex != -1) {
-              if (handleType == SelectionHandleType.start) {
-                widget.controller.selection.updateSelectionStart(charIndex);
-              } else {
-                widget.controller.selection.updateSelectionEnd(charIndex);
-              }
-            }
-          }
-        },
-        onDragEnd: () {
-          // Recalculate toolbar position
-          final selectionRects = widget.controller.selection.getSelectionRects(pageIndex, widget.controller.session.getCachedPageChars(pageIndex));
-          if (selectionRects.isNotEmpty) {
-            final toolbarPos = widget.controller.selection.calculateToolbarPosition(
-              selectionRects,
-              scale,
-              panOffset,
-            );
-            widget.controller.selection.endHandleDrag(toolbarPos);
-          }
-        },
-      ),
-    ];
-  }
-
-  /// Create a highlight annotation.
-  Future<void> _createHighlight(Color color) async {
+  /// Delete an annotation.
+  Future<void> _deleteAnnotation(Annotation annotation) async {
     final annotationController = widget.annotationController;
     if (annotationController == null) return;
 
-    final pageIndex = widget.controller.selection.selectingPageIndex;
-    final startChar = widget.controller.selection.selectionStartCharIndex;
-    final endChar = widget.controller.selection.selectionEndCharIndex;
-    if (pageIndex == null || startChar == null || endChar == null) return;
-
-    final selectedText = widget.controller.selection.getSelectedText(widget.controller.session.getCachedPageChars(pageIndex));
-    final rects = widget.controller.selection.getSelectionRects(pageIndex, widget.controller.session.getCachedPageChars(pageIndex));
-
-    await annotationController.createHighlight(
-      pageIndex: pageIndex,
-      startCharIndex: startChar,
-      endCharIndex: endChar,
-      selectedText: selectedText,
-      rects: rects.map((r) => AnnotationRect(
-        left: r.left,
-        top: r.top,
-        right: r.right,
-        bottom: r.bottom,
-      )).toList(),
-      colorHex: _colorToHex(color),
-    );
-
-    widget.controller.selection.clearSelection();
+    await annotationController.deleteAnnotation(annotation.id);
+    widget.controller.deselectAnnotation();
   }
 
-  /// Create an underline annotation.
-  Future<void> _createUnderline(Color color) async {
-    final annotationController = widget.annotationController;
-    if (annotationController == null) return;
-
-    final pageIndex = widget.controller.selection.selectingPageIndex;
-    final startChar = widget.controller.selection.selectionStartCharIndex;
-    final endChar = widget.controller.selection.selectionEndCharIndex;
-    if (pageIndex == null || startChar == null || endChar == null) return;
-
-    final selectedText = widget.controller.selection.getSelectedText(widget.controller.session.getCachedPageChars(pageIndex));
-    final rects = widget.controller.selection.getSelectionRects(pageIndex, widget.controller.session.getCachedPageChars(pageIndex));
-
-    await annotationController.createUnderline(
-      pageIndex: pageIndex,
-      startCharIndex: startChar,
-      endCharIndex: endChar,
-      selectedText: selectedText,
-      rects: rects.map((r) => AnnotationRect(
-        left: r.left,
-        top: r.top,
-        right: r.right,
-        bottom: r.bottom,
-      )).toList(),
-      colorHex: _colorToHex(color),
-    );
-
-    widget.controller.selection.clearSelection();
-  }
-
-  /// Convert Color to hex string.
-  String _colorToHex(Color color) {
-    final argb = color.toARGB32();
-    return '#${(argb & 0x00FFFFFF).toRadixString(16).toUpperCase().padLeft(6, '0')}';
+  /// Show color picker for annotation.
+  void _showAnnotationColorPicker(Annotation annotation) {
+    // For now, just close the toolbar. Full color picker can be added later.
+    widget.controller.deselectAnnotation();
   }
 }
 
@@ -344,19 +239,19 @@ class _PdfViewportWidgetState extends State<PdfViewportWidget> {
 /// only rendering pages within the viewport + buffer.
 class _PdfPagesContainer extends StatefulWidget {
   final PdfViewportController controller;
-  final Quad viewport;
   final GlobalKey viewportKey;
   final double baseScale;
   final TransformationController transformationController;
   final bool isInkMode;
+  final AnnotationController? annotationController;
 
   const _PdfPagesContainer({
     required this.controller,
-    required this.viewport,
     required this.viewportKey,
     required this.baseScale,
     required this.transformationController,
     required this.isInkMode,
+    this.annotationController,
   });
 
   @override
@@ -451,11 +346,11 @@ class _PdfPagesContainerState extends State<_PdfPagesContainer> {
         key: ValueKey('page-$i'),
         pageIndex: i,
         controller: widget.controller,
-        viewport: widget.viewport,
         viewportWidth: viewportWidth,
         viewportKey: widget.viewportKey,
         transformationController: widget.transformationController,
         isInkMode: widget.isInkMode,
+        annotationController: widget.annotationController,
       ));
     }
 
@@ -505,9 +400,9 @@ class PdfPageWidget extends StatefulWidget {
   final PdfViewportController controller;
   final GlobalKey? viewportKey;
   final double viewportWidth;
-  final Quad? viewport;
   final TransformationController? transformationController;
   final bool isInkMode;
+  final AnnotationController? annotationController;
 
   const PdfPageWidget({
     super.key,
@@ -515,16 +410,16 @@ class PdfPageWidget extends StatefulWidget {
     required this.controller,
     this.viewportKey,
     required this.viewportWidth,
-    this.viewport,
     this.transformationController,
     this.isInkMode = false,
+    this.annotationController,
   });
 
   @override
   State<PdfPageWidget> createState() => _PdfPageWidgetState();
 }
 
-class _PdfPageWidgetState extends State<PdfPageWidget> {
+class _PdfPageWidgetState extends State<PdfPageWidget> with SingleTickerProviderStateMixin {
   Size? _pdfSize;
   ui.Image? _lowResImage;
   ui.Image? _highResTile;
@@ -533,20 +428,54 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   Timer? _highResDebounceTimer;
   bool _isSelecting = false;
   bool _disposed = false;
+  double _lastZoom = 1.0;
+
+  // Fade-in animation for smooth loading experience
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  bool _lowResLoaded = false;
 
   // Use singleton RenderScheduler
   static final RenderScheduler _renderScheduler = RenderScheduler();
 
+  // Annotation controller reference for tap detection
+  AnnotationController? _annotationController;
+
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    widget.transformationController?.addListener(_onTransformChanged);
+    _annotationController = widget.annotationController;
     _initPage();
+  }
+
+  Future<void> _initPage() async {
+    // Load page size immediately (fast, cached)
+    final size = await widget.controller.session.getPageSize(widget.pageIndex);
+    if (!mounted || _disposed) return;
+
+    setState(() {
+      _pdfSize = size;
+    });
+
+    // Start low-res render immediately
+    _loadLowResImage();
   }
 
   @override
   void dispose() {
     _disposed = true;
+    widget.transformationController?.removeListener(_onTransformChanged);
     _highResDebounceTimer?.cancel();
+    _fadeController.dispose();
 
     // Cancel any pending render tasks for this page
     _renderScheduler.cancelPage(widget.pageIndex);
@@ -563,33 +492,47 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   @override
   void didUpdateWidget(PdfPageWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Trigger high-res update when viewport changes
-    if (oldWidget.viewport != widget.viewport) {
-      _onViewportChanged();
+    // Update transform listener if controller changed
+    if (oldWidget.transformationController != widget.transformationController) {
+      oldWidget.transformationController?.removeListener(_onTransformChanged);
+      widget.transformationController?.addListener(_onTransformChanged);
     }
   }
 
-  Future<void> _initPage() async {
-    // Load page size immediately (fast, cached)
-    final size = await widget.controller.session.getPageSize(widget.pageIndex);
-    if (!mounted || _disposed) return;
+  void _onTransformChanged() {
+    final zoom = widget.transformationController != null
+        ? _getMatrixScale2D(widget.transformationController!.value)
+        : 1.0;
 
-    setState(() {
-      _pdfSize = size;
-    });
-
-    // Start low-res render immediately
-    _loadLowResImage();
-  }
-
-  // Called by parent when viewport changes (via didUpdateWidget)
-  void _onViewportChanged() {
-    _highResDebounceTimer?.cancel();
-    _highResDebounceTimer = Timer(const Duration(milliseconds: 150), () {
-      if (!_disposed && mounted) {
-        _loadHighResTile();
+    // Trigger high-res render on any zoom change (lower threshold for better responsiveness)
+    if ((zoom - _lastZoom).abs() > 0.05) {
+      _lastZoom = zoom;
+      _highResDebounceTimer?.cancel();
+      // Shorter debounce for faster response
+      _highResDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+        if (!_disposed && mounted) {
+          _loadHighResTile();
+        }
+      });
+    } else if (_highResRect != null) {
+      // Also check if the visible rect has shifted significantly
+      final visibleRect = _getVisibleRect();
+      if (visibleRect != null && _highResRect != null) {
+        // If the visible rect has moved more than 20% of its size from the high-res rect center, re-render
+        final highResCenter = Offset(
+          (_highResRect!.left + _highResRect!.right) / 2,
+          (_highResRect!.top + _highResRect!.bottom) / 2,
+        );
+        final visibleCenter = Offset(
+          (visibleRect.left + visibleRect.right) / 2,
+          (visibleRect.top + visibleRect.bottom) / 2,
+        );
+        final threshold = min(visibleRect.width, visibleRect.height) * 0.2;
+        if ((highResCenter - visibleCenter).distance > threshold) {
+          _loadHighResTile();
+        }
       }
-    });
+    }
   }
 
   Future<void> _loadLowResImage() async {
@@ -602,14 +545,23 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
       final double pdfWidth = _pdfSize!.width;
       final double pdfHeight = _pdfSize!.height;
 
+      // Higher resolution for better quality (similar to GoodNotes/MarginNote)
       final dpr = MediaQuery.of(context).devicePixelRatio;
-      final targetWidth = (600 * dpr).round();
-      final targetHeight = (600 * dpr * (pdfHeight / pdfWidth)).round();
+      final zoom = widget.transformationController != null
+          ? _getMatrixScale2D(widget.transformationController!.value)
+          : 1.0;
+
+      // Base resolution scales with zoom for clarity
+      // Use higher base for sharper text on modern displays
+      final baseResolution = 1500.0; // Higher base for sharper text
+      final effectiveZoom = zoom.clamp(1.0, 4.0); // Cap at 4x for memory
+      final targetWidth = (baseResolution * dpr * effectiveZoom).round().clamp(1000, 3500);
+      final targetHeight = (targetWidth * (pdfHeight / pdfWidth)).round();
 
       final coords = PdfCoordinates(pdfWidth: pdfWidth, pdfHeight: pdfHeight);
       final fullPage = coords.fullPagePdfRect;
 
-      // Use RenderScheduler with high priority (priority = 0 = highest)
+      // Use RenderScheduler with high priority
       final img = await _renderScheduler.scheduleRender(
         pageIndex: widget.pageIndex,
         priority: widget.pageIndex.toDouble(), // Lower page index = higher priority
@@ -638,7 +590,10 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
       if (mounted && !_disposed) {
         setState(() {
           _lowResImage = img;
+          _lowResLoaded = true;
         });
+        // Trigger fade-in animation
+        _fadeController.forward();
       } else {
         img.dispose();
       }
@@ -671,27 +626,48 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
     final double pdfHeight = _pdfSize!.height;
     final baseScale = widget.viewportWidth / pdfWidth;
 
-    final double expandX = 100.0 / zoom;
-    final double expandY = 150.0 / zoom;
+    // Expand the visible rect to cover more area for smoother panning
+    // Use percentage-based buffer for better coverage at all zoom levels
+    final bufferRatio = 0.15; // 15% buffer on each side
+    final bufferX = visibleRect.width * bufferRatio;
+    final bufferY = visibleRect.height * bufferRatio;
+
     final expandedVisibleRect = Rect.fromLTRB(
-      max(0.0, visibleRect.left - expandX),
-      max(0.0, visibleRect.top - expandY),
-      min(pdfWidth * baseScale, visibleRect.right + expandX),
-      min(pdfHeight * baseScale, visibleRect.bottom + expandY),
+      max(0.0, visibleRect.left - bufferX),
+      max(0.0, visibleRect.top - bufferY),
+      min(pdfWidth * baseScale, visibleRect.right + bufferX),
+      min(pdfHeight * baseScale, visibleRect.bottom + bufferY),
     );
 
+    // Skip if we already have a good tile (relaxed threshold)
+    // But also check if the tile center has drifted too far from visible center
     if (_highResRect != null &&
         _highResTile != null &&
         _highResZoom != null &&
-        (_highResZoom! - zoom).abs() < 0.01 &&
-        _highResRect!.containsRect(visibleRect)) {
-      return;
+        (_highResZoom! - zoom).abs() < 0.05) {
+      // Check if visible rect is still well-covered by the existing tile
+      final tileCenter = Offset(
+        (_highResRect!.left + _highResRect!.right) / 2,
+        (_highResRect!.top + _highResRect!.bottom) / 2,
+      );
+      final visibleCenter = Offset(
+        (visibleRect.left + visibleRect.right) / 2,
+        (visibleRect.top + visibleRect.bottom) / 2,
+      );
+
+      // If the tile covers the visible rect and centers haven't drifted too much, skip
+      final centerDrift = (tileCenter - visibleCenter).distance;
+      final maxDrift = min(visibleRect.width, visibleRect.height) * 0.1;
+
+      if (_highResRect!.containsRect(visibleRect) && centerDrift < maxDrift) {
+        return;
+      }
     }
 
     // Use RenderScheduler to limit concurrent renders
     final image = await _renderScheduler.scheduleRender(
       pageIndex: widget.pageIndex,
-      priority: widget.pageIndex.toDouble() + 1000.0, // High-res has lower priority
+      priority: widget.pageIndex.toDouble() + 500.0, // Medium priority for high-res
       render: () async {
         final docId = widget.controller.docId!;
 
@@ -702,22 +678,25 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
         final coords = PdfCoordinates(pdfWidth: pdfWidth, pdfHeight: pdfHeight);
         final pdfRect = coords.flutterToPdf(expandedVisibleRect, baseScale);
 
-        final dpr = mounted ? MediaQuery.of(context).devicePixelRatio : 2.0;
+        final dpr = MediaQuery.of(context).devicePixelRatio;
 
-        // Scale down multiplier at high zoom factors to optimize performance
-        double scaleMultiplier = 1.3;
-        if (zoom > 10.0) {
-          scaleMultiplier = 0.8;
-        } else if (zoom > 5.0) {
-          scaleMultiplier = 1.0;
+        // High DPI rendering for sharpness (like GoodNotes/MarginNote)
+        // Use higher scale multiplier for clearer text
+        double scaleMultiplier = 2.5; // Base high DPI
+        if (zoom > 2.0) {
+          scaleMultiplier = 3.0;
+        } else if (zoom > 4.0) {
+          scaleMultiplier = 3.5;
+        } else if (zoom > 6.0) {
+          scaleMultiplier = 4.0;
         }
 
         final renderScale = zoom * dpr * scaleMultiplier;
         double targetWidthDouble = expandedVisibleRect.width * renderScale;
         double targetHeightDouble = expandedVisibleRect.height * renderScale;
 
-        // Cap tile dimensions to a maximum of 2048px
-        const double maxDimension = 2048.0;
+        // Cap tile dimensions to a maximum of 2560px for better quality
+        const double maxDimension = 2560.0;
         if (targetWidthDouble > maxDimension || targetHeightDouble > maxDimension) {
           final double ratio = maxDimension / max(targetWidthDouble, targetHeightDouble);
           targetWidthDouble *= ratio;
@@ -803,9 +782,24 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
   @override
   Widget build(BuildContext context) {
     if (_pdfSize == null) {
-      return const SizedBox(
-        height: 400,
-        child: Center(child: CircularProgressIndicator()),
+      // Placeholder with estimated size to avoid layout jumps
+      return Container(
+        width: widget.viewportWidth,
+        height: 400, // Estimated placeholder height
+        margin: const EdgeInsets.symmetric(vertical: PdfPageWidget.pageVerticalMargin),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: SizedBox.shrink(), // No spinner, just blank placeholder
+        ),
       );
     }
 
@@ -842,20 +836,24 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
       onLongPressEnd: (details) {
         // Calculate toolbar position based on selection
         if (selectionRects.isNotEmpty) {
-          final toolbarPos = widget.controller.selection.calculateToolbarPosition(
-            selectionRects,
-            scale,
-            Offset.zero,
-          );
+          // Convert to screen coordinates
+          final screenRects = selectionRects.map((r) => coords.pdfToFlutter(r, scale)).toList();
+          final topRect = screenRects.reduce((a, b) => a.top < b.top ? a : b);
+          final centerX = screenRects.fold<double>(0, (sum, r) => sum + (r.left + r.right) / 2) / screenRects.length;
+          final toolbarPos = Offset(centerX, topRect.top - 48);
           widget.controller.selection.endSelection(toolbarPos);
         }
         setState(() {
           _isSelecting = false;
         });
       },
+      onTapUp: (details) {
+        // Check if tapped on an annotation
+        _checkAnnotationTap(details.localPosition, scale, coords, logicalWidth, logicalHeight);
+      },
       child: Stack(
         children: [
-          // PDF Content Layer
+          // PDF Content Layer with smooth fade-in
           Container(
             width: logicalWidth,
             height: logicalHeight,
@@ -870,19 +868,36 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
                 ),
               ],
             ),
-            child: CustomPaint(
-              painter: PdfPagePainter(
-                lowResImage: _lowResImage,
-                highResTile: _highResTile,
-                highResRect: _highResRect,
-                highlights: widget.controller.highlights.where((h) => h.pageIndex == widget.pageIndex).toList(),
-                selectionRects: selectionRects,
-                pdfWidth: pdfWidth,
-                pdfHeight: pdfHeight,
-                scale: scale,
-                isSelecting: _isSelecting,
-              ),
-            ),
+            child: _lowResLoaded
+                ? FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: CustomPaint(
+                      painter: PdfPagePainter(
+                        lowResImage: _lowResImage,
+                        highResTile: _highResTile,
+                        highResRect: _highResRect,
+                        highlights: widget.controller.highlights.where((h) => h.pageIndex == widget.pageIndex).toList(),
+                        selectionRects: selectionRects,
+                        pdfWidth: pdfWidth,
+                        pdfHeight: pdfHeight,
+                        scale: scale,
+                        isSelecting: _isSelecting,
+                      ),
+                    ),
+                  )
+                : CustomPaint(
+                    painter: PdfPagePainter(
+                      lowResImage: _lowResImage,
+                      highResTile: _highResTile,
+                      highResRect: _highResRect,
+                      highlights: widget.controller.highlights.where((h) => h.pageIndex == widget.pageIndex).toList(),
+                      selectionRects: selectionRects,
+                      pdfWidth: pdfWidth,
+                      pdfHeight: pdfHeight,
+                      scale: scale,
+                      isSelecting: _isSelecting,
+                    ),
+                  ),
           ),
           // Selection Area Overlay (separate layer for performance)
           if (isSelectingThisPage && selectionRects.isNotEmpty)
@@ -905,6 +920,66 @@ class _PdfPageWidgetState extends State<PdfPageWidget> {
         ],
       ),
     );
+  }
+
+  /// Check if tap hit an annotation and show edit toolbar.
+  void _checkAnnotationTap(
+    Offset localPosition,
+    double scale,
+    PdfCoordinates coords,
+    double logicalWidth,
+    double logicalHeight,
+  ) {
+    if (_annotationController == null) return;
+
+    // Get annotations for this page
+    final annotations = _annotationController!.annotationsForPage(widget.pageIndex);
+
+    // Convert tap position to PDF coordinates
+    final pdfPoint = coords.flutterToPdfPoint(localPosition, scale);
+
+    // Find annotation that contains the tap point
+    for (final annotation in annotations) {
+      if (annotation.type == AnnotationType.highlight ||
+          annotation.type == AnnotationType.underline ||
+          annotation.type == AnnotationType.wave) {
+        // Check if tap is within any of the annotation's rects
+        final rects = annotation.rects;
+        if (rects == null) continue;
+
+        for (final rect in rects) {
+          final pdfRect = Rect.fromLTRB(rect.left, rect.top, rect.right, rect.bottom);
+          // Normalize the rect (PDF coordinates have top > bottom)
+          final normalizedRect = Rect.fromLTRB(
+            pdfRect.left,
+            max(pdfRect.top, pdfRect.bottom),
+            pdfRect.right,
+            min(pdfRect.top, pdfRect.bottom),
+          );
+
+          if (pdfPoint.dx >= normalizedRect.left &&
+              pdfPoint.dx <= normalizedRect.right &&
+              pdfPoint.dy >= normalizedRect.bottom &&
+              pdfPoint.dy <= normalizedRect.top) {
+            // Found annotation, calculate toolbar position and show edit toolbar
+            final screenRect = coords.pdfToFlutter(pdfRect, scale);
+            final panOffset = widget.controller.transform.panOffset;
+            final toolbarCenter = Offset(
+              (screenRect.left + screenRect.right) / 2 + panOffset.dx,
+              screenRect.top + panOffset.dy,
+            );
+
+            widget.controller.selectAnnotation(annotation.id, toolbarCenter);
+            return;
+          }
+        }
+      }
+    }
+
+    // No annotation hit, deselect if any selected
+    if (widget.controller.selectedAnnotationId != null) {
+      widget.controller.deselectAnnotation();
+    }
   }
 }
 
@@ -942,7 +1017,8 @@ class PdfPagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..filterQuality = ui.FilterQuality.medium;
+    // Use high quality filtering for sharper rendering
+    final paint = Paint()..filterQuality = ui.FilterQuality.high;
 
     if (lowResImage != null) {
       canvas.drawImageRect(
@@ -954,11 +1030,13 @@ class PdfPagePainter extends CustomPainter {
     }
 
     if (highResTile != null && highResRect != null) {
+      // Use the same high-quality paint for tile rendering
+      final tilePaint = Paint()..filterQuality = ui.FilterQuality.high;
       canvas.drawImageRect(
         highResTile!,
         Rect.fromLTWH(0, 0, highResTile!.width.toDouble(), highResTile!.height.toDouble()),
         highResRect!,
-        paint,
+        tilePaint,
       );
     }
 

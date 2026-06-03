@@ -1,0 +1,6 @@
+- [x] Task 1: Basic App Shell & Top Tab Bar
+- [x] Task 2: Top Action Toolbar & Path Breadcrumbs
+- [x] Task 3: Canvas Workspace Setup & Floating Orbs
+- [x] Task 4: Mind Map Nodes & CSS Layout
+- [x] Task 5: Connection Lines (SVG & JS Rendering)
+- [x] Task 6: Interactive Features & Left/Bottom Toolbars

@@ -2,14 +2,20 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Floating toolbar that appears above selected text.
+/// Floating toolbar that appears above/below selected text.
 ///
-/// Contains:
-/// - "Highlight" and "Underline" actions.
-/// - 4 customizable preset colors (long-press to customize).
-/// - Palette button to select custom colors from a popover.
+/// Features:
+/// - Dynamic arrow direction (points to selected text)
+/// - "Highlight" and "Underline" actions
+/// - 4 customizable preset colors (long-press to customize)
+/// - Palette button to select custom colors from a popover
+/// - No close button (tap outside to dismiss)
 class PdfSelectionToolbar extends StatefulWidget {
-  final Offset position;
+  final Offset selectionCenter;
+  final double selectionTop;
+  final double selectionBottom;
+  final double screenWidth;
+  final double screenHeight;
   final VoidCallback onDismiss;
   final ValueChanged<Color> onHighlight;
   final ValueChanged<Color> onUnderline;
@@ -17,7 +23,11 @@ class PdfSelectionToolbar extends StatefulWidget {
 
   const PdfSelectionToolbar({
     super.key,
-    required this.position,
+    required this.selectionCenter,
+    required this.selectionTop,
+    required this.selectionBottom,
+    required this.screenWidth,
+    required this.screenHeight,
     required this.onDismiss,
     required this.onHighlight,
     required this.onUnderline,
@@ -40,6 +50,9 @@ class _PdfSelectionToolbarState extends State<PdfSelectionToolbar> with SingleTi
   ];
   Color _activeColor = const Color(0xFFFFD60A);
 
+  // Arrow direction: true means arrow on top (menu below text), false means arrow on bottom (menu above text)
+  bool _arrowOnTop = false;
+
   @override
   void initState() {
     super.initState();
@@ -53,12 +66,90 @@ class _PdfSelectionToolbarState extends State<PdfSelectionToolbar> with SingleTi
     );
     _animController.forward();
     _loadPresetColors();
+    _calculatePosition();
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
+  void _calculatePosition() {
+    // Toolbar dimensions
+    const toolbarHeight = 52.0;
+    const arrowHeight = 8.0;
+
+    // Calculate available space above and below selection
+    final safeTopMargin = 60.0;
+    final safeBottomMargin = 40.0;
+
+    // Use actual selection positions (not clamped) to determine direction
+    // This ensures the toolbar appears on the correct side of the selection
+    final spaceAbove = widget.selectionTop - safeTopMargin;
+    final spaceBelow = widget.screenHeight - widget.selectionBottom - safeBottomMargin;
+    final spaceNeededAbove = toolbarHeight + arrowHeight;
+    final spaceNeededBelow = toolbarHeight + arrowHeight;
+
+    // Decide arrow direction based on available space
+    // Prefer showing toolbar above selection (more natural for reading)
+    // Only show below if there's not enough space above
+    if (spaceAbove >= spaceNeededAbove) {
+      _arrowOnTop = false; // Toolbar above, arrow points down
+    } else if (spaceBelow >= spaceNeededBelow) {
+      _arrowOnTop = true; // Toolbar below, arrow points up
+    } else {
+      // Not enough space on either side, choose the side with more space
+      _arrowOnTop = spaceBelow > spaceAbove;
+    }
+  }
+
+  Offset _getToolbarPosition() {
+    const toolbarWidth = 360.0;
+    const toolbarHeight = 52.0;
+    const arrowHeight = 8.0;
+    const safeTopMargin = 60.0;
+    const safeBottomMargin = 40.0;
+
+    // Calculate horizontal position (center on selection)
+    double centerX = widget.selectionCenter.dx - toolbarWidth / 2;
+    centerX = centerX.clamp(8.0, widget.screenWidth - toolbarWidth - 8.0);
+
+    // Calculate vertical position based on arrow direction
+    double toolbarY;
+    if (_arrowOnTop) {
+      // Toolbar below selection, arrow on top pointing up to text
+      toolbarY = widget.selectionBottom + arrowHeight;
+    } else {
+      // Toolbar above selection, arrow on bottom pointing down to text
+      toolbarY = widget.selectionTop - toolbarHeight - arrowHeight;
+    }
+
+    // Final clamp to ensure toolbar stays within screen bounds
+    // But prioritize being close to the selection
+    toolbarY = toolbarY.clamp(safeTopMargin, widget.screenHeight - toolbarHeight - safeBottomMargin);
+
+    return Offset(centerX, toolbarY);
+  }
+
+  Offset _getArrowPosition() {
+    final toolbarPos = _getToolbarPosition();
+    const toolbarWidth = 360.0;
+    const arrowHeight = 8.0;
+    const toolbarHeight = 52.0;
+
+    // Arrow should point to selection center horizontally
+    double arrowX = widget.selectionCenter.dx;
+    // Clamp arrow to be within toolbar bounds
+    final minX = toolbarPos.dx + 20;
+    final maxX = toolbarPos.dx + toolbarWidth - 20;
+    arrowX = arrowX.clamp(minX, maxX);
+
+    // Arrow Y position: on the side of toolbar that faces the selection
+    double arrowY;
+    if (_arrowOnTop) {
+      // Arrow on top of toolbar, pointing up to selection above
+      arrowY = toolbarPos.dy - arrowHeight;
+    } else {
+      // Arrow on bottom of toolbar, pointing down to selection below
+      arrowY = toolbarPos.dy + toolbarHeight;
+    }
+
+    return Offset(arrowX, arrowY);
   }
 
   Future<void> _loadPresetColors() async {
@@ -105,10 +196,8 @@ class _PdfSelectionToolbarState extends State<PdfSelectionToolbar> with SingleTi
               _activeColor = color;
             });
             _savePresetColors();
-            // Automatically apply the changed color to the highlight
             widget.onHighlight(color);
           } else {
-            // Apply custom highlight directly
             widget.onHighlight(color);
           }
         },
@@ -133,20 +222,20 @@ class _PdfSelectionToolbarState extends State<PdfSelectionToolbar> with SingleTi
         _showColorPickerPopover(context, details.globalPosition, index);
       },
       child: Container(
-        width: 26,
-        height: 26,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.symmetric(horizontal: 3),
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-            width: isSelected ? 2.5 : 1.0,
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+            width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: isSelected ? 6 : 3,
+              color: color.withValues(alpha: 0.4),
+              blurRadius: isSelected ? 4 : 2,
               spreadRadius: isSelected ? 1 : 0,
             ),
           ],
@@ -158,150 +247,183 @@ class _PdfSelectionToolbarState extends State<PdfSelectionToolbar> with SingleTi
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final toolbarPos = _getToolbarPosition();
+    final arrowPos = _getArrowPosition();
 
-    return Positioned(
-      left: widget.position.dx - 180, // Offset to center the toolbar
-      top: widget.position.dy - 55,  // Position slightly above the target point
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Material(
-          type: MaterialType.transparency,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF161520).withOpacity(0.85) : Colors.white.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
-                    width: 1.0,
+    return Stack(
+      children: [
+        // Arrow pointing to selection
+        Positioned(
+          left: arrowPos.dx - 10,
+          top: arrowPos.dy,
+          child: CustomPaint(
+            size: const Size(20, 8),
+            painter: _ArrowPainter(
+              color: isDark ? const Color(0xFF161520).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
+              arrowOnTop: _arrowOnTop,
+            ),
+          ),
+        ),
+        // Main toolbar
+        Positioned(
+          left: toolbarPos.dx,
+          top: toolbarPos.dy,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Material(
+              type: MaterialType.transparency,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF161520).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
+                        width: 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Highlight Action - icon only
+                        _CompactToolButton(
+                          icon: Icons.border_color_rounded,
+                          color: _activeColor,
+                          onPressed: () => widget.onHighlight(_activeColor),
+                        ),
+
+                        const SizedBox(width: 4),
+
+                        // Underline Action - icon only
+                        _CompactToolButton(
+                          icon: Icons.format_underlined_rounded,
+                          color: _activeColor,
+                          onPressed: () => widget.onUnderline(_activeColor),
+                        ),
+
+                        const SizedBox(width: 4),
+                        Container(
+                          height: 16,
+                          width: 1.0,
+                          color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12),
+                        ),
+                        const SizedBox(width: 4),
+
+                        // 4 Preset Colors
+                        ...List.generate(4, (index) => _buildPresetColorButton(context, index)),
+
+                        const SizedBox(width: 4),
+
+                        // Palette / Color Picker Button
+                        GestureDetector(
+                          onTapDown: (details) {
+                            _showColorPickerPopover(context, details.globalPosition, null);
+                          },
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.palette_outlined,
+                              size: 14,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Highlight Action
-                    Tooltip(
-                      message: '高亮',
-                      child: TextButton.icon(
-                        onPressed: () => widget.onHighlight(_activeColor),
-                        style: TextButton.styleFrom(
-                          foregroundColor: _activeColor,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: const Icon(Icons.border_color_rounded, size: 16),
-                        label: const Text(
-                          '高亮',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 4),
-
-                    // Underline Action
-                    Tooltip(
-                      message: '下划线',
-                      child: TextButton.icon(
-                        onPressed: () => widget.onUnderline(_activeColor),
-                        style: TextButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white : Colors.black87,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: Icon(Icons.format_underlined_rounded, size: 16, color: _activeColor),
-                        label: Text(
-                          '下划线',
-                          style: TextStyle(
-                            fontSize: 12, 
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 6),
-                    Container(
-                      height: 18,
-                      width: 1.0,
-                      color: isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.12),
-                    ),
-                    const SizedBox(width: 6),
-
-                    // 4 Preset Colors
-                    ...List.generate(4, (index) => _buildPresetColorButton(context, index)),
-
-                    const SizedBox(width: 4),
-
-                    // Palette / Color Picker Button
-                    GestureDetector(
-                      onTapDown: (details) {
-                        _showColorPickerPopover(context, details.globalPosition, null);
-                      },
-                      child: Tooltip(
-                        message: '调色板',
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.palette_outlined,
-                            size: 16,
-                            color: isDark ? Colors.white70 : Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Close Button
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: isDark ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.5),
-                        size: 18,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: widget.onDismiss,
-                      splashRadius: 16,
-                    ),
-                  ],
                 ),
               ),
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Compact tool button with icon only.
+class _CompactToolButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _CompactToolButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
 }
 
+/// Arrow painter for the toolbar.
+class _ArrowPainter extends CustomPainter {
+  final Color color;
+  final bool arrowOnTop;
 
+  _ArrowPainter({
+    required this.color,
+    required this.arrowOnTop,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    if (arrowOnTop) {
+      // Arrow pointing up (triangle with tip at top)
+      path.moveTo(0, size.height);
+      path.lineTo(size.width / 2, 0);
+      path.lineTo(size.width, size.height);
+      path.close();
+    } else {
+      // Arrow pointing down (triangle with tip at bottom)
+      path.moveTo(0, 0);
+      path.lineTo(size.width / 2, size.height);
+      path.lineTo(size.width, 0);
+      path.close();
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArrowPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.arrowOnTop != arrowOnTop;
+  }
+}
 
 class _ColorPickerPopoverOverlay extends StatelessWidget {
   final Offset position;
@@ -369,15 +491,15 @@ class _ColorPickerPopoverOverlay extends StatelessWidget {
                   width: popoverWidth,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E2E).withOpacity(0.9) : Colors.white.withOpacity(0.9),
+                    color: isDark ? const Color(0xFF1E1E2E).withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
                       width: 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -412,12 +534,12 @@ class _ColorPickerPopoverOverlay extends StatelessWidget {
                                 border: Border.all(
                                   color: isSelected
                                       ? (isDark ? Colors.white : Colors.black87)
-                                      : Colors.white.withOpacity(0.8),
+                                      : Colors.white.withValues(alpha: 0.8),
                                   width: isSelected ? 2.5 : 1.0,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: color.withOpacity(0.25),
+                                    color: color.withValues(alpha: 0.25),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),

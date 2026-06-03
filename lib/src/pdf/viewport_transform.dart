@@ -133,6 +133,47 @@ class ViewportTransform extends ChangeNotifier {
     _panOffset = Offset(state.panOffsetX, state.panOffsetY);
     notifyListeners();
   }
+
+  /// Constrain viewport boundaries to keep PDF visible within viewport.
+  /// No-op if free pan mode is enabled.
+  ///
+  /// This is the only coordination logic that belongs in ViewportTransform:
+  /// it operates purely on viewport state, not on document state.
+  void constrainBounds({
+    required Size pdfSize,
+    required Size viewportSize,
+    bool freePanEnabled = false,
+  }) {
+    if (freePanEnabled || pdfSize.isEmpty || viewportSize.isEmpty) return;
+
+    final baseScale = viewportSize.width / pdfSize.width;
+    final pdfDisplayWidth = pdfSize.width * baseScale * _zoom;
+    final pdfDisplayHeight = pdfSize.height * baseScale * _zoom;
+
+    double minX;
+    double maxX;
+    if (pdfDisplayWidth < viewportSize.width) {
+      minX = (viewportSize.width - pdfDisplayWidth) / 2;
+      maxX = minX;
+    } else {
+      minX = viewportSize.width - pdfDisplayWidth;
+      maxX = 0.0;
+    }
+
+    double minY;
+    double maxY;
+    if (pdfDisplayHeight < viewportSize.height) {
+      minY = (viewportSize.height - pdfDisplayHeight) / 2;
+      maxY = minY;
+    } else {
+      minY = viewportSize.height - pdfDisplayHeight;
+      maxY = 0.0;
+    }
+
+    final targetX = _panOffset.dx.clamp(minX, maxX);
+    final targetY = _panOffset.dy.clamp(minY, maxY);
+    setPanOffset(Offset(targetX, targetY));
+  }
 }
 
 /// Viewport state for persistence.

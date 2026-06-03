@@ -1,7 +1,6 @@
 /// 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
 library;
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:starmind/src/domain/annotation.dart';
 import 'package:starmind/src/domain/ink_stroke.dart';

@@ -179,6 +179,7 @@ class WorkspaceController extends ChangeNotifier {
   Future<void> unbindTag(String docId, String tagId) => documentQuery.unbindTag(docId, tagId);
 
   void openDocument(Document doc) => tabs.openDocument(doc);
+  void openMindMap(String topicId, String title) => tabs.openMindMap(topicId, title);
   void closeTab(int index) => tabs.closeTab(index);
   void closeTabById(String docId) => tabs.closeTabById(docId);
   void selectTab(int index) => tabs.selectTab(index);

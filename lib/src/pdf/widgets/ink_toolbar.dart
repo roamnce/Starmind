@@ -55,12 +55,15 @@ extension PenTypeInkToolConversion on PenType {
   }
 }
 
-/// Toolbar for ink/handwriting annotation tools.
+/// Compact toolbar for ink/handwriting annotation tools.
 ///
 /// Provides:
 /// - Tool selection (pen, highlighter, eraser)
 /// - Color picker
 /// - Stroke width slider
+/// - Palm rejection toggle
+///
+/// Uses Forui components for a modern, compact UI.
 class InkToolbar extends StatefulWidget {
   final InkTool currentTool;
   final String currentColor;
@@ -87,7 +90,10 @@ class InkToolbar extends StatefulWidget {
   State<InkToolbar> createState() => _InkToolbarState();
 }
 
-class _InkToolbarState extends State<InkToolbar> {
+class _InkToolbarState extends State<InkToolbar> with SingleTickerProviderStateMixin {
+  late AnimationController _expandController;
+  bool _isColorExpanded = false;
+  bool _isWidthExpanded = false;
 
   /// Preset colors for ink.
   static const List<String> presetColors = [
@@ -100,14 +106,34 @@ class _InkToolbarState extends State<InkToolbar> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
+
+  @override
+  void dispose() {
+    _expandController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        color: isDark ? const Color(0xFF1E1E2E).withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -122,179 +148,93 @@ class _InkToolbarState extends State<InkToolbar> {
           // Main toolbar row
           Row(
             children: [
-              // Tool buttons
-              _ToolButton(
-                icon: Icons.edit,
+              // Tool buttons group
+              _CompactToolButton(
+                icon: Icons.edit_rounded,
                 isSelected: widget.currentTool == InkTool.pen,
                 tooltip: '画笔',
                 onTap: () => widget.onToolChanged(InkTool.pen),
               ),
-              _ToolButton(
-                icon: Icons.highlight,
+              _CompactToolButton(
+                icon: Icons.highlight_rounded,
                 isSelected: widget.currentTool == InkTool.highlighter,
                 tooltip: '荧光笔',
                 onTap: () => widget.onToolChanged(InkTool.highlighter),
               ),
-              _ToolButton(
-                icon: Icons.cleaning_services,
+              _CompactToolButton(
+                icon: Icons.cleaning_services_rounded,
                 isSelected: widget.currentTool == InkTool.eraser,
                 tooltip: '橡皮擦',
                 onTap: () => widget.onToolChanged(InkTool.eraser),
               ),
 
-              const SizedBox(width: 8),
-              Container(
-                width: 1,
-                height: 32,
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              const SizedBox(width: 8),
+              _VerticalDivider(),
 
-              // Color button
-              _ColorButton(
-                colorHex: widget.currentTool == InkTool.eraser
-                    ? '#FFFFFF'
-                    : widget.currentColor,
-                onTap: widget.currentTool != InkTool.eraser
-                    ? () => _showColorPickerDialog()
-                    : null,
-              ),
-
-              const SizedBox(width: 8),
-
-              // Stroke width button
-              _WidthButton(
-                strokeWidth: widget.strokeWidth,
-                onTap: widget.currentTool != InkTool.eraser
-                    ? () => _showWidthSliderDialog()
-                    : null,
-              ),
-
-              const SizedBox(width: 8),
-              Container(
-                width: 1,
-                height: 32,
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              const SizedBox(width: 8),
-
-              // Palm rejection toggle
-              IconButton(
-                icon: Icon(
-                  widget.palmRejectionEnabled
-                      ? Icons.touch_app
-                      : Icons.do_not_touch,
-                  size: 20,
+              // Color button (compact)
+              if (widget.currentTool != InkTool.eraser)
+                _CompactColorButton(
+                  colorHex: widget.currentColor,
+                  onTap: () => setState(() => _isColorExpanded = !_isColorExpanded),
                 ),
-                color: widget.palmRejectionEnabled
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                onPressed: () => widget.onPalmRejectionChanged(!widget.palmRejectionEnabled),
+
+              // Width button (compact)
+              if (widget.currentTool != InkTool.eraser)
+                _CompactWidthButton(
+                  strokeWidth: widget.strokeWidth,
+                  onTap: () => setState(() => _isWidthExpanded = !_isWidthExpanded),
+                ),
+
+              _VerticalDivider(),
+
+              // Palm rejection toggle (compact)
+              _CompactIconButton(
+                icon: widget.palmRejectionEnabled
+                    ? Icons.touch_app_rounded
+                    : Icons.do_not_touch_rounded,
                 tooltip: widget.palmRejectionEnabled ? '防误触开启' : '防误触关闭',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                isActive: widget.palmRejectionEnabled,
+                onTap: () => widget.onPalmRejectionChanged(!widget.palmRejectionEnabled),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
 
-  void _showColorPickerDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择颜色'),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: presetColors.map((colorHex) {
-            final isSelected = colorHex == widget.currentColor;
-            final color = _parseColorHex(colorHex);
-
-            return GestureDetector(
-              onTap: () {
-                widget.onColorChanged(colorHex);
-                Navigator.of(context).pop();
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: isSelected
-                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 3)
-                      : null,
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check,
-                        color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                        size: 20,
-                      )
-                    : null,
+          // Expanded color picker
+          if (_isColorExpanded && widget.currentTool != InkTool.eraser)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _CompactColorPicker(
+                colors: presetColors,
+                selectedColor: widget.currentColor,
+                onColorSelected: (colorHex) {
+                  widget.onColorChanged(colorHex);
+                  setState(() => _isColorExpanded = false);
+                },
               ),
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showWidthSliderDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('笔触粗细'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Slider(
-              value: widget.strokeWidth,
-              min: 1.0,
-              max: 20.0,
-              divisions: 19,
-              onChanged: (value) {
-                widget.onStrokeWidthChanged(value);
-              },
             ),
-            Text('当前: ${widget.strokeWidth.toStringAsFixed(1)}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('确定'),
-          ),
+
+          // Expanded width slider
+          if (_isWidthExpanded && widget.currentTool != InkTool.eraser)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _CompactWidthSlider(
+                strokeWidth: widget.strokeWidth,
+                onChanged: widget.onStrokeWidthChanged,
+              ),
+            ),
         ],
       ),
     );
-  }
-
-  Color _parseColorHex(String hex) {
-    final buffer = StringBuffer();
-    if (hex.length == 7) buffer.write('ff');
-    buffer.write(hex.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
   }
 }
 
-/// Tool selection button.
-class _ToolButton extends StatelessWidget {
+/// Compact tool selection button.
+class _CompactToolButton extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final String tooltip;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
-  const _ToolButton({
+  const _CompactToolButton({
     required this.icon,
     required this.isSelected,
     required this.tooltip,
@@ -303,23 +243,29 @@ class _ToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
-      color: isSelected ? theme.colorScheme.primaryContainer : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 36,
-          height: 36,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.1))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
           child: Icon(
             icon,
-            size: 20,
+            size: 18,
             color: isSelected
-                ? theme.colorScheme.onPrimaryContainer
-                : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ? (isDark ? Colors.white : Colors.black87)
+                : (isDark ? Colors.white54 : Colors.black45),
           ),
         ),
       ),
@@ -327,39 +273,60 @@ class _ToolButton extends StatelessWidget {
   }
 }
 
-/// Color selection button.
-class _ColorButton extends StatelessWidget {
-  final String colorHex;
-  final VoidCallback? onTap;
+/// Compact icon button.
+class _CompactIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool isActive;
+  final VoidCallback onTap;
 
-  const _ColorButton({
-    required this.colorHex,
+  const _CompactIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.isActive,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = _parseColorHex(colorHex);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 4,
-            ),
-          ],
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: isActive
+                ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.1))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: isActive
+                ? (isDark ? Colors.white : Colors.black87)
+                : (isDark ? Colors.white54 : Colors.black45),
+          ),
         ),
       ),
     );
   }
+}
+
+/// Compact color button.
+class _CompactColorButton extends StatelessWidget {
+  final String colorHex;
+  final VoidCallback onTap;
+
+  const _CompactColorButton({
+    required this.colorHex,
+    required this.onTap,
+  });
 
   Color _parseColorHex(String hex) {
     final buffer = StringBuffer();
@@ -367,42 +334,194 @@ class _ColorButton extends StatelessWidget {
     buffer.write(hex.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _parseColorHex(colorHex);
+
+    return Tooltip(
+      message: '颜色',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 28,
+          height: 28,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-/// Stroke width button.
-class _WidthButton extends StatelessWidget {
+/// Compact width button.
+class _CompactWidthButton extends StatelessWidget {
   final double strokeWidth;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
-  const _WidthButton({
+  const _CompactWidthButton({
     required this.strokeWidth,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Container(
-            width: strokeWidth.clamp(2.0, 16.0),
-            height: strokeWidth.clamp(2.0, 16.0),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurface,
-              shape: BoxShape.circle,
+    return Tooltip(
+      message: '粗细: ${strokeWidth.toStringAsFixed(1)}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Container(
+              width: strokeWidth.clamp(3.0, 12.0),
+              height: strokeWidth.clamp(3.0, 12.0),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white70 : Colors.black54,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Compact color picker row.
+class _CompactColorPicker extends StatelessWidget {
+  final List<String> colors;
+  final String selectedColor;
+  final ValueChanged<String> onColorSelected;
+
+  const _CompactColorPicker({
+    required this.colors,
+    required this.selectedColor,
+    required this.onColorSelected,
+  });
+
+  Color _parseColorHex(String hex) {
+    final buffer = StringBuffer();
+    if (hex.length == 7) buffer.write('ff');
+    buffer.write(hex.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: colors.map((colorHex) {
+        final color = _parseColorHex(colorHex);
+        final isSelected = colorHex == selectedColor;
+
+        return GestureDetector(
+          onTap: () => onColorSelected(colorHex),
+          child: Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: isSelected
+                  ? Border.all(color: Colors.white, width: 2)
+                  : Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+            child: isSelected
+                ? Icon(
+                    Icons.check,
+                    size: 14,
+                    color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                  )
+                : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// Compact width slider.
+class _CompactWidthSlider extends StatelessWidget {
+  final double strokeWidth;
+  final ValueChanged<double> onChanged;
+
+  const _CompactWidthSlider({
+    required this.strokeWidth,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.edit_rounded,
+          size: 14,
+          color: isDark ? Colors.white54 : Colors.black45,
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 120,
+          child: Slider(
+            value: strokeWidth,
+            min: 1.0,
+            max: 20.0,
+            divisions: 19,
+            onChanged: onChanged,
+          ),
+        ),
+        Text(
+          strokeWidth.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Vertical divider for toolbar sections.
+class _VerticalDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: 1,
+      height: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12),
     );
   }
 }

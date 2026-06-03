@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>亮色思维导图卡片布局复刻</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --main-border: #a6d8fc;
+      --header-bg: #bfe3fc;
+      --header-text: #2c5282;
+      --node-parent-border: #cbd5e1;
+      --node-parent-text: #475569;
+      --teal-bg: #9ad3df;
+      --teal-border: #74b9c7;
+      --teal-text: #1e4d58;
+      --green-bg: #cfead4;
+      --green-border: #a2d3ab;
+      --green-text: #2d5a37;
+      --orange-bg: #fde3c3;
+      --orange-border: #e9be8a;
+      --orange-text: #613e15;
+      
+      --nested-border: #e2e8f0;
+      --nested-bg: #f8fafc;
+      --nested-card-bg: #ffffff;
+      --nested-text: #475569;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+      background-color: #f3f7fa;
+      color: #334155;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    /* 装饰背景元素 */
+    .bg-decorator {
+      position: fixed;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(191,227,252,0.4) 0%, rgba(243,247,250,0) 70%);
+      filter: blur(50px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .bg-dec-1 { top: -100px; left: -100px; }
+    .bg-dec-2 { bottom: -100px; right: -100px; }
+
+    .viewport {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .canvas {
+      position: relative;
+      padding: 60px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* SVG 连线画布 */
+    .connector-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 主卡片容器 */
+    .main-card {
+      position: relative;
+      z-index: 10;
+      background: #ffffff;
+      border: 1.5px solid var(--main-border);
+      border-radius: 14px;
+      width: 480px;
+      box-shadow: 0 20px 50px rgba(166, 216, 252, 0.25), 0 4px 12px rgba(166, 216, 252, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .main-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 25px 60px rgba(166, 216, 252, 0.35), 0 6px 16px rgba(166, 216, 252, 0.15);
+    }
+
+    /* 卡片顶部标题 */
+    .card-header {
+      background-color: var(--header-bg);
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--header-text);
+      letter-spacing: 0.5px;
+      border-bottom: 1.5px dashed var(--main-border);
+      user-select: none;
+    }
+
+    .card-body {
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* 分支结构 1 */
+    .section-branch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      width: 100%;
+      min-height: 160px;
+    }
+
+    .parent-wrapper {
+      display: flex;
+      align-items: center;
+      width: 32%;
+      z-index: 5;
+    }
+
+    /* 节点卡片基础样式 */
+    .node-card {
+      background: #ffffff;
+      border-radius: 12px;
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .node-card:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    
+    .node-card:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* 父节点 */
+    .node-parent {
+      border: 1.5px solid var(--node-parent-border);
+      border-radius: 20px; /* 截图里是扁圆角/胶囊形 */
+      padding: 8px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--node-parent-text);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+      display: inline-block;
+      text-align: center;
+      width: 100%;
+    }
+
+    .anchor-out {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translate(50%, -50%);
+      width: 6px;
+      height: 6px;
+      background: var(--main-border);
+      border-radius: 50%;
+      z-index: 10;
+      border: 1px solid #ffffff;
+    }
+
+    .children-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 52%;
+      z-index: 5;
+    }
+
+    /* 子节点卡片 */
+    .node-child {
+      width: 100%;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .anchor-in {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      z-index: 10;
+      border: 1px solid #ffffff;
+    }
+
+    .child-teal {
+      background-color: var(--teal-bg);
+      border: 1.5px solid var(--teal-border);
+      color: var(--teal-text);
+    }
+    .child-teal .anchor-in { background-color: var(--teal-border); }
+    .child-teal .card-divider { border-bottom: 1.2px dashed rgba(30, 77, 88, 0.2); }
+
+    .child-green {
+      background-color: var(--green-bg);
+      border: 1.5px solid var(--green-border);
+      color: var(--green-text);
+    }
+    .child-green .anchor-in { background-color: var(--green-border); }
+    .child-green .card-divider { border-bottom: 1.2px dashed rgba(45, 90, 55, 0.2); }
+
+    .child-orange {
+      background-color: var(--orange-bg);
+      border: 1.5px solid var(--orange-border);
+      color: var(--orange-text);
+    }
+    .child-orange .anchor-in { background-color: var(--orange-border); }
+    .child-orange .card-divider { border-bottom: 1.2px dashed rgba(97, 62, 21, 0.2); }
+
+    .card-divider {
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    .card-text {
+      font-size: 12.5px;
+      font-weight: 500;
+      min-height: 15px;
+      letter-spacing: 0.2px;
+    }
+
+    /* 分支结构 2 (底部的嵌套卡片组) */
+    .section-nested {
+      width: 100%;
+      z-index: 5;
+    }
+
+    .nested-container {
+      background-color: var(--nested-bg);
+      border: 1.5px solid var(--nested-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+    }
+
+    .nested-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+      user-select: none;
+    }
+
+    .nested-body {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nested-card {
+      flex: 1;
+      background-color: var(--nested-card-bg);
+      border: 1.2px solid var(--nested-border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .nested-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+      border-color: #cbd5e1;
+    }
+
+    .nested-card .card-text {
+      color: var(--nested-text);
+      font-size: 12px;
+    }
+
+    .nested-card .card-divider {
+      border-bottom: 1.2px dashed #e2e8f0;
+      margin: 6px 0;
+    }
+
+    /* 炫酷的控制台浮窗，用来演示交互 */
+    .control-panel {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(166, 216, 252, 0.4);
+      padding: 12px 18px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #4a5568;
+    }
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #48bb78;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-decorator bg-dec-1"></div>
+  <div class="bg-decorator bg-dec-2"></div>
+
+  <div class="viewport">
+    <div class="canvas" id="canvas">
+      <!-- SVG 连线画布 -->
+      <svg class="connector-canvas" id="connectorSvg"></svg>
+      
+      <!-- 主导图卡片 -->
+      <div class="main-card" id="mainCard">
+        <!-- 标题栏 -->
+        <div class="card-header">时间</div>
+        
+        <div class="card-body">
+          <!-- 顶部树形分支结构 -->
+          <div class="section-branch">
+            <div class="parent-wrapper">
+              <div class="node-card node-parent" id="nodeParent">
+                <span class="card-text">卡片</span>
+                <div class="anchor-out" id="parentOut"></div>
+              </div>
+            </div>
+            
+            <div class="children-column">
+              <!-- 子节点 1: Teal -->
+              <div class="node-card node-child child-teal" id="childTeal">
+                <div class="anchor-in"></div>
+                <div class="card-text">卡片</div>
+                <div class="card-divider"></div>
+                <div class="card-text">&nbsp;</div>
+              </div>
+              
+              <!-- 子节点 2: Green -->
+              <div class="node-card node-child child-green" id="childGreen">
+                <div class="anchor-in"></div>
+                <div class="card-text">卡片</div>
+                <div class="card-divider"></div>
+                <div class="card-text">&nbsp;</div>
+              </div>
+              
+              <!-- 子节点 3: Orange -->
+              <div class="node-card node-child child-orange" id="childOrange">
+                <div class="anchor-in"></div>
+                <div class="card-text">卡片</div>
+                <div class="card-divider"></div>
+                <div class="card-text">&nbsp;</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 底部嵌套卡片结构 -->
+          <div class="section-nested">
+            <div class="nested-container">
+              <div class="nested-header">卡片</div>
+              <div class="nested-body">
+                <!-- 嵌套子卡片 1 -->
+                <div class="nested-card">
+                  <div class="card-text">卡片</div>
+                  <div class="card-divider"></div>
+                  <div class="card-text">&nbsp;</div>
+                </div>
+                
+                <!-- 嵌套子卡片 2 -->
+                <div class="nested-card">
+                  <div class="card-text">卡片</div>
+                  <div class="card-divider"></div>
+                  <div class="card-text">&nbsp;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 交互面板 -->
+  <div class="control-panel">
+    <div class="control-title">状态面板</div>
+    <div class="control-item">
+      <div class="indicator"></div>
+      <span>SVG 连线: 动态渲染中</span>
+    </div>
+    <div class="control-item" style="color: #718096; font-size: 11px;">
+      <span>提示：拖动浏览器窗口，连线会自动重算</span>
+    </div>
+  </div>
+
+  <script>
+    const svg = document.getElementById('connectorSvg');
+    const canvas = document.getElementById('canvas');
+    const parentOut = document.getElementById('parentOut');
+    const children = [
+      document.getElementById('childTeal'),
+      document.getElementById('childGreen'),
+      document.getElementById('childOrange')
+    ];
+
+    function drawLines() {
+      // 清空旧连线
+      svg.innerHTML = '';
+      
+      // 获取 SVG 画布坐标基础
+      const svgRect = svg.getBoundingClientRect();
+      
+      // 获取父卡片输出锚点坐标
+      const startRect = parentOut.getBoundingClientRect();
+      const startX = startRect.left + startRect.width / 2 - svgRect.left;
+      const startY = startRect.top + startRect.height / 2 - svgRect.top;
+
+      // 遍历所有子卡片并计算连线
+      children.forEach((child, index) => {
+        const anchorIn = child.querySelector('.anchor-in');
+        if (!anchorIn) return;
+        
+        const endRect = anchorIn.getBoundingClientRect();
+        const endX = endRect.left + endRect.width / 2 - svgRect.left;
+        const endY = endRect.top + endRect.height / 2 - svgRect.top;
+
+        // 计算贝塞尔曲线控制点，使线条产生平滑的 S 弯折
+        const dx = Math.abs(endX - startX) * 0.45;
+        const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+        
+        // 创建 SVG 路径元素
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', '#a6d8fc');
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('fill', 'none');
+        
+        // 添加一个平滑绘制的动画样式
+        path.style.strokeDasharray = '1000';
+        path.style.strokeDashoffset = '1000';
+        path.style.animation = 'drawPath 1s ease-out forwards';
+        
+        svg.appendChild(path);
+      });
+    }
+
+    // 动态绘制动画效果
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes drawPath {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 在页面完全加载和窗口大小时重画连线
+    window.addEventListener('load', drawLines);
+    window.addEventListener('resize', drawLines);
+
+    // 增加节点点击高亮效果
+    document.querySelectorAll('.node-card, .nested-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // 清除所有卡片的高亮
+        document.querySelectorAll('.node-card, .nested-card').forEach(c => {
+          c.style.boxShadow = '';
+          if (!c.classList.contains('child-teal') && 
+              !c.classList.contains('child-green') && 
+              !c.classList.contains('child-orange')) {
+            c.style.borderColor = '';
+          }
+        });
+        
+        // 高亮当前点击的卡片
+        e.stopPropagation();
+        card.style.boxShadow = '0 0 12px rgba(166, 216, 252, 0.6)';
+        if (!card.classList.contains('child-teal') && 
+            !card.classList.contains('child-green') && 
+            !card.classList.contains('child-orange')) {
+          card.style.borderColor = '#1862c6';
+        }
+      });
+    });
+
+    // 点击空白处清除高亮
+    document.body.addEventListener('click', () => {
+      document.querySelectorAll('.node-card, .nested-card').forEach(c => {
+        c.style.boxShadow = '';
+        if (!c.classList.contains('child-teal') && 
+            !c.classList.contains('child-green') && 
+            !c.classList.contains('child-orange')) {
+          c.style.borderColor = '';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

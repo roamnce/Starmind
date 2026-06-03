@@ -104,8 +104,8 @@ class AnnotationHitDetector {
 
   /// Convert screen position to PDF coordinates.
   Offset _screenToPdf(Offset screenPos, int pageIndex, Size pdfSize) {
-    final zoom = viewportController.zoom;
-    final panOffset = viewportController.panOffset;
+    final zoom = viewportController.transform.zoom;
+    final panOffset = viewportController.transform.panOffset;
 
     final pdfX = (screenPos.dx - panOffset.dx * zoom) / zoom;
     final pdfY = pdfSize.height - (screenPos.dy - panOffset.dy * zoom) / zoom;

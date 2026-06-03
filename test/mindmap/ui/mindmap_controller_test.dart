@@ -142,10 +142,10 @@ void main() {
 
       test('toggleSidebar expands and collapses correctly', () {
         expect(controller.isSidebarExpanded, isFalse);
-        
-        controller.toggleSidebar(SidebarTab.style);
+
+        controller.toggleSidebar(SidebarTab.theme);
         expect(controller.isSidebarExpanded, isTrue);
-        expect(controller.activeSidebarTab, equals(SidebarTab.style));
+        expect(controller.activeSidebarTab, equals(SidebarTab.theme));
 
         // Toggling a different tab keeps it expanded but changes tab
         controller.toggleSidebar(SidebarTab.note);

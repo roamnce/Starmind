@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>暗色思维导图卡片布局复刻</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0c0e12;
+      --grid-color: rgba(255, 255, 255, 0.02);
+      --card-bg: #171a21;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --root-badge-bg: #354556;
+      --root-badge-border: rgba(255, 255, 255, 0.12);
+      
+      --red-badge-bg: #f65656;
+      --red-partition-bg: rgba(246, 86, 86, 0.03);
+      --red-partition-border: rgba(246, 86, 86, 0.2);
+      
+      --blue-badge-bg: #707df4;
+      --blue-partition-bg: rgba(112, 125, 244, 0.03);
+      --blue-partition-border: rgba(112, 125, 244, 0.2);
+      
+      --node-dark-bg: #0c0d10;
+      --node-dark-border: #2c303b;
+      --node-pill-border: #202228;
+      
+      --text-main: #eceff4;
+      --text-sub: #abb2bf;
+      --text-muted: #636875;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    /* 模拟思维导图的网格背景 */
+    .viewport {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* 装饰用发光球体 */
+    .glow-orb {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(112, 125, 244, 0.05) 0%, rgba(12, 14, 18, 0) 70%);
+      filter: blur(80px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .glow-1 { top: -150px; left: -100px; }
+    .glow-2 { bottom: -150px; right: -100px; }
+
+    .canvas {
+      position: relative;
+      padding: 80px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* SVG 连线画布 */
+    .connector-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 主导图大框架 */
+    .main-card {
+      position: relative;
+      z-index: 10;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 32px 24px 24px 24px;
+      width: 620px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      margin-top: 10px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .main-card:hover {
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 30px rgba(112, 125, 244, 0.05);
+    }
+
+    /* 顶部悬挂根节点 */
+    .root-badge {
+      position: absolute;
+      left: 20px;
+      top: -16px;
+      background: var(--root-badge-bg);
+      border: 1px solid var(--root-badge-border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+      user-select: none;
+    }
+
+    /* 核心布局体 */
+    .card-body {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    /* 主题分区 */
+    .partition {
+      flex: 1;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .partition-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .partition-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .badge-red {
+      background-color: var(--red-badge-bg);
+      color: #ffffff;
+    }
+
+    .badge-blue {
+      background-color: var(--blue-badge-bg);
+      color: #ffffff;
+    }
+
+    .badge-blue .icon {
+      font-size: 11px;
+    }
+
+    .partition-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .partition-red {
+      background: var(--red-partition-bg);
+      border: 1px solid var(--red-partition-border);
+    }
+
+    .partition-blue {
+      background: var(--blue-partition-bg);
+      border: 1px solid var(--blue-partition-border);
+    }
+
+    /* 分支组 */
+    .branch-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+    }
+
+    /* 黑卡片节点 */
+    .node-card {
+      background-color: var(--node-dark-bg);
+      border: 1.2px solid var(--node-dark-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      align-self: flex-start;
+      min-width: 104px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      user-select: none;
+    }
+
+    .node-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .node-card:active {
+      transform: translateY(0);
+    }
+
+    /* 连线定位锚点 */
+    .anchor-out {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translate(50%, -50%);
+      width: 5px;
+      height: 5px;
+      background-color: rgba(246, 86, 86, 0.8);
+      border-radius: 50%;
+      z-index: 10;
+      border: 1px solid var(--node-dark-bg);
+    }
+
+    .anchor-in {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 5px;
+      height: 5px;
+      background-color: rgba(246, 86, 86, 0.8);
+      border-radius: 50%;
+      z-index: 10;
+      border: 1px solid var(--node-dark-bg);
+    }
+
+    /* 收起展开按钮 */
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    /* 子级药丸容器 */
+    .sub-nodes-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-left: 20px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+      max-height: 200px;
+    }
+
+    .sub-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* 黑色药丸子节点 */
+    .node-pill {
+      background-color: var(--node-dark-bg);
+      border: 1px solid var(--node-pill-border);
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--text-sub);
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      user-select: none;
+    }
+
+    .node-pill:hover {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    /* 折叠状态的样式变化 */
+    .collapsed .sub-nodes-container {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding-left: 0;
+      margin-top: 0;
+      pointer-events: none;
+    }
+    
+    .collapsed.partition {
+      background: rgba(255,255,255,0.01);
+      border-color: var(--card-border);
+    }
+
+    .collapsed .partition-content {
+      display: none !important;
+    }
+
+    /* 演示用控制看板 */
+    .control-panel {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(23, 26, 33, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 18px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #707df4;
+      box-shadow: 0 0 8px #707df4;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb glow-1"></div>
+  <div class="glow-orb glow-2"></div>
+
+  <div class="viewport">
+    <div class="canvas">
+      <!-- SVG 连线画布 -->
+      <svg class="connector-canvas" id="connectorSvg"></svg>
+      
+      <!-- 主框架卡片 -->
+      <div class="main-card">
+        <!-- 悬挂根节点 -->
+        <div class="root-badge" id="rootBadge">
+          <span class="badge-text">AI配音</span>
+          <button class="toggle-btn" onclick="toggleParentCollapse(this)">−</button>
+        </div>
+        
+        <div class="card-body" id="cardBody">
+          <!-- 左分区（红色主题） -->
+          <div class="partition partition-red" id="partRed">
+            <div class="partition-header">
+              <span class="partition-badge badge-red">常用平台</span>
+              <button class="toggle-btn" onclick="togglePartition(this, 'partRed')">−</button>
+            </div>
+            
+            <div class="partition-content">
+              <!-- 国内平台分支 -->
+              <div class="branch-group" id="groupDomestic">
+                <div class="node-card node-dark" id="nodeDomestic">
+                  <span class="node-text">国内平台</span>
+                  <button class="toggle-btn" onclick="toggleBranch(this, 'groupDomestic')">−</button>
+                  <div class="anchor-out" id="domOut"></div>
+                </div>
+                
+                <div class="sub-nodes-container">
+                  <!-- minimax 与 千问 并排 -->
+                  <div class="sub-row">
+                    <div class="node-pill" id="pillMinimax">
+                      <div class="anchor-in"></div>
+                      minimax
+                    </div>
+                    <div class="node-pill" id="pillQianwen">
+                      <div class="anchor-in"></div>
+                      千问
+                    </div>
+                  </div>
+                  <!-- 豆包 单独一行 -->
+                  <div class="sub-row">
+                    <div class="node-pill" id="pillDoubao">
+                      <div class="anchor-in"></div>
+                      豆包
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 国外平台节点 -->
+              <div class="branch-group">
+                <div class="node-card node-dark">
+                  <span class="node-text">国外平台</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 右分区（蓝色主题） -->
+          <div class="partition partition-blue" id="partBlue">
+            <div class="partition-header">
+              <span class="partition-badge badge-blue">
+                <span class="icon">🚩</span>分支主题3
+              </span>
+              <button class="toggle-btn" onclick="togglePartition(this, 'partBlue')">−</button>
+            </div>
+            
+            <div class="partition-content">
+              <div class="branch-group">
+                <div class="node-card node-dark">
+                  <span class="node-text">小说</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 交互演示看板 -->
+  <div class="control-panel">
+    <div class="control-title">暗色演示面板</div>
+    <div class="control-item">
+      <div class="indicator"></div>
+      <span>网格底纹 & 折叠已就绪</span>
+    </div>
+    <div class="control-item" style="color: var(--text-muted); font-size: 11px;">
+      <span>提示：点击 [−] 可收起/展开分区或分支</span>
+    </div>
+  </div>
+
+  <script>
+    const svg = document.getElementById('connectorSvg');
+    const domesticOut = document.getElementById('domOut');
+    const pills = [
+      document.getElementById('pillMinimax'),
+      document.getElementById('pillQianwen'),
+      document.getElementById('pillDoubao')
+    ];
+
+    function drawLines() {
+      // 清空原有线条
+      svg.innerHTML = '';
+      
+      // 检测折叠状态
+      const isRedCollapsed = document.getElementById('partRed').classList.contains('collapsed');
+      const isDomCollapsed = document.getElementById('groupDomestic').classList.contains('collapsed');
+      const isRootCollapsed = document.getElementById('cardBody').style.display === 'none';
+
+      // 任何一级折叠都不需要再画内连线
+      if (isRedCollapsed || isDomCollapsed || isRootCollapsed) return;
+
+      const svgRect = svg.getBoundingClientRect();
+      const startRect = domesticOut.getBoundingClientRect();
+      
+      const startX = startRect.left + startRect.width / 2 - svgRect.left;
+      const startY = startRect.top + startRect.height / 2 - svgRect.top;
+
+      pills.forEach(pill => {
+        const anchorIn = pill.querySelector('.anchor-in');
+        if (!anchorIn) return;
+        
+        const endRect = anchorIn.getBoundingClientRect();
+        const endX = endRect.left + endRect.width / 2 - svgRect.left;
+        const endY = endRect.top + endRect.height / 2 - svgRect.top;
+
+        // 绘制平滑贝塞尔曲线
+        const dx = Math.abs(endX - startX) * 0.45;
+        const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', 'rgba(246, 86, 86, 0.4)');
+        path.setAttribute('stroke-width', '1.2');
+        path.setAttribute('fill', 'none');
+        
+        svg.appendChild(path);
+      });
+    }
+
+    // 分区折叠切换
+    function togglePartition(btn, partId) {
+      const part = document.getElementById(partId);
+      part.classList.toggle('collapsed');
+      
+      if (part.classList.contains('collapsed')) {
+        btn.innerText = '+';
+      } else {
+        btn.innerText = '−';
+      }
+      
+      // 延迟重画连线，确保 DOM 收展过渡完成
+      setTimeout(drawLines, 80);
+    }
+
+    // 分支折叠切换
+    function toggleBranch(btn, groupId) {
+      const group = document.getElementById(groupId);
+      group.classList.toggle('collapsed');
+      
+      if (group.classList.contains('collapsed')) {
+        btn.innerText = '+';
+      } else {
+        btn.innerText = '−';
+      }
+      
+      setTimeout(drawLines, 260); // 等待 CSS transition 动画结束
+    }
+
+    // 根节点折叠切换 (全局)
+    function toggleParentCollapse(btn) {
+      const body = document.getElementById('cardBody');
+      if (body.style.display === 'none') {
+        body.style.display = 'flex';
+        btn.innerText = '−';
+      } else {
+        body.style.display = 'none';
+        btn.innerText = '+';
+      }
+      
+      setTimeout(drawLines, 80);
+    }
+
+    // 点击节点卡片高亮激活
+    document.querySelectorAll('.node-card, .node-pill').forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // 清除所有卡片激活状态
+        document.querySelectorAll('.node-card, .node-pill').forEach(c => {
+          c.style.borderColor = '';
+          c.style.boxShadow = '';
+        });
+        
+        // 激活当前卡片
+        card.style.borderColor = '#707df4';
+        card.style.boxShadow = '0 0 10px rgba(112, 125, 244, 0.4)';
+      });
+    });
+
+    // 点击空白处还原
+    document.body.addEventListener('click', () => {
+      document.querySelectorAll('.node-card, .node-pill').forEach(c => {
+        c.style.borderColor = '';
+        c.style.boxShadow = '';
+      });
+    });
+
+    // 监听重绘事件
+    window.addEventListener('load', drawLines);
+    window.addEventListener('resize', drawLines);
+  </script>
+</body>
+</html>

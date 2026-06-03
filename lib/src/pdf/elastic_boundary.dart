@@ -1,5 +1,4 @@
 // lib/src/pdf/elastic_boundary.dart
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// 弹性边界约束

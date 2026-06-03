@@ -71,7 +71,7 @@ class ColorPickerPopup extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.5),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -149,7 +149,7 @@ class _ColorChip extends StatelessWidget {
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -355,5 +355,5 @@ void showColorPickerPopup({
     ),
   );
 
-  overlay.insert(entry!);
+  overlay.insert(entry);
 }

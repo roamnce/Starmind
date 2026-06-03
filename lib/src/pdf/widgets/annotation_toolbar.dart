@@ -46,7 +46,7 @@ class AnnotationToolbar extends StatelessWidget {
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.3),
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -80,7 +80,7 @@ class AnnotationToolbar extends StatelessWidget {
               Container(
                 width: 1,
                 height: 24,
-                color: theme.colorScheme.outline.withOpacity(0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
               const SizedBox(width: 4),
 
@@ -202,7 +202,7 @@ class _ColorButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 2,
             ),
           ],
@@ -264,7 +264,7 @@ class ColorPickerDialog extends StatelessWidget {
                     : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 4,
                   ),
                 ],

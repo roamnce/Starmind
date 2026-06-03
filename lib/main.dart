@@ -24,9 +24,21 @@ import 'package:starmind/src/pdf/widgets/ink_canvas_layer.dart';
 import 'package:starmind/src/pdf/widgets/annotation_renderer.dart';
 import 'package:starmind/src/pdf/widgets/interactive_canvas_viewer.dart';
 import 'package:starmind/src/pdf/annotation_controller.dart';
+import 'package:starmind/src/pdf/widgets/annotation_edit_toolbar.dart';
 import 'package:starmind/src/pdf/widgets/annotation_sidebar_panel.dart';
 import 'package:starmind/src/pdf/widgets/selection_handles_overlay.dart';
 import 'package:starmind/src/pdf/pdf_highlight.dart';
+import 'package:starmind/src/pdf/pdf_coordinates.dart';
+import 'package:starmind/src/pdf/pdf_export_service.dart';
+import 'package:starmind/src/pdf/pen_config.dart';
+import 'package:starmind/src/pdf/pen_config_service.dart';
+import 'package:starmind/src/pdf/pressure_curve.dart';
+import 'package:starmind/src/mindmap/ui/mindmap_page.dart';
+import 'package:starmind/src/mindmap/ui/mindmap_controller.dart';
+import 'package:starmind/src/mindmap/service/mindmap_service.dart';
+import 'package:starmind/src/mindmap/domain/topic.dart';
+import 'package:starmind/src/mindmap/storage/ffi_mindmap_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vector_math/vector_math_64.dart' show Quad, Matrix4;
 
 Future<void> main() async {
@@ -44,6 +56,9 @@ Future<void> main() async {
   ));
 }
 
+// Global navigator key for accessing context outside of widget tree
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -56,6 +71,7 @@ class MyApp extends StatelessWidget {
         final isDark = controller.isDarkMode;
 
         return MaterialApp(
+          navigatorKey: navigatorKey,
           title: 'StarMind',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
@@ -83,10 +99,16 @@ class WorkspacePage extends StatefulWidget {
 }
 
 class _WorkspacePageState extends State<WorkspacePage> {
-  late final WorkspaceController _workspaceController;
+  WorkspaceController? _workspaceController;
 
   // Cache of PDF controllers mapped by docId
   final Map<String, PdfViewportController> _pdfControllers = {};
+
+  // Cache of MindMap controllers mapped by topicId
+  final Map<String, MindMapController> _mindMapControllers = {};
+
+  // MindMap service (shared across all mindmap controllers)
+  MindMapService? _mindMapService;
 
   // Track expanded folder and tag nodes
   final Set<String> _expandedFolderIds = {'root'};
@@ -96,17 +118,22 @@ class _WorkspacePageState extends State<WorkspacePage> {
   String _activeNavType = 'all';
 
   @override
-  void initState() {
-    super.initState();
-    _workspaceController = context.workspaceController;
-    _workspaceController.addListener(_onWorkspaceChanged);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_workspaceController == null) {
+      _workspaceController = context.workspaceController;
+      _workspaceController!.addListener(_onWorkspaceChanged);
+    }
   }
 
   @override
   void dispose() {
-    _workspaceController.removeListener(_onWorkspaceChanged);
+    _workspaceController?.removeListener(_onWorkspaceChanged);
     for (final ctrl in _pdfControllers.values) {
       ctrl.closeDoc();
+      ctrl.dispose();
+    }
+    for (final ctrl in _mindMapControllers.values) {
       ctrl.dispose();
     }
     super.dispose();
@@ -114,6 +141,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   void _onWorkspaceChanged() {
     _syncPdfControllers();
+    _syncMindMapControllers();
     if (mounted) {
       setState(() {});
     }
@@ -121,7 +149,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   /// Syncs cached PDF controllers with active workspace tabs.
   void _syncPdfControllers() {
-    final root = _workspaceController.rootLayoutNode;
+    if (_workspaceController == null) return;
+    final root = _workspaceController!.rootLayoutNode;
     if (root is! LeafNode) return;
 
     final activePdfIds = root.tabs
@@ -138,6 +167,25 @@ class _WorkspacePageState extends State<WorkspacePage> {
     }
   }
 
+  /// Syncs cached MindMap controllers with active workspace tabs.
+  void _syncMindMapControllers() {
+    if (_workspaceController == null) return;
+    final root = _workspaceController!.rootLayoutNode;
+    if (root is! LeafNode) return;
+
+    final activeMindMapIds = root.tabs
+        .where((t) => t.type == TabType.mindmap)
+        .map((t) => t.id)
+        .toSet();
+
+    // Dispose controllers for closed tabs
+    final closedIds = _mindMapControllers.keys.where((id) => !activeMindMapIds.contains(id)).toList();
+    for (final id in closedIds) {
+      final ctrl = _mindMapControllers.remove(id);
+      ctrl?.dispose();
+    }
+  }
+
   /// Gets or creates a PdfViewportController for a tab.
   PdfViewportController _getOrBuildController(String docId, String filePath) {
     if (!_pdfControllers.containsKey(docId)) {
@@ -148,17 +196,36 @@ class _WorkspacePageState extends State<WorkspacePage> {
     return _pdfControllers[docId]!;
   }
 
+  /// Gets or creates a MindMapController for a topic.
+  MindMapController _getOrBuildMindMapController(String topicId) {
+    if (!_mindMapControllers.containsKey(topicId)) {
+      // Initialize service lazily if needed
+      _mindMapService ??= MindMapService(FfiMindMapRepository());
+      final ctrl = MindMapController(_mindMapService!, topicId);
+      ctrl.loadTopic();
+      _mindMapControllers[topicId] = ctrl;
+    }
+    return _mindMapControllers[topicId]!;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = _workspaceController.isDarkMode;
-    final leaf = _workspaceController.rootLayoutNode as LeafNode;
+    // If controller not initialized yet, show loading
+    if (_workspaceController == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final isDark = _workspaceController!.isDarkMode;
+    final leaf = _workspaceController!.rootLayoutNode as LeafNode;
     final activeIndex = leaf.activeIndex;
     final activeTab = leaf.tabs[activeIndex];
-    final sidebarOpen = _workspaceController.sidebarOpen;
+    final sidebarOpen = _workspaceController!.sidebarOpen;
 
     // ── SYSTEM STATUS BAR CONTROL ──
-    final shouldHideStatusBar = _workspaceController.hideSystemStatusBar ||
-        (activeTab.type == TabType.pdf && _workspaceController.isImmersiveMode);
+    final shouldHideStatusBar = _workspaceController!.hideSystemStatusBar ||
+        (activeTab.type == TabType.pdf && _workspaceController!.isImmersiveMode);
 
     if (shouldHideStatusBar) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -166,7 +233,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
 
-    final shouldShowTabBar = !(activeTab.type == TabType.pdf && _workspaceController.isImmersiveMode);
+    final shouldShowTabBar = !(activeTab.type == TabType.pdf && _workspaceController!.isImmersiveMode);
     final showSidebar = sidebarOpen && activeTab.type == TabType.home;
 
     return Scaffold(
@@ -188,10 +255,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
                   TabBarWidget(
                     tabs: leaf.tabs,
                     activeIndex: activeIndex,
-                    onSelect: (idx) => _workspaceController.selectTab(idx),
+                    onSelect: (idx) => _workspaceController!.selectTab(idx),
                     onClose: (idx) {
                       final tabToClose = leaf.tabs[idx];
-                      _workspaceController.closeTab(idx);
+                      _workspaceController!.closeTab(idx);
                       _pdfControllers.remove(tabToClose.id);
                     },
                   ),
@@ -209,7 +276,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                         child: ClipRect(
                           child: showSidebar
                               ? SidebarWidget(
-                                  controller: _workspaceController,
+                                  controller: _workspaceController!,
                                   expandedFolderIds: _expandedFolderIds,
                                   expandedTagIds: _expandedTagIds,
                                   activeNavType: _activeNavType,
@@ -218,13 +285,13 @@ class _WorkspacePageState extends State<WorkspacePage> {
                                       _activeNavType = type;
                                     });
                                     if (type == 'all') {
-                                      _workspaceController.setFilters(folderFilter: 'all', resetOther: true);
+                                      _workspaceController!.setFilters(folderFilter: 'all', resetOther: true);
                                     } else if (type == 'unclassified') {
-                                      _workspaceController.setFilters(folderFilter: 'unclassified', resetOther: true);
+                                      _workspaceController!.setFilters(folderFilter: 'unclassified', resetOther: true);
                                     } else if (type == 'folder') {
-                                      _workspaceController.setFilters(folderFilter: id, resetOther: true);
+                                      _workspaceController!.setFilters(folderFilter: id, resetOther: true);
                                     } else if (type == 'tag') {
-                                      _workspaceController.setFilters(tagFilter: id, resetOther: true);
+                                      _workspaceController!.setFilters(tagFilter: id, resetOther: true);
                                     }
                                   },
                                 )
@@ -234,16 +301,22 @@ class _WorkspacePageState extends State<WorkspacePage> {
   
                       // Main Viewport Area
                       Expanded(
-                        child: activeTab.type == TabType.home
-                            ? HomeDashboard(
-                                controller: _workspaceController,
-                                activeNavType: _activeNavType,
-                              )
-                            : PdfTabViewport(
-                                docId: activeTab.id,
-                                filePath: activeTab.filePath ?? '',
-                                pdfController: _getOrBuildController(activeTab.id, activeTab.filePath ?? ''),
-                              ),
+                        child: switch (activeTab.type) {
+                          TabType.home => HomeDashboard(
+                              controller: _workspaceController!,
+                              activeNavType: _activeNavType,
+                            ),
+                          TabType.pdf => PdfTabViewport(
+                              docId: activeTab.id,
+                              filePath: activeTab.filePath ?? '',
+                              pdfController: _getOrBuildController(activeTab.id, activeTab.filePath ?? ''),
+                            ),
+                          TabType.mindmap => MindMapTabViewport(
+                              topicId: activeTab.id,
+                              title: activeTab.title,
+                              controller: _getOrBuildMindMapController(activeTab.id),
+                            ),
+                        },
                       ),
                     ],
                   ),
@@ -264,7 +337,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                     _buildFloatingButton(
                       icon: Icons.splitscreen_rounded,
                       tooltip: sidebarOpen ? '折叠侧栏' : '展开侧栏',
-                      onTap: () => _workspaceController.setSidebarOpen(!sidebarOpen),
+                      onTap: () => _workspaceController!.setSidebarOpen(!sidebarOpen),
                     ),
                     const SizedBox(width: 6),
                     _buildFloatingButton(
@@ -1560,6 +1633,278 @@ void _showRenameTagDialog(BuildContext context, Tag node) {
   );
 }
 
+// ── CREATE MENU (NEW/IMPORT) ──
+
+void _showCreateMenu(BuildContext context, WorkspaceController controller) {
+  final isDark = controller.isDarkMode;
+
+  // Get button position for popup positioning
+  final RenderBox? button = context.findRenderObject() as RenderBox?;
+  final Offset buttonPosition = button?.localToGlobal(Offset.zero) ?? Offset.zero;
+  final Size buttonSize = button?.size ?? Size.zero;
+
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'create_menu',
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 150),
+    pageBuilder: (context, anim1, anim2) {
+      return Stack(
+        children: [
+          // Invisible barrier to dismiss
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.translucent,
+            ),
+          ),
+          // Popup menu positioned below button
+          Positioned(
+            left: buttonPosition.dx - 40,
+            top: buttonPosition.dy + buttonSize.height + 8,
+            child: FadeTransition(
+              opacity: anim1,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                  CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    width: 160,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xED16110A) : const Color(0xEDFFFBF7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x33FFDC8C), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildMenuItem(
+                            context: context,
+                            icon: Icons.account_tree_rounded,
+                            label: '新建思维导图',
+                            color: const Color(0xFF60A0E0),
+                            onTap: () {
+                              Navigator.pop(context);
+                              // Pass controller directly to avoid using deactivated context
+                              _showCreateMindMapDialog(controller);
+                            },
+                          ),
+                          Container(
+                            height: 1,
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            color: isDark ? const Color(0x22FFDC8C) : const Color(0x22D4C4A8),
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            icon: Icons.picture_as_pdf_rounded,
+                            label: '导入 PDF',
+                            color: const Color(0xFFE86060),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showImportPdfDialog(context, controller);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Widget _buildMenuItem({
+  required BuildContext context,
+  required IconData icon,
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFFFF8E6),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showCreateMindMapDialog([WorkspaceController? controller]) {
+  final textController = TextEditingController();
+  final isDark = controller?.isDarkMode ?? true;
+  // Use provided controller directly
+  final workspaceController = controller;
+
+  if (workspaceController == null) {
+    debugPrint('Error: WorkspaceController is null');
+    return;
+  }
+
+  // We need a context for showDialog, use the root navigator
+  // Get context from navigator state
+  final context = navigatorKey.currentContext;
+  if (context == null) {
+    debugPrint('Error: No navigator context available');
+    return;
+  }
+
+  _showGlassDialog(
+    context: context,
+    child: Card(
+      color: isDark ? const Color(0xF216110A) : const Color(0xF2FFFBF7),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0x33FFDC8C)),
+      ),
+      child: Container(
+        width: 380,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.account_tree_rounded, color: Color(0xFF60A0E0)),
+                const SizedBox(width: 10),
+                Text(
+                  '创建思维导图',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: textController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '输入思维导图标题',
+                hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                filled: true,
+                fillColor: isDark ? Colors.black26 : Colors.black12,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onSubmitted: (_) {
+                // Pop dialog first
+                Navigator.pop(context);
+                // Create mindmap with captured controller
+                _createAndOpenMindMap(textController.text, workspaceController);
+              },
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('取消', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF60A0E0),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    // Pop dialog first
+                    Navigator.pop(context);
+                    // Create mindmap with captured controller
+                    _createAndOpenMindMap(textController.text, workspaceController);
+                  },
+                  child: const Text('创建'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> _createAndOpenMindMap(String title, WorkspaceController controller) async {
+  if (title.trim().isEmpty) return;
+  try {
+    final service = MindMapService(FfiMindMapRepository());
+    final topic = await service.createTopic(title.trim());
+
+    // Create default mindmap structure: root node with 3 child nodes
+    // 根节点
+    final rootNode = await service.createNote(
+      topicId: topic.id,
+      title: title.trim(),
+      parentId: null,
+    );
+    await service.addRootNote(topicId: topic.id, noteId: rootNode.id);
+
+    // 三个子节点
+    final child1 = await service.createNote(
+      topicId: topic.id,
+      title: '分支主题1',
+      parentId: rootNode.id,
+    );
+    await service.addChild(parentId: rootNode.id, childId: child1.id);
+
+    final child2 = await service.createNote(
+      topicId: topic.id,
+      title: '分支主题2',
+      parentId: rootNode.id,
+    );
+    await service.addChild(parentId: rootNode.id, childId: child2.id);
+
+    final child3 = await service.createNote(
+      topicId: topic.id,
+      title: '分支主题3',
+      parentId: rootNode.id,
+    );
+    await service.addChild(parentId: rootNode.id, childId: child3.id);
+
+    // Open the mindmap tab
+    controller.openMindMap(topic.id, topic.title);
+  } catch (e) {
+    debugPrint('Failed to create mindmap: $e');
+  }
+}
+
 // ── APP SETTINGS DIALOG ──
 
 void _showSettingsDialog(BuildContext context) {
@@ -2033,7 +2378,42 @@ class HomeDashboard extends StatefulWidget {
 class _HomeDashboardState extends State<HomeDashboard> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchVisible = false;
-  String _activeGridFilter = '全部'; // '全部', '笔记', 'PDF'
+  String _activeGridFilter = '全部'; // '全部', '笔记', 'PDF', '思维导图'
+  List<Topic> _topics = [];
+  bool _isLoadingTopics = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTopics();
+  }
+
+  @override
+  void didUpdateWidget(HomeDashboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeNavType != widget.activeNavType) {
+      _loadTopics();
+    }
+  }
+
+  Future<void> _loadTopics() async {
+    if (_isLoadingTopics) return;
+    setState(() => _isLoadingTopics = true);
+    try {
+      final service = MindMapService(FfiMindMapRepository());
+      final topics = await service.getAllTopics();
+      if (mounted) {
+        setState(() {
+          _topics = topics;
+          _isLoadingTopics = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingTopics = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -2118,13 +2498,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final isDark = widget.controller.isDarkMode;
     final docs = widget.controller.documents;
 
-    // Filter items locally based on 'All/Note/PDF' selector
-    // In our phase 3 context, we only support PDF documents imports.
-    // So '全部' and 'PDF' will show PDFs, '笔记' is empty.
+    // Filter items locally based on selector
     final displayDocs = docs.where((doc) {
       if (_activeGridFilter == '笔记') return false;
-      return true;
+      if (_activeGridFilter == 'PDF') return true;
+      if (_activeGridFilter == '思维导图') return false;
+      return true; // '全部'
     }).toList();
+
+    final List<dynamic> mergedList = [];
+    if (_activeGridFilter == '全部') {
+      mergedList.addAll(displayDocs);
+      mergedList.addAll(_topics);
+    } else if (_activeGridFilter == 'PDF') {
+      mergedList.addAll(displayDocs);
+    } else if (_activeGridFilter == '思维导图') {
+      mergedList.addAll(_topics);
+    }
 
     return Column(
       children: [
@@ -2204,19 +2594,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 isDark: isDark,
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFC800),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-                  fixedSize: const Size.fromHeight(32),
-                  elevation: 6,
-                  shadowColor: const Color(0x33FFC800),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                icon: const Icon(Icons.add, size: 14),
-                label: const Text('导入 PDF', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                onPressed: () => _showImportPdfDialog(context, widget.controller),
+              Builder(
+                builder: (btnContext) {
+                  return ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFC800),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                      fixedSize: const Size.fromHeight(32),
+                      elevation: 6,
+                      shadowColor: const Color(0x33FFC800),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('新建/导入', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    onPressed: () => _showCreateMenu(btnContext, widget.controller),
+                  );
+                }
               ),
             ],
           ),
@@ -2230,11 +2624,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
             border: Border(bottom: BorderSide(color: isDark ? const Color(0x0CFFDC8C) : Colors.black12)),
           ),
           child: Row(
-            children: ['全部', '笔记', 'PDF'].map((filter) {
+            children: ['全部', '笔记', 'PDF', '思维导图'].map((filter) {
               final isActive = _activeGridFilter == filter;
 
               return GestureDetector(
-                onTap: () => setState(() => _activeGridFilter = filter),
+                onTap: () {
+                  setState(() => _activeGridFilter = filter);
+                  _loadTopics();
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   alignment: Alignment.center,
@@ -2264,7 +2661,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
         // ── GRID AREA ──
         Expanded(
-          child: displayDocs.isEmpty && widget.activeNavType == 'trash'
+          child: mergedList.isEmpty && widget.activeNavType == 'trash'
               ? const Center(child: Text('回收站为空', style: TextStyle(color: Colors.white24)))
               : GridView.builder(
                   padding: const EdgeInsets.all(20),
@@ -2274,15 +2671,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     mainAxisSpacing: 14,
                     childAspectRatio: 3 / 4.4,
                   ),
-                  itemCount: displayDocs.length + 1,
+                  itemCount: mergedList.length + 1,
                   itemBuilder: (context, idx) {
                     if (idx == 0) {
-                      // First slot is "Import PDF" dashed card
-                      return _buildImportDashedCard(isDark);
+                      if (_activeGridFilter == '思维导图') {
+                        return _buildCreateMindMapDashedCard(isDark);
+                      } else {
+                        return _buildImportDashedCard(isDark);
+                      }
                     }
 
-                    final doc = displayDocs[idx - 1];
-                    return _buildDocumentCard(context, doc, isDark);
+                    final item = mergedList[idx - 1];
+                    if (item is Document) {
+                      return _buildDocumentCard(context, item, isDark);
+                    } else {
+                      return _buildTopicGridCard(context, item as Topic, isDark);
+                    }
                   },
                 ),
         ),
@@ -2358,6 +2762,189 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCreateMindMapDashedCard(bool isDark) {
+    return GestureDetector(
+      onTap: () => _showCreateMindMapDialog(widget.controller),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0x33FFDC8C) : const Color(0x331862C6),
+            style: BorderStyle.solid,
+            width: 1.5,
+          ),
+          color: isDark ? const Color(0x0C1862C6) : const Color(0x051862C6),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0x7760A0E0), width: 1.5),
+              ),
+              child: const Icon(Icons.add, color: Color(0xFF60A0E0), size: 18),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '新建思维导图',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: isDark ? Colors.white60 : Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopicGridCard(BuildContext context, Topic topic, bool isDark) {
+    final colors = [
+      const Color(0xFF1862C6),
+      const Color(0xFF60A0E0),
+    ];
+    final date = topic.updatedAt;
+    final dateStr = '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+
+    return GestureDetector(
+      onDoubleTap: () => widget.controller.openMindMap(topic.id, topic.title),
+      onSecondaryTapDown: (details) {
+        _showTopicCardContextMenu(context, details.globalPosition, topic);
+      },
+      onLongPressStart: (details) {
+        _showTopicCardContextMenu(context, details.globalPosition, topic);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? Colors.white10 : const Color(0x1F1862C6)),
+          color: isDark ? Colors.white10 : Colors.white,
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Cover (3:4 aspect)
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: colors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // MINDMAP Label tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '脑图',
+                            style: TextStyle(fontSize: 8, color: Color(0xFF60A0E0), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const Spacer(),
+                        // Topic Title
+                        Text(
+                          topic.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Icon(
+                          Icons.account_tree_rounded,
+                          color: Colors.white30,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Meta info
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      topic.title,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dateStr,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTopicCardContextMenu(BuildContext context, Offset position, Topic topic) {
+    _showGlassContextMenu(
+      context: context,
+      tapPosition: position,
+      items: [
+        ContextMenuItem(
+          title: '打开脑图',
+          icon: Icons.open_in_new_rounded,
+          onTap: () => widget.controller.openMindMap(topic.id, topic.title),
+        ),
+        ContextMenuItem(
+          title: '彻底删除',
+          icon: Icons.delete_sweep_rounded,
+          isDanger: true,
+          onTap: () async {
+            final service = MindMapService(FfiMindMapRepository());
+            await service.trashTopic(topic.id);
+            _loadTopics();
+          },
+        ),
+      ],
     );
   }
 
@@ -2609,6 +3196,139 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 }
 
+// ── MINDMAP VIEWPORT TAB CONTENT ──
+
+class MindMapTabViewport extends StatefulWidget {
+  final String topicId;
+  final String title;
+  final MindMapController controller;
+
+  const MindMapTabViewport({
+    super.key,
+    required this.topicId,
+    required this.title,
+    required this.controller,
+  });
+
+  @override
+  State<MindMapTabViewport> createState() => _MindMapTabViewportState();
+}
+
+class _MindMapTabViewportState extends State<MindMapTabViewport> {
+  final Map<String, PdfViewportController> _splitPdfControllers = {};
+  final Map<String, MindMapController> _splitMindMapControllers = {};
+
+  // Cache workspace controller to avoid accessing deactivated context in build()
+  WorkspaceController? _workspaceController;
+  bool _isDark = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Safely capture workspaceController in didChangeDependencies
+    _workspaceController = context.maybeWorkspaceController;
+    _isDark = _workspaceController?.isDarkMode ?? true;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onMindMapChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onMindMapChanged);
+    for (final ctrl in _splitPdfControllers.values) {
+      ctrl.dispose();
+    }
+    for (final ctrl in _splitMindMapControllers.values) {
+      ctrl.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onMindMapChanged() {
+    if (mounted) setState(() {});
+  }
+
+  PdfViewportController _getOrBuildSplitPdfController(String docId, String filePath) {
+    if (!_splitPdfControllers.containsKey(docId)) {
+      final ctrl = PdfViewportController();
+      ctrl.loadDoc(filePath);
+      _splitPdfControllers[docId] = ctrl;
+    }
+    return _splitPdfControllers[docId]!;
+  }
+
+  MindMapController _getOrBuildSplitMindMapController(String topicId) {
+    if (!_splitMindMapControllers.containsKey(topicId)) {
+      final service = MindMapService(FfiMindMapRepository());
+      final ctrl = MindMapController(service, topicId);
+      ctrl.loadTopic();
+      _splitMindMapControllers[topicId] = ctrl;
+    }
+    return _splitMindMapControllers[topicId]!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use cached _isDark instead of accessing context.workspaceController
+    // to avoid "Looking up a deactivated widget's ancestor is unsafe" error
+    final isDark = _isDark;
+    final splitType = widget.controller.splitType;
+    final splitId = widget.controller.splitId;
+    final splitFilePath = widget.controller.splitFilePath;
+
+    Widget buildViewport() {
+      if (splitType == null || splitId == null) {
+        return MindMapPage(controller: widget.controller);
+      }
+
+      if (splitType == 'pdf') {
+        final pdfCtrl = _getOrBuildSplitPdfController(splitId, splitFilePath ?? '');
+        return Row(
+          children: [
+            Expanded(
+              child: MindMapPage(controller: widget.controller),
+            ),
+            const VerticalDivider(width: 1, color: Color(0x1F2A3547)),
+            Expanded(
+              child: PdfTabViewport(
+                docId: splitId,
+                filePath: splitFilePath ?? '',
+                pdfController: pdfCtrl,
+              ),
+            ),
+          ],
+        );
+      }
+
+      if (splitType == 'mindmap') {
+        final mindmapCtrl = _getOrBuildSplitMindMapController(splitId);
+        return Row(
+          children: [
+            Expanded(
+              child: MindMapPage(controller: widget.controller),
+            ),
+            const VerticalDivider(width: 1, color: Color(0x1F2A3547)),
+            Expanded(
+              child: MindMapPage(controller: mindmapCtrl),
+            ),
+          ],
+        );
+      }
+
+      return MindMapPage(controller: widget.controller);
+    }
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0C0A07) : const Color(0xFFFAF8F5),
+      body: buildViewport(),
+    );
+  }
+}
+
 // ── PDF VIEWPORT TAB CONTENT ──
 
 class PdfTabViewport extends StatefulWidget {
@@ -2648,8 +3368,18 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   bool _palmRejectionEnabled = false;
   PointerDeviceKind? _lastPointerDeviceKind;
 
+  // Pen configuration state
+  PenConfig _penConfig = PenConfig.ballpointPen();
+  PenConfigService? _penConfigService;
+
   // Annotation controller for ink drawing and annotations
   AnnotationController? _annotationController;
+
+  // Selected annotation state for edit toolbar
+  String? _selectedAnnotationId;
+  Offset? _selectedAnnotationCenter;
+  double? _selectedAnnotationTop;
+  double? _selectedAnnotationBottom;
 
   AnimationController? _snapBackController;
   Animation<Offset>? _snapBackAnimation;
@@ -2658,7 +3388,18 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   Timer? _inertiaTimer;
   bool _isUpdatingTransform = false;
 
+  // Cache workspace controller to avoid accessing deactivated context
+  WorkspaceController? _workspaceController;
+  bool _freePanEnabled = false;
+
   double get _pdfLayoutWidth => MediaQuery.of(context).size.width * 0.55;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _workspaceController = context.maybeWorkspaceController;
+    _freePanEnabled = _workspaceController?.freePanEnabled ?? false;
+  }
 
   @override
   void initState() {
@@ -2666,15 +3407,27 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     widget.pdfController.addListener(_onPdfChanged);
     _transformController.addListener(_onTransformChanged);
     _initAnnotationController();
-    _palmRejectionEnabled = context.workspaceController.palmRejectionEnabled;
     _snapBackController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
     );
+    _loadPenConfig();
+  }
+
+  Future<void> _loadPenConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    _penConfigService = PenConfigService(prefs);
+    final savedConfig = _penConfigService!.loadPenConfig();
+    if (mounted) {
+      setState(() {
+        _penConfig = savedConfig;
+      });
+    }
   }
 
   Future<void> _initAnnotationController() async {
-    final repository = context.workspaceController.repository;
+    final repository = _workspaceController?.repository;
+    if (repository == null) return;
     _annotationController = AnnotationController(
       repository: repository,
       documentId: widget.docId,
@@ -2729,8 +3482,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
       }
 
       // Clamp translation to prevent flying off-screen (only in GoodNotes mode)
-      final freePanEnabled = context.workspaceController.freePanEnabled;
-      if (!freePanEnabled && !_isInteracting) {
+      // Use cached _freePanEnabled to avoid accessing deactivated context
+      if (!_freePanEnabled && !_isInteracting) {
         _clampTransformValueIfNeeded();
       }
 
@@ -2865,7 +3618,10 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
   }
 
   void _onInteractionUpdate(ScaleUpdateDetails details) {
-    // Handled by _onTransformChanged listener
+    // Cancel text selection and close floating toolbar on zoom gesture (2+ fingers)
+    if (details.pointerCount >= 2) {
+      widget.pdfController.selection.clearSelection();
+    }
   }
 
   void _onInteractionEnd(ScaleEndDetails details) {
@@ -2909,7 +3665,8 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
     final actualViewportWidth = customViewportWidth ?? viewportSize.width;
     final baseScale = _pdfLayoutWidth / pdfSize.width;
     final pdfDisplayWidth = pdfSize.width * baseScale * pdfCtrl.transform.zoom;
-    final freePanEnabled = context.workspaceController.freePanEnabled;
+    // Use cached _freePanEnabled to avoid accessing deactivated context
+    final freePanEnabled = _freePanEnabled;
 
     double targetPanX = pdfCtrl.transform.panOffset.dx;
     final double margin = 100.0;
@@ -3004,13 +3761,6 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
         _currentPage = newPage;
       });
     }
-  }
-
-  Offset? _getToolbarLocalPosition() {
-    if (widget.pdfController.selection.selectionToolbarPosition == null) return null;
-    final RenderBox? stackBox = _pdfStackKey.currentContext?.findRenderObject() as RenderBox?;
-    if (stackBox == null) return null;
-    return stackBox.globalToLocal(widget.pdfController.selection.selectionToolbarPosition!);
   }
 
   /// Builds the text selection gesture layer for a page.
@@ -3199,166 +3949,423 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
 
   Widget _buildTopToolbar(BuildContext context, bool isDark, PdfViewportController pdfCtrl) {
     return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xEC100D08) : const Color(0xECFFFBF7),
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? const Color(0x1AFFDC8C) : Colors.black12,
-            width: 1,
+      height: 48,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1A1610).withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.08),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _buildGlassToolbarButton(
+                  icon: Icons.near_me_rounded,
+                  tooltip: '选择',
+                  isActive: _activeTool == 'select',
+                  onTap: () => setState(() => _activeTool = 'select'),
+                  isDark: isDark,
+                ),
+                _buildGlassToolbarButton(
+                  icon: Icons.pan_tool_rounded,
+                  tooltip: '手形拖动',
+                  isActive: _activeTool == 'hand',
+                  onTap: () => setState(() => _activeTool = 'hand'),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 4),
+                _buildToolbarDivider(isDark),
+                const SizedBox(width: 4),
+                _buildGlassToolbarButton(
+                  icon: Icons.edit_rounded,
+                  tooltip: '画笔',
+                  isActive: _activeTool == 'pen',
+                  onTap: () => setState(() {
+                    _activeTool = 'pen';
+                    _inkTool = InkTool.pen;
+                  }),
+                  onLongPress: () => _showPenConfigMenu(context, isDark),
+                  isDark: isDark,
+                ),
+                _buildGlassToolbarButton(
+                  icon: Icons.border_color_rounded,
+                  tooltip: '高亮',
+                  isActive: _activeTool == 'highlight',
+                  onTap: () => setState(() {
+                    _activeTool = 'highlight';
+                    _inkTool = InkTool.highlighter;
+                  }),
+                  isDark: isDark,
+                ),
+                _buildGlassToolbarButton(
+                  icon: Icons.text_fields_rounded,
+                  tooltip: '文本批注',
+                  isActive: _activeTool == 'text',
+                  onTap: () => setState(() => _activeTool = 'text'),
+                  isDark: isDark,
+                ),
+                _buildGlassToolbarButton(
+                  icon: Icons.auto_fix_normal_rounded,
+                  tooltip: '橡皮擦',
+                  isActive: _activeTool == 'eraser',
+                  onTap: () => setState(() {
+                    _activeTool = 'eraser';
+                    _inkTool = InkTool.eraser;
+                  }),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 4),
+                _buildToolbarDivider(isDark),
+                const SizedBox(width: 4),
+                _buildGlassToolbarButton(
+                  icon: _palmRejectionEnabled ? Icons.do_not_touch : Icons.touch_app,
+                  tooltip: _palmRejectionEnabled ? '防误触: 开' : '防误触: 关',
+                  isActive: _palmRejectionEnabled,
+                  onTap: () => setState(() {
+                    _palmRejectionEnabled = !_palmRejectionEnabled;
+                    context.workspaceController.setPalmRejectionEnabled(_palmRejectionEnabled);
+                  }),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 4),
+                _buildToolbarDivider(isDark),
+                const SizedBox(width: 6),
+                ...[const Color(0xFFFFC800), const Color(0xFF4CAF50), const Color(0xFF2196F3), const Color(0xFFE05858)].map((color) {
+                  final isSelected = _activeColor == color;
+                  return GestureDetector(
+                    onTap: () => setState(() => _activeColor = color),
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : Colors.white.withValues(alpha: 0.5),
+                          width: isSelected ? 2.0 : 1.0,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.4),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                  );
+                }),
+                const Spacer(),
+                _buildGlassToolbarButton(
+                  icon: Icons.undo_rounded,
+                  tooltip: '撤销',
+                  isActive: false,
+                  onTap: pdfCtrl.canUndo ? () => pdfCtrl.undo() : null,
+                  isDark: isDark,
+                  enabled: pdfCtrl.canUndo,
+                ),
+                _buildGlassToolbarButton(
+                  icon: Icons.redo_rounded,
+                  tooltip: '重做',
+                  isActive: false,
+                  onTap: pdfCtrl.canRedo ? () => pdfCtrl.redo() : null,
+                  isDark: isDark,
+                  enabled: pdfCtrl.canRedo,
+                ),
+                const SizedBox(width: 4),
+                _buildToolbarDivider(isDark),
+                const SizedBox(width: 4),
+                _buildGlassToolbarButton(
+                  icon: _isExcerptsOpen ? Icons.menu_open_rounded : Icons.menu_rounded,
+                  tooltip: '批注列表',
+                  isActive: _isExcerptsOpen,
+                  onTap: () {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final viewportSize = _viewportKey.currentContext?.size;
+                    double? targetWidth;
+                    if (viewportSize != null) {
+                      if (_isExcerptsOpen) {
+                        targetWidth = viewportSize.width + (screenWidth * 0.28);
+                      } else {
+                        targetWidth = viewportSize.width - (screenWidth * 0.28);
+                      }
+                    }
+                    setState(() {
+                      _isExcerptsOpen = !_isExcerptsOpen;
+                    });
+                    if (targetWidth != null) {
+                      _applyCenteringIfNeeded(customViewportWidth: targetWidth);
+                    }
+                  },
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 4),
+                _buildToolbarDivider(isDark),
+                const SizedBox(width: 4),
+                _buildGlassToolbarButton(
+                  icon: Icons.share_rounded,
+                  tooltip: '导出',
+                  isActive: false,
+                  onTap: () => _showExportMenu(context, isDark),
+                  isDark: isDark,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          _buildToolbarButton(
-            icon: Icons.near_me_rounded,
-            tooltip: '选择',
-            isActive: _activeTool == 'select',
-            onTap: () => setState(() => _activeTool = 'select'),
-            isDark: isDark,
-          ),
-          _buildToolbarButton(
-            icon: Icons.pan_tool_rounded,
-            tooltip: '手形拖动',
-            isActive: _activeTool == 'hand',
-            onTap: () => setState(() => _activeTool = 'hand'),
-            isDark: isDark,
-          ),
-          const SizedBox(width: 6),
-          Container(width: 1, height: 18, color: isDark ? Colors.white12 : Colors.black12),
-          const SizedBox(width: 6),
-          _buildToolbarButton(
-            icon: Icons.edit_rounded,
-            tooltip: '画笔',
-            isActive: _activeTool == 'pen',
-            onTap: () => setState(() {
-              _activeTool = 'pen';
-              _inkTool = InkTool.pen;
-            }),
-            isDark: isDark,
-          ),
-          _buildToolbarButton(
-            icon: Icons.border_color_rounded,
-            tooltip: '高亮',
-            isActive: _activeTool == 'highlight',
-            onTap: () => setState(() {
-              _activeTool = 'highlight';
-              _inkTool = InkTool.highlighter;
-            }),
-            isDark: isDark,
-          ),
-          _buildToolbarButton(
-            icon: Icons.text_fields_rounded,
-            tooltip: '文本批注',
-            isActive: _activeTool == 'text',
-            onTap: () => setState(() => _activeTool = 'text'),
-            isDark: isDark,
-          ),
-          _buildToolbarButton(
-            icon: Icons.auto_fix_normal_rounded,
-            tooltip: '橡皮擦',
-            isActive: _activeTool == 'eraser',
-            onTap: () => setState(() {
-              _activeTool = 'eraser';
-              _inkTool = InkTool.eraser;
-            }),
-            isDark: isDark,
-          ),
-          const SizedBox(width: 6),
-          Container(width: 1, height: 18, color: isDark ? Colors.white12 : Colors.black12),
-          const SizedBox(width: 6),
-          _buildToolbarButton(
-            icon: _palmRejectionEnabled ? Icons.do_not_touch : Icons.touch_app,
-            tooltip: _palmRejectionEnabled ? '防误触: 开' : '防误触: 关',
-            isActive: _palmRejectionEnabled,
-            onTap: () => setState(() {
-              _palmRejectionEnabled = !_palmRejectionEnabled;
-              context.workspaceController.setPalmRejectionEnabled(_palmRejectionEnabled);
-            }),
-            isDark: isDark,
-          ),
-          const SizedBox(width: 6),
-          Container(width: 1, height: 18, color: isDark ? Colors.white12 : Colors.black12),
-          const SizedBox(width: 12),
-          ...[const Color(0xFFFFC800), const Color(0xFF4CAF50), const Color(0xFF2196F3), const Color(0xFFE05858)].map((color) {
-            final isSelected = _activeColor == color;
-            return GestureDetector(
-              onTap: () => setState(() => _activeColor = color),
-              child: Container(
-                width: 18,
-                height: 18,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? (isDark ? Colors.white : Colors.black87) : Colors.transparent,
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            );
-          }),
-          const Spacer(),
-          _buildToolbarButton(
-            icon: Icons.undo_rounded,
-            tooltip: '撤销',
-            isActive: false,
-            onTap: pdfCtrl.canUndo ? () => pdfCtrl.undo() : null,
-            isDark: isDark,
-            enabled: pdfCtrl.canUndo,
-          ),
-          _buildToolbarButton(
-            icon: Icons.redo_rounded,
-            tooltip: '重做',
-            isActive: false,
-            onTap: pdfCtrl.canRedo ? () => pdfCtrl.redo() : null,
-            isDark: isDark,
-            enabled: pdfCtrl.canRedo,
-          ),
-          const SizedBox(width: 6),
-          Container(width: 1, height: 18, color: isDark ? Colors.white12 : Colors.black12),
-          const SizedBox(width: 6),
-          _buildToolbarButton(
-            icon: _isExcerptsOpen ? Icons.menu_open_rounded : Icons.menu_rounded,
-            tooltip: '批注列表',
-            isActive: _isExcerptsOpen,
-            onTap: () {
-              final screenWidth = MediaQuery.of(context).size.width;
-              final viewportSize = _viewportKey.currentContext?.size;
-              double? targetWidth;
-              if (viewportSize != null) {
-                if (_isExcerptsOpen) {
-                  // Closing excerpts sidebar: viewport expands
-                  targetWidth = viewportSize.width + (screenWidth * 0.28);
-                } else {
-                  // Opening excerpts sidebar: viewport shrinks
-                  targetWidth = viewportSize.width - (screenWidth * 0.28);
-                }
-              }
-              setState(() {
-                _isExcerptsOpen = !_isExcerptsOpen;
-              });
-              if (targetWidth != null) {
-                _applyCenteringIfNeeded(customViewportWidth: targetWidth);
-              }
-            },
-            isDark: isDark,
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildToolbarButton({
+  /// Shows the export menu with options for exporting PDF and annotations.
+  void _showExportMenu(BuildContext context, bool isDark) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final RenderBox? buttonBox = context.findRenderObject() as RenderBox?;
+
+    if (buttonBox == null) return;
+
+    final Offset buttonPosition = buttonBox.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size buttonSize = buttonBox.size;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        buttonPosition.dx,
+        buttonPosition.dy + buttonSize.height + 4,
+        buttonPosition.dx + buttonSize.width,
+        0,
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'full',
+          child: Row(
+            children: [
+              Icon(Icons.picture_as_pdf_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black87),
+              const SizedBox(width: 12),
+              const Text('导出带注释 PDF'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'standard',
+          child: Row(
+            children: [
+              Icon(Icons.file_present_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black87),
+              const SizedBox(width: 12),
+              const Text('仅导出标准注释'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'json',
+          child: Row(
+            children: [
+              Icon(Icons.data_object_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black87),
+              const SizedBox(width: 12),
+              const Text('导出注释 JSON'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        _handleExport(context, value, isDark);
+      }
+    });
+  }
+
+  /// Handles the export action based on selected menu item.
+  Future<void> _handleExport(BuildContext context, String exportType, bool isDark) async {
+    // Get current document info
+    final workspaceController = context.workspaceController;
+    final leaf = workspaceController.rootLayoutNode as LeafNode;
+    final activeTab = leaf.tabs[leaf.activeIndex];
+
+    if (activeTab.type != TabType.pdf) {
+      _showSnackBar(context, '仅 PDF 文档支持导出', isDark);
+      return;
+    }
+
+    final docId = activeTab.id;
+
+    // Find the document
+    final documents = await workspaceController.repository.getDocuments();
+    if (!mounted) return;
+    final doc = documents.firstWhere(
+      (d) => d.id == docId,
+      orElse: () => throw Exception('Document not found'),
+    );
+
+    // Generate default output filename
+    final originalName = doc.filePath.split('/').last.split('.').first;
+    String defaultFileName;
+    String fileExtension;
+
+    switch (exportType) {
+      case 'full':
+        defaultFileName = '${originalName}_annotated';
+        fileExtension = 'pdf';
+      case 'standard':
+        defaultFileName = '${originalName}_standard';
+        fileExtension = 'pdf';
+      case 'json':
+        defaultFileName = '${originalName}_annotations';
+        fileExtension = 'json';
+      default:
+        defaultFileName = originalName;
+        fileExtension = 'pdf';
+    }
+
+    // Show file save dialog using file_picker package
+    // Note: FilePicker doesn't have a saveFile method on all platforms
+    // We'll use getDirectoryPath and construct the full path
+    final selectedDirectory = await FilePicker.getDirectoryPath(
+      dialogTitle: '选择保存位置',
+    );
+
+    if (selectedDirectory == null) {
+      return; // User cancelled
+    }
+
+    // Construct the full output path
+    String outputPath = '$selectedDirectory/$defaultFileName.$fileExtension';
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1A1610) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 24),
+            Text(
+              '正在导出...',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final exportService = PdfExportService(workspaceController.repository);
+
+      switch (exportType) {
+        case 'full':
+          await exportService.exportPdfWithAnnotations(
+            documentId: docId,
+            outputPath: outputPath,
+          );
+        case 'standard':
+          await exportService.exportPdfStandardOnly(
+            documentId: docId,
+            outputPath: outputPath,
+          );
+        case 'json':
+          await exportService.exportAnnotationsJson(
+            documentId: docId,
+            outputPath: outputPath,
+          );
+      }
+
+      // Close progress dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show success message
+      if (mounted) {
+        _showSnackBar(context, '导出成功: $outputPath', isDark, isSuccess: true);
+      }
+    } catch (e) {
+      // Close progress dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show error message
+      if (mounted) {
+        _showSnackBar(context, '导出失败: ${e.toString()}', isDark, isError: true);
+      }
+    }
+  }
+
+  /// Shows a snackbar message.
+  void _showSnackBar(BuildContext context, String message, bool isDark, {bool isSuccess = false, bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isSuccess ? Icons.check_circle_rounded : (isError ? Icons.error_rounded : Icons.info_rounded),
+              color: isSuccess ? Colors.green : (isError ? Colors.red : (isDark ? Colors.white : Colors.black87)),
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isDark ? const Color(0xFF2A2518) : Colors.white,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Widget _buildToolbarDivider(bool isDark) {
+    return Container(
+      width: 1,
+      height: 20,
+      color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12),
+    );
+  }
+
+  Widget _buildGlassToolbarButton({
     required IconData icon,
     required String tooltip,
     required bool isActive,
     required VoidCallback? onTap,
     required bool isDark,
     bool enabled = true,
+    VoidCallback? onLongPress,
   }) {
     final color = enabled
         ? (isActive
@@ -3368,11 +4375,23 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
 
     return Tooltip(
       message: tooltip,
-      child: IconButton(
-        icon: Icon(icon, size: 16, color: color),
-        onPressed: onTap,
-        constraints: const BoxConstraints(),
-        padding: const EdgeInsets.all(8),
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Container(
+          width: 36,
+          height: 36,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: isActive
+                ? const Color(0xFFFFC800).withValues(alpha: 0.15)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
       ),
     );
   }
@@ -3632,10 +4651,11 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.maybeWorkspaceController?.isDarkMode ?? true;
+    final isDark = _workspaceController?.isDarkMode ?? true;
     final pdfCtrl = widget.pdfController;
 
-    final freePanEnabled = context.workspaceController.freePanEnabled;
+    // Use cached _freePanEnabled to avoid accessing deactivated context
+    final freePanEnabled = _freePanEnabled;
     if (_lastFreePanEnabled != null && _lastFreePanEnabled != freePanEnabled) {
       _lastFreePanEnabled = freePanEnabled;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3754,12 +4774,55 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                     ),
                     if (pdfCtrl.selection.selectionToolbarPosition != null)
                       () {
-                        final pos = _getToolbarLocalPosition();
-                        if (pos != null) {
-                          return PdfSelectionToolbar(
-                            position: pos,
-                            onDismiss: () => pdfCtrl.selection.clearSelection(),
-                            onHighlight: (color) async {
+                        final pageIndex = pdfCtrl.selection.selectingPageIndex;
+                        if (pageIndex == null) return const SizedBox.shrink();
+
+                        final pdfSize = pdfCtrl.pageSizes[pageIndex];
+                        if (pdfSize == null) return const SizedBox.shrink();
+
+                        final selectionRects = pdfCtrl.selection.getSelectionRects(
+                          pageIndex,
+                          pdfCtrl.session.getCachedPageChars(pageIndex),
+                        );
+
+                        if (selectionRects.isEmpty) return const SizedBox.shrink();
+
+                        final viewportWidth = _pdfLayoutWidth;
+                        final scale = viewportWidth / pdfSize.width * pdfCtrl.transform.zoom;
+                        final panOffset = pdfCtrl.transform.panOffset;
+                        final coords = PdfCoordinates(pdfWidth: pdfSize.width, pdfHeight: pdfSize.height);
+
+                        // Convert PDF rects to screen coordinates
+                        final screenRects = selectionRects.map((r) => coords.pdfToFlutter(r, scale)).toList();
+
+                        // Find bounds in screen coordinates
+                        final topRect = screenRects.reduce((a, b) => a.top < b.top ? a : b);
+                        final bottomRect = screenRects.reduce((a, b) => a.bottom > b.bottom ? a : b);
+                        final centerX = screenRects.fold<double>(0, (sum, r) => sum + (r.left + r.right) / 2) / screenRects.length;
+
+                        // Calculate actual screen positions
+                        // screenRects are relative to PDF page origin (0,0 at top-left of page)
+                        // panOffset is the translation applied to the entire PDF canvas
+                        final topY = topRect.top + panOffset.dy;
+                        final bottomY = bottomRect.bottom + panOffset.dy;
+                        final screenCenterX = centerX + panOffset.dx;
+
+                        // Get the actual screen bounds for toolbar positioning
+                        final screenHeight = MediaQuery.of(context).size.height;
+                        final screenWidth = MediaQuery.of(context).size.width;
+
+                        // Clamp toolbar position to screen bounds with safe margins
+                        final safeTopMargin = 60.0; // Leave space for top toolbar
+                        final safeBottomMargin = 40.0; // Leave space for bottom status bar
+
+                        return PdfSelectionToolbar(
+                          selectionCenter: Offset(screenCenterX, (topY + bottomY) / 2),
+                          selectionTop: topY.clamp(safeTopMargin, screenHeight - safeBottomMargin),
+                          selectionBottom: bottomY.clamp(safeTopMargin, screenHeight - safeBottomMargin),
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
+                          onDismiss: () => pdfCtrl.selection.clearSelection(),
+                          onHighlight: (color) async {
                               final pageIndex = pdfCtrl.selection.selectingPageIndex!;
                               final start = min(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
                               final end = max(pdfCtrl.selection.selectionStartCharIndex!, pdfCtrl.selection.selectionEndCharIndex!).toInt();
@@ -3819,8 +4882,46 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
                               pdfCtrl.selection.clearSelection();
                             },
                           );
-                        }
-                        return const SizedBox.shrink();
+                      }(),
+                    // Annotation edit toolbar (when annotation is tapped)
+                    if (_selectedAnnotationId != null && _selectedAnnotationCenter != null)
+                      () {
+                        final annotation = _annotationController?.annotations.firstWhere(
+                          (a) => a.id == _selectedAnnotationId,
+                          orElse: () => throw StateError('Annotation not found'),
+                        );
+                        if (annotation == null) return const SizedBox.shrink();
+
+                        return AnnotationEditToolbar(
+                          annotation: annotation,
+                          annotationCenter: _selectedAnnotationCenter!,
+                          annotationTop: _selectedAnnotationTop ?? _selectedAnnotationCenter!.dy,
+                          annotationBottom: _selectedAnnotationBottom ?? _selectedAnnotationCenter!.dy,
+                          screenWidth: MediaQuery.of(context).size.width,
+                          screenHeight: MediaQuery.of(context).size.height,
+                          onDelete: () async {
+                            if (_annotationController != null) {
+                              await _annotationController!.deleteAnnotation(_selectedAnnotationId!);
+                            }
+                            setState(() {
+                              _selectedAnnotationId = null;
+                              _selectedAnnotationCenter = null;
+                              _selectedAnnotationTop = null;
+                              _selectedAnnotationBottom = null;
+                            });
+                          },
+                          onColorChange: () {
+                            // TODO: Show color picker for annotation
+                          },
+                          onClose: () {
+                            setState(() {
+                              _selectedAnnotationId = null;
+                              _selectedAnnotationCenter = null;
+                              _selectedAnnotationTop = null;
+                              _selectedAnnotationBottom = null;
+                            });
+                          },
+                        );
                       }(),
                   ],
                 ),
@@ -3852,6 +4953,190 @@ class _PdfTabViewportState extends State<PdfTabViewport> with TickerProviderStat
         _buildBottomStatusBar(context, isDark, pdfCtrl),
       ],
     );
+  }
+
+  /// Shows the pen configuration popup menu.
+  void _showPenConfigMenu(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1A1610) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.tune_rounded, size: 20, color: isDark ? Colors.white70 : Colors.black87),
+            const SizedBox(width: 12),
+            Text(
+              '画笔设置',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 280,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Stabilizer level section
+              Text(
+                '平滑度',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _penConfig.stabilizerLevel.toDouble(),
+                      min: 0,
+                      max: 10,
+                      divisions: 10,
+                      onChanged: (value) {
+                        setState(() {
+                          _penConfig = _penConfig.copyWith(stabilizerLevel: value.round());
+                        });
+                        _penConfigService?.savePenConfig(_penConfig);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_penConfig.stabilizerLevel}',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '值越高线条越平滑，但响应稍慢',
+                style: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.black38,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Pressure curve section (only for pressure-enabled pens)
+              if (_penConfig.pressureEnabled) ...[
+                Text(
+                  '压感曲线',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildPressureCurveChip(
+                      label: '线性',
+                      curve: PressureCurve.linear,
+                      isDark: isDark,
+                    ),
+                    _buildPressureCurveChip(
+                      label: '柔和',
+                      curve: PressureCurve.soft,
+                      isDark: isDark,
+                    ),
+                    _buildPressureCurveChip(
+                      label: '硬朗',
+                      curve: PressureCurve.firm,
+                      isDark: isDark,
+                    ),
+                    _buildPressureCurveChip(
+                      label: 'S型',
+                      curve: PressureCurve.sCurve,
+                      isDark: isDark,
+                    ),
+                    _buildPressureCurveChip(
+                      label: '重压',
+                      curve: PressureCurve.heavy,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '调节笔尖压力与线条粗细的关系',
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              '完成',
+              style: TextStyle(
+                color: const Color(0xFFFFC800),
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a pressure curve selection chip.
+  Widget _buildPressureCurveChip({
+    required String label,
+    required PressureCurve curve,
+    required bool isDark,
+  }) {
+    final isSelected = _isPressureCurveEqual(curve);
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _penConfig = _penConfig.copyWith(pressureCurve: curve);
+          });
+          _penConfigService?.savePenConfig(_penConfig);
+        }
+      },
+      selectedColor: const Color(0xFFFFC800).withValues(alpha: 0.2),
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+      labelStyle: TextStyle(
+        color: isSelected
+            ? const Color(0xFFFFC800)
+            : (isDark ? Colors.white70 : Colors.black87),
+        fontSize: 13,
+      ),
+      side: BorderSide(
+        color: isSelected
+            ? const Color(0xFFFFC800)
+            : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12)),
+      ),
+    );
+  }
+
+  /// Check if two pressure curves are equal by comparing control points.
+  bool _isPressureCurveEqual(PressureCurve other) {
+    return _penConfig.pressureCurve.p1 == other.p1 &&
+        _penConfig.pressureCurve.p2 == other.p2;
   }
 }
 
@@ -3988,7 +5273,6 @@ class _PdfTabPagesContainer extends StatelessWidget {
           PdfPageWidget(
             pageIndex: i,
             controller: controller,
-            viewport: viewport,
             viewportKey: viewportKey,
             viewportWidth: viewportWidth,
             transformationController: transformationController,

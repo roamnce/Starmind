@@ -1,9 +1,12 @@
 // lib/src/mindmap/ui/mindmap_sidebar.dart
 
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'mindmap_controller.dart';
 import '../domain/note.dart';
 import 'markdown_editor_toolbar.dart';
+import 'panels/node_search_panel.dart';
+import 'panels/style_config_panel.dart';
 
 class MindMapSidebar extends StatelessWidget {
   final MindMapController controller;
@@ -26,16 +29,16 @@ class MindMapSidebar extends StatelessWidget {
     return Container(
       width: 320,
       decoration: const BoxDecoration(
-        color: Color(0xFF141921),
+        color: Color(0xFF16110A),
         border: Border(
-          left: BorderSide(color: Color(0x1F2A3547), width: 1),
+          left: BorderSide(color: Color(0x14FFDC8C), width: 1),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(context),
-          const Divider(height: 1, color: Color(0x1F2A3547)),
+          const Divider(height: 1, color: Color(0x14FFDC8C)),
           Expanded(
             child: _buildContent(context),
           ),
@@ -52,42 +55,50 @@ class MindMapSidebar extends StatelessWidget {
 
     switch (tab) {
       case SidebarTab.note:
-        icon = Icons.send_rounded; // diagonal paper plane
+        icon = Icons.send_rounded;
         title = '节点笔记';
         trailing = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded, size: 20),
-              onPressed: () => controller.navigateSibling('prev'),
-              tooltip: '上一个同级节点',
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(32, 32),
-                foregroundColor: Colors.white70,
+            FButton.icon(
+              variant: FButtonVariant.ghost,
+              size: FButtonSizeVariant.xs,
+              style: const FButtonStyleDelta.delta(
+                iconContentStyle: FButtonIconContentStyleDelta.delta(
+                  constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                  padding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
+                ),
               ),
+              onPress: () => controller.navigateSibling('prev'),
+              child: const Icon(Icons.chevron_left_rounded, size: 20, color: Colors.white70),
             ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right_rounded, size: 20),
-              onPressed: () => controller.navigateSibling('next'),
-              tooltip: '下一个同级节点',
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(32, 32),
-                foregroundColor: Colors.white70,
+            const SizedBox(width: 4),
+            FButton.icon(
+              variant: FButtonVariant.ghost,
+              size: FButtonSizeVariant.xs,
+              style: const FButtonStyleDelta.delta(
+                iconContentStyle: FButtonIconContentStyleDelta.delta(
+                  constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                  padding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
+                ),
               ),
+              onPress: () => controller.navigateSibling('next'),
+              child: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.white70),
             ),
           ],
         );
-        break;
-      case SidebarTab.style:
-        icon = Icons.push_pin_rounded; // diagonal pin/thumbtack
+      case SidebarTab.search:
+        icon = Icons.search_rounded;
+        title = '节点搜索';
+      case SidebarTab.theme:
+        icon = Icons.palette_outlined;
         title = '导图主题';
-        break;
+      case SidebarTab.config:
+        icon = Icons.tune_rounded;
+        title = '样式配置';
       case SidebarTab.icon:
-        icon = Icons.sentiment_satisfied_alt_rounded; // smiley face
+        icon = Icons.sentiment_satisfied_alt_rounded;
         title = '节点图标';
-        break;
     }
 
     return Container(
@@ -96,7 +107,7 @@ class MindMapSidebar extends StatelessWidget {
       child: Row(
         children: [
           Transform.rotate(
-            angle: tab == SidebarTab.note ? -0.5 : 0.0, // diagonal look for paper plane
+            angle: tab == SidebarTab.note ? -0.5 : 0.0,
             child: Icon(icon, color: const Color(0xFF1862C6), size: 20),
           ),
           const SizedBox(width: 10),
@@ -120,8 +131,12 @@ class MindMapSidebar extends StatelessWidget {
     switch (controller.activeSidebarTab) {
       case SidebarTab.note:
         return _buildNotePanel(context);
-      case SidebarTab.style:
-        return _buildStylePanel(context);
+      case SidebarTab.search:
+        return NodeSearchPanel(controller: controller);
+      case SidebarTab.theme:
+        return _buildThemePanel(context);
+      case SidebarTab.config:
+        return StyleConfigPanel(controller: controller);
       case SidebarTab.icon:
         return _buildIconPanel(context);
     }
@@ -171,28 +186,17 @@ class MindMapSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0x0DFFFFFF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0x1F2A3547)),
-              ),
-              child: TextField(
+            child: FTextField(
+              control: FTextFieldControl.managed(
                 controller: textController,
-                focusNode: focusNode,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                decoration: const InputDecoration(
-                  hintText: '输入笔记内容...',
-                  hintStyle: TextStyle(color: Colors.white30),
-                  border: InputBorder.none,
-                ),
-                onChanged: (val) {
-                  controller.updateNoteContent(note.id, val);
+                onChange: (val) {
+                  controller.updateNoteContent(note.id, val.text);
                 },
               ),
+              focusNode: focusNode,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              hint: '输入笔记内容...',
             ),
           ),
         ],
@@ -200,282 +204,53 @@ class MindMapSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildStylePanel(BuildContext context) {
-    // Presets defined in requirement
-    final bgPresets = [
-      {'name': '经典暗黑', 'color': const Color(0xFF0C0A07)},
-      {'name': '深空灰蓝', 'color': const Color(0xFF141B24)},
-      {'name': '暗绿森林', 'color': const Color(0xFF0A140D)},
-      {'name': '幽冥幻紫', 'color': const Color(0xFF0A0515)},
+  /// 导图主题面板 - 按原型设计，3 个预设主题卡片
+  Widget _buildThemePanel(BuildContext context) {
+    final themes = [
+      {
+        'name': '经典深色 (默认)',
+        'colors': [const Color(0xFF242930), const Color(0xFFE05858), const Color(0xFF7B61FF)],
+        'theme': 'default',
+      },
+      {
+        'name': '赛博朋克',
+        'colors': [const Color(0xFF00F0FF), const Color(0xFFFF007F), const Color(0xFF7B00FF)],
+        'theme': 'cyber',
+      },
+      {
+        'name': '森林绿意',
+        'colors': [const Color(0xFF2E7D32), const Color(0xFF81C784), const Color(0xFF4CAF50)],
+        'theme': 'forest',
+      },
     ];
 
-    final gridPresets = [
-      {'name': '经典白', 'color': const Color(0x05FFFFFF)},
-      {'name': '奢华金', 'color': const Color(0x0DFAD278)},
-      {'name': '冰川蓝', 'color': const Color(0x0800F0FF)},
-      {'name': '霓虹红', 'color': const Color(0x08FF007F)},
-    ];
-
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(16.0),
-      children: [
-        // Presets Canvas Background
-        const Text(
-          '画布背景色',
-          style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 2.2,
-          children: bgPresets.map((preset) {
-            final isSelected = controller.canvasBgColor == preset['color'];
-            return InkWell(
-              onTap: () => controller.updateTheme(canvasBgColor: preset['color'] as Color),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: preset['color'] as Color,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF1862C6) : const Color(0x1F2A3547),
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  preset['name'] as String,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white60,
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-
-        const SizedBox(height: 16),
-        // Custom Canvas Background
-        _buildCustomBgSliders(),
-
-        const SizedBox(height: 24),
-        // Presets Grid Line Color
-        const Text(
-          '网格线颜色',
-          style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 2.2,
-          children: gridPresets.map((preset) {
-            final isSelected = controller.gridColor.value == (preset['color'] as Color).value;
-            return InkWell(
-              onTap: () => controller.updateTheme(gridColor: preset['color'] as Color),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: controller.canvasBgColor,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF1862C6) : const Color(0x1F2A3547),
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Grid pattern preview
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _MiniGridPainter(preset['color'] as Color),
-                      ),
-                    ),
-                    Center(
-                      child: Text(
-                        preset['name'] as String,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white60,
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-
-        const SizedBox(height: 16),
-        // Custom Grid Color
-        _buildCustomGridSliders(),
-
-        const SizedBox(height: 24),
-        // Grid Display and Size Settings
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '网格显示',
-              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            '导图主题选择',
+            style: TextStyle(
+              color: Color(0xB3FFF8E6),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
-            Switch(
-              value: controller.showGrid,
-              onChanged: (val) => controller.updateTheme(showGrid: val),
-              activeColor: const Color(0xFF1862C6),
-              activeTrackColor: const Color(0x3D1862C6),
-              inactiveThumbColor: Colors.grey,
-              inactiveTrackColor: const Color(0x1F2A3547),
-            ),
-          ],
-        ),
-
-        if (controller.showGrid) ...[
+          ),
           const SizedBox(height: 12),
-          Text(
-            '网格大小: ${controller.gridSize.toStringAsFixed(0)}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          Slider(
-            value: controller.gridSize.clamp(20.0, 100.0),
-            min: 20.0,
-            max: 100.0,
-            activeColor: const Color(0xFF1862C6),
-            inactiveColor: const Color(0x1F2A3547),
-            onChanged: (val) => controller.updateTheme(gridSize: val),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildCustomBgSliders() {
-    final color = controller.canvasBgColor;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0x05FFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0x0DFFFFFF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '自定义背景色 (RGB)',
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          _buildColorSlider('R', color.red, (val) {
-            controller.updateTheme(canvasBgColor: Color.fromARGB(255, val, color.green, color.blue));
-          }),
-          _buildColorSlider('G', color.green, (val) {
-            controller.updateTheme(canvasBgColor: Color.fromARGB(255, color.red, val, color.blue));
-          }),
-          _buildColorSlider('B', color.blue, (val) {
-            controller.updateTheme(canvasBgColor: Color.fromARGB(255, color.red, color.green, val));
+          ...themes.map((theme) {
+            final isActive = false; // TODO: 检查当前主题
+            return _ThemeCard(
+              name: theme['name'] as String,
+              colors: theme['colors'] as List<Color>,
+              isActive: isActive,
+              onTap: () {
+                // TODO: 实现主题切换
+              },
+            );
           }),
         ],
       ),
-    );
-  }
-
-  Widget _buildCustomGridSliders() {
-    final color = controller.gridColor;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0x05FFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0x0DFFFFFF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '自定义网格色 (RGBA)',
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          _buildColorSlider('R', color.red, (val) {
-            controller.updateTheme(gridColor: Color.fromARGB(color.alpha, val, color.green, color.blue));
-          }),
-          _buildColorSlider('G', color.green, (val) {
-            controller.updateTheme(gridColor: Color.fromARGB(color.alpha, color.red, val, color.blue));
-          }),
-          _buildColorSlider('B', color.blue, (val) {
-            controller.updateTheme(gridColor: Color.fromARGB(color.alpha, color.red, color.green, val));
-          }),
-          Row(
-            children: [
-              SizedBox(
-                width: 16,
-                child: Text('A', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
-              ),
-              Expanded(
-                child: Slider(
-                  value: color.opacity,
-                  min: 0.0,
-                  max: 1.0,
-                  activeColor: const Color(0xFF1862C6),
-                  inactiveColor: const Color(0x1F2A3547),
-                  onChanged: (val) {
-                    controller.updateTheme(gridColor: color.withOpacity(val));
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 32,
-                child: Text(
-                  color.opacity.toStringAsFixed(2),
-                  textAlign: TextAlign.end,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildColorSlider(String label, int value, ValueChanged<int> onChanged) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 16,
-          child: Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
-        ),
-        Expanded(
-          child: Slider(
-            value: value.toDouble(),
-            min: 0,
-            max: 255,
-            activeColor: const Color(0xFF1862C6),
-            inactiveColor: const Color(0x1F2A3547),
-            onChanged: (val) => onChanged(val.toInt()),
-          ),
-        ),
-        SizedBox(
-          width: 32,
-          child: Text(
-            '$value',
-            textAlign: TextAlign.end,
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-          ),
-        ),
-      ],
     );
   }
 
@@ -502,9 +277,8 @@ class MindMapSidebar extends StatelessWidget {
                   onTap: () {
                     if (controller.selectedNote != null) {
                       final currentTitle = controller.selectedNote!.title;
-                      // Replace existing emoji if title starts with one, or just prepend
                       var newTitle = currentTitle;
-                      final regex = RegExp(r'^[\u2000-\u32FF\ud83c-\udbff\udc00-\udfff\ufe0f]+\s*');
+                      final regex = RegExp(r'^[ -㋿\ud83c-􏰀-\udfff️]+\s*');
                       if (regex.hasMatch(currentTitle)) {
                         newTitle = currentTitle.replaceFirst(regex, '$emoji ');
                       } else {
@@ -536,25 +310,65 @@ class MindMapSidebar extends StatelessWidget {
   }
 }
 
-class _MiniGridPainter extends CustomPainter {
-  final Color gridColor;
+/// 主题卡片组件
+class _ThemeCard extends StatelessWidget {
+  final String name;
+  final List<Color> colors;
+  final bool isActive;
+  final VoidCallback onTap;
 
-  _MiniGridPainter(this.gridColor);
+  const _ThemeCard({
+    required this.name,
+    required this.colors,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = gridColor
-      ..strokeWidth = 1.0;
-
-    for (double x = 4; x < size.width; x += 12) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 4; y < size.height; y += 12) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0x05FFF8E6),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? const Color(0xFFC8841A) : const Color(0x14FFDC8C),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Row(
+              children: colors.map((color) {
+                return Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: isActive ? const Color(0xE6FFF8E6) : const Color(0xB3FFF8E6),
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant _MiniGridPainter oldDelegate) => gridColor != oldDelegate.gridColor;
 }

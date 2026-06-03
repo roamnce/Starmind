@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review — Starmind PDF Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .pass-through { opacity: 0.4; }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      <header class="border-b border-slate-200 pb-6">
+        <div class="flex items-baseline justify-between">
+          <h1 class="text-3xl font-semibold tracking-tight">Starmind PDF Viewer</h1>
+          <span class="text-sm text-slate-500">Architecture review · 2026-05-29 (Updated)</span>
+        </div>
+        <div class="mt-4 flex gap-4 text-xs text-slate-600">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 border border-slate-400 rounded"></span> Module</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 border-t-2 border-dashed border-slate-400"></span> Seam</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-red-600"></span> Leakage</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 border-2 border-slate-800 rounded"></span> Deep</span>
+          <span class="flex items-center gap-1 opacity-40"><span class="inline-block w-3 h-3 border border-slate-300 rounded bg-slate-100"></span> Shallow</span>
+        </div>
+      </header>
+
+      <section id="candidates" class="space-y-10">
+        <!-- Candidate 1: Shallow Gesture Modules (NEW) -->
+        <article class="rounded-lg border-2 border-red-200 bg-white overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <h2 class="text-xl font-semibold">Delete or Deepen Shallow Gesture Modules</h2>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Strong</span>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">new finding</span>
+            </div>
+            <div class="font-mono text-sm text-slate-600 mb-4">
+              lib/src/pdf/gesture_coordinator.dart (102 lines) · lib/src/pdf/gesture_dispatcher.dart (126 lines) · lib/src/pdf/gesture_handler.dart → DrawingGestureHandler (50 lines)
+            </div>
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">Before: shallow modules</div>
+                <div class="relative h-64 flex flex-col items-center justify-center gap-3">
+                  <div class="w-44 h-8 border border-slate-300 rounded bg-red-50 flex items-center justify-center text-xs text-red-400">GestureCoordinator</div>
+                  <div class="text-xs text-slate-400">if (_isDrawing) callback()</div>
+                  <div class="w-44 h-8 border border-slate-300 rounded bg-red-50 flex items-center justify-center text-xs text-red-400">GestureDispatcher</div>
+                  <div class="text-xs text-slate-400">state only, no logic</div>
+                  <div class="w-44 h-8 border border-slate-300 rounded bg-red-50 flex items-center justify-center text-xs text-red-400">DrawingGestureHandler</div>
+                  <div class="text-xs text-slate-400">callback wrapper (50 lines)</div>
+                </div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">After: deep module OR delete</div>
+                <div class="relative h-64 flex flex-col items-center justify-center">
+                  <div class="w-52 h-20 border-2 border-slate-800 rounded bg-slate-800 text-white flex flex-col items-center justify-center">
+                    <span class="text-sm font-medium">NavigationGestureHandler</span>
+                    <span class="text-xs opacity-70 mt-1">• Gesture type detection • Axis alignment</span>
+                    <span class="text-xs opacity-70">• Inertia animation • Boundary constraints</span>
+                  </div>
+                  <div class="text-xs text-emerald-600 mt-3">→ 4-method interface, 300+ lines of behavior</div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <p class="text-slate-700"><strong>Problem:</strong> Three modules for gesture handling, all shallow — interfaces nearly as complex as implementations. They add indirection without hiding complexity.</p>
+              <p class="text-slate-700"><strong>Solution:</strong> Either delete all three and inline the trivial logic, or deepen NavigationGestureHandler by extracting the 1300-line gesture state machine from InteractiveCanvasViewer.</p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li><strong>Locality:</strong> gesture logic concentrated in one place</li>
+                <li><strong>Testability:</strong> extracted state machine can be unit tested without Flutter widget lifecycle</li>
+                <li><strong>Leverage:</strong> callers get full gesture handling from a 4-method interface</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- Candidate 2: Coordinate Transformation Scattered (NEW) -->
+        <article class="rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <h2 class="text-xl font-semibold">Concentrate Coordinate Transformation in PdfCoordinates</h2>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Worth exploring</span>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">new finding</span>
+            </div>
+            <div class="font-mono text-sm text-slate-600 mb-4">
+              lib/src/pdf/pdf_coordinates.dart (127 lines, deep) · lib/src/pdf/widgets/pdf_viewport_widget.dart (duplicated transforms at lines 274, 477, 852, 899)
+            </div>
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">Before: duplicated logic</div>
+                <pre class="mermaid text-sm">
+                  flowchart TD
+                    A[pdf_viewport_widget.dart] --> B[_screenToPdf]
+                    A --> C[_localToPdf]
+                    A --> D[_pdfRectToLocal x2]
+                    E[PdfCoordinates] -.unused.-> F[flutterToPdf]
+                    E -.unused.-> G[pdfToFlutter]
+                    class B,C,D leak
+                    class E deep
+                </pre>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">After: single source</div>
+                <pre class="mermaid text-sm">
+                  flowchart TD
+                    A[pdf_viewport_widget.dart] --> B[PdfCoordinates]
+                    B --> C[flutterToPdf]
+                    B --> D[pdfToFlutter]
+                    B --> E[flutterToPdfPoint]
+                    B --> F[pdfToFlutterPoint]
+                    class B,C,D,E,F deep
+                </pre>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <p class="text-slate-700"><strong>Problem:</strong> PdfCoordinates is a deep module that handles Y-flip transformation, but the widget has 4 local methods doing the same thing. Callers don't use the existing abstraction.</p>
+              <p class="text-slate-700"><strong>Solution:</strong> Remove all 4 local coordinate methods and route through PdfCoordinates. Extend PdfCoordinates with pan offset support if needed.</p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li><strong>Locality:</strong> all Y-flip logic in one place</li>
+                <li><strong>Leverage:</strong> existing tests cover the transformation</li>
+                <li><strong>AI-navigability:</strong> clear where to find coordinate conversion</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- Candidate 3: InteractiveCanvasViewer God Widget (UPDATED) -->
+        <article class="rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <h2 class="text-xl font-semibold">Extract gesture state machine from InteractiveCanvasViewer</h2>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Worth exploring</span>
+            </div>
+            <div class="font-mono text-sm text-slate-600 mb-4">
+              lib/src/pdf/widgets/interactive_canvas_viewer.dart (1337 lines)
+            </div>
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">Before: god widget</div>
+                <div class="relative h-64 flex flex-col items-center justify-center">
+                  <div class="w-56 h-32 border border-slate-300 rounded bg-slate-100 flex flex-col items-center justify-center text-xs text-slate-400">
+                    <span>InteractiveCanvasViewer</span>
+                    <span class="mt-2 opacity-60">1337 lines from Flutter SDK</span>
+                    <span class="mt-1 opacity-40">17 fields for gesture tracking</span>
+                    <span class="mt-1 opacity-40">_matrixTranslate: 120 lines</span>
+                    <span class="mt-1 opacity-40">_onScaleUpdate: gesture switching</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-500 mb-3">After: extracted handler</div>
+                <div class="relative h-64 flex flex-col items-center justify-center">
+                  <div class="w-48 h-12 border-2 border-slate-800 rounded bg-slate-800 text-white flex items-center justify-center text-sm">InteractiveCanvasViewer</div>
+                  <div class="w-40 h-8 border border-slate-200 rounded text-xs flex items-center justify-center mt-2 bg-white">1 field: _gestureHandler</div>
+                  <div class="w-48 h-16 border-2 border-emerald-400 rounded bg-emerald-50 flex flex-col items-center justify-center mt-3">
+                    <span class="text-sm font-medium">NavigationGestureHandler</span>
+                    <span class="text-xs opacity-60">onStart/onUpdate/onEnd/reset</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <p class="text-slate-700"><strong>Problem:</strong> 1337 lines copied from Flutter SDK with custom gesture handling mixed in. 17 fields in State class for gesture tracking. No seam for swapping gesture behavior.</p>
+              <p class="text-slate-700"><strong>Solution:</strong> Extract gesture state machine into NavigationGestureHandler. Reduce State fields from 17 to 1.</p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li><strong>Testability:</strong> gesture logic testable without widget lifecycle</li>
+                <li><strong>Locality:</strong> gesture bugs found in one place</li>
+                <li><strong>Leverage:</strong> other widgets can reuse gesture handling</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- Candidate 4: PdfViewportController Leaky Facade -->
+        <article class="rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <h2 class="text-xl font-semibold">PdfViewportController: tighten or accept as coordinator</h2>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-200 text-slate-600">Speculative</span>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">recently refactored</span>
+            </div>
+            <div class="font-mono text-sm text-slate-600 mb-4">
+              lib/src/pdf/pdf_viewport_controller.dart (152 lines)
+            </div>
+            <div class="space-y-3">
+              <p class="text-slate-700"><strong>Problem:</strong> Facade exposes sub-modules publicly (session, transform, selection). Callers reach through: controller.session.getCachedPageChars(), controller.transform.panOffset, etc.</p>
+              <p class="text-slate-700"><strong>Context:</strong> Recently refactored from pass-through wrapper. Does provide coordination value (selection clearing on doc load, shared undo stack). Porous interface defeats facade pattern.</p>
+              <p class="text-slate-700"><strong>Deletion test:</strong> Deleting would force callers to manage coordination themselves. It earns its keep as a coordinator, just not as a true facade.</p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li><strong>Option A:</strong> Tighten — make sub-modules private, add delegation methods</li>
+                <li><strong>Option B:</strong> Accept — document that this is a coordinator, not a facade</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Top Recommendation -->
+      <section id="top-recommendation" class="rounded-lg border-2 border-red-200 bg-red-50 p-6">
+        <h3 class="text-lg font-semibold text-red-800 mb-2">Top recommendation</h3>
+        <p class="text-red-700">
+          <strong>Delete or Deepen Gesture Modules</strong> — GestureCoordinator, GestureDispatcher, and DrawingGestureHandler were just created but are already shallow. Either delete them and inline the trivial logic, or deepen NavigationGestureHandler by extracting the 1300-line gesture state machine from InteractiveCanvasViewer. Fixing this now prevents architectural debt from accumulating.
+        </p>
+        <a href="#candidates" class="text-sm text-red-600 underline mt-2 block">Jump to candidates</a>
+      </section>
+    </main>
+  </body>
+</html>

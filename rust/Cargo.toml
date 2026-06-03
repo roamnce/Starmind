@@ -1,6 +1,6 @@
 # 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
 [package]
-name = "rust"
+name = "rust_lib_starmind"
 version = "0.1.0"
 edition = "2024"
 

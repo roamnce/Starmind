@@ -118,7 +118,7 @@ class TreeBuilder {
     List<TreeItemData> items,
     String rootId,
     String rootName,
-    T createNode(String id, String name, List<T> children, int documentCount),
+    T Function(String id, String name, List<T> children, int documentCount) createNode,
   ) {
     // Build parent -> children map
     final parentToChildren = <String?, List<TreeItemData>>{};

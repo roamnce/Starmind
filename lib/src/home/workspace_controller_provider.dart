@@ -1,4 +1,5 @@
 /// 🤖 Generated wholly or partially with Claude Code; Google Antigravity
+library;
 
 import 'package:flutter/material.dart';
 import 'package:starmind/src/home/workspace_controller.dart';

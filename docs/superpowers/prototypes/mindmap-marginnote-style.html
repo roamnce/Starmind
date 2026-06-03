@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starmind MindMap - MarginNote 风格原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f7;
+            color: #333;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* 主容器 */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左侧 PDF 面板 */
+        .pdf-panel {
+            width: 50%;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-toolbar {
+            height: 44px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+        }
+
+        .pdf-toolbar-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+        }
+
+        .pdf-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            background: #e8e8e8;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pdf-page {
+            background: #fff;
+            width: 500px;
+            min-height: 700px;
+            padding: 50px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .pdf-page h2 {
+            font-size: 18px;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a90d9;
+        }
+
+        .pdf-page p {
+            margin-bottom: 16px;
+            text-align: justify;
+            color: #333;
+        }
+
+        /* 摘录高亮 */
+        .excerpt-highlight {
+            background: linear-gradient(180deg, transparent 60%, #ffd700 60%);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 2px;
+        }
+
+        .excerpt-highlight:hover {
+            background: linear-gradient(180deg, transparent 40%, #ffd700 40%);
+        }
+
+        .excerpt-highlight.selected {
+            background: linear-gradient(180deg, transparent 40%, #ff9500 40%);
+        }
+
+        /* 摘录弹出的快速菜单 */
+        .quick-excerpt-menu {
+            position: absolute;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 6px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .quick-excerpt-menu.visible {
+            display: flex;
+            gap: 4px;
+        }
+
+        .quick-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background: #f5f5f7;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.15s;
+        }
+
+        .quick-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .quick-btn.primary {
+            background: #4a90d9;
+            color: #fff;
+        }
+
+        .quick-btn.primary:hover {
+            background: #357abd;
+        }
+
+        /* 中间分割条 */
+        .divider {
+            width: 6px;
+            background: #e0e0e0;
+            cursor: col-resize;
+            transition: background 0.2s;
+        }
+
+        .divider:hover {
+            background: #4a90d9;
+        }
+
+        /* 右侧思维导图画布 */
+        .mindmap-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f7;
+        }
+
+        .mindmap-toolbar {
+            height: 44px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+        }
+
+        .mindmap-title {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            background: #e8e8e8;
+            padding: 3px;
+            border-radius: 6px;
+        }
+
+        .toolbar-group button {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.15s;
+        }
+
+        .toolbar-group button:hover {
+            background: #d8d8d8;
+        }
+
+        .toolbar-group button.active {
+            background: #fff;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 画布容器 */
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: 0 0;
+        }
+
+        /* 网格背景 */
+        .canvas-grid {
+            position: absolute;
+            top: -5000px;
+            left: -5000px;
+            width: 10000px;
+            height: 10000px;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        /* 连线层 */
+        .edges-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .edge-line {
+            stroke: #999;
+            stroke-width: 2;
+            fill: none;
+            transition: stroke 0.2s;
+        }
+
+        .edge-line.highlighted {
+            stroke: #4a90d9;
+            stroke-width: 3;
+        }
+
+        /* 节点卡片 - MarginNote 风格 */
+        .node-card {
+            position: absolute;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-width: 200px;
+            max-width: 320px;
+            cursor: grab;
+            transition: box-shadow 0.2s, transform 0.1s;
+            border-left: 4px solid #4a90d9;
+        }
+
+        .node-card:active {
+            cursor: grabbing;
+        }
+
+        .node-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .node-card.selected {
+            box-shadow: 0 4px 20px rgba(74, 144, 217, 0.3);
+            border-left-color: #ff9500;
+        }
+
+        .node-card.root {
+            border-left-color: #ff9500;
+            background: linear-gradient(135deg, #fff 0%, #fffbe6 100%);
+        }
+
+        /* 节点颜色标记 */
+        .node-card.color-red { border-left-color: #ff6b6b; }
+        .node-card.color-green { border-left-color: #51cf66; }
+        .node-card.color-blue { border-left-color: #4a90d9; }
+        .node-card.color-purple { border-left-color: #9775fa; }
+        .node-card.color-yellow { border-left-color: #ffd700; }
+
+        /* 节点头部 - 来源信息 */
+        .node-header {
+            padding: 8px 12px 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fafafa;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .node-source-icon {
+            width: 16px;
+            height: 16px;
+            background: #4a90d9;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 10px;
+        }
+
+        .node-source-info {
+            font-size: 11px;
+            color: #888;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .node-jump-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            color: #4a90d9;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+
+        .node-jump-btn:hover {
+            background: rgba(74, 144, 217, 0.1);
+        }
+
+        /* 节点内容 */
+        .node-content {
+            padding: 10px 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .node-content img {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        /* 节点标签 */
+        .node-tags {
+            padding: 4px 12px 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .node-tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            color: #666;
+        }
+
+        .node-tag.highlight {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* 节点操作按钮 */
+        .node-actions {
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            display: none;
+            gap: 2px;
+        }
+
+        .node-card:hover .node-actions,
+        .node-card.selected .node-actions {
+            display: flex;
+        }
+
+        .node-action-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .node-action-btn:hover {
+            background: #4a90d9;
+            color: #fff;
+        }
+
+        /* 子节点数量指示器 */
+        .children-indicator {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4a90d9;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .node-card.has-children .children-indicator {
+            display: block;
+        }
+
+        /* 连接点 */
+        .connector {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border: 2px solid #4a90d9;
+            border-radius: 50%;
+            cursor: crosshair;
+            transition: all 0.15s;
+            z-index: 10;
+        }
+
+        .connector:hover {
+            background: #4a90d9;
+            transform: scale(1.3);
+        }
+
+        .connector.bottom {
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .connector.bottom:hover {
+            transform: translateX(-50%) scale(1.3);
+        }
+
+        .connector.right {
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .connector.right:hover {
+            transform: translateY(-50%) scale(1.3);
+        }
+
+        /* 缩放控件 */
+        .zoom-widget {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: #fff;
+            padding: 6px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #f5f5f7;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.15s;
+        }
+
+        .zoom-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .zoom-level {
+            text-align: center;
+            font-size: 10px;
+            color: #888;
+            padding: 4px 0;
+        }
+
+        /* 小地图 */
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 100px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .minimap-content {
+            transform: scale(0.1);
+            transform-origin: top left;
+        }
+
+        .minimap-viewport {
+            position: absolute;
+            border: 2px solid #4a90d9;
+            background: rgba(74, 144, 217, 0.1);
+            pointer-events: none;
+        }
+
+        /* 摘录拖拽预览 */
+        .excerpt-drag-preview {
+            position: fixed;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            padding: 12px;
+            max-width: 250px;
+            font-size: 13px;
+            line-height: 1.5;
+            pointer-events: none;
+            z-index: 10000;
+            border-left: 4px solid #4a90d9;
+            opacity: 0.9;
+            display: none;
+        }
+
+        /* 右键菜单 */
+        .context-menu {
+            position: fixed;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 6px 0;
+            min-width: 160px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .context-menu.visible {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+        }
+
+        .context-menu-item:hover {
+            background: #f5f5f7;
+        }
+
+        .context-menu-item.danger {
+            color: #ff6b6b;
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: #e8e8e8;
+            margin: 4px 0;
+        }
+
+        /* 颜色选择器 */
+        .color-picker {
+            position: absolute;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .color-picker.visible {
+            display: flex;
+            gap: 4px;
+        }
+
+        .color-option {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+        }
+
+        /* 搜索框 */
+        .search-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 100px;
+            z-index: 2000;
+        }
+
+        .search-overlay.visible {
+            display: flex;
+        }
+
+        .search-box {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            width: 500px;
+            overflow: hidden;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .search-result-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .search-result-item:hover {
+            background: #f5f5f7;
+        }
+
+        /* 状态提示 */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 3000;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 动画 */
+        @keyframes nodeAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .node-card.new {
+            animation: nodeAppear 0.3s ease-out;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .pdf-panel {
+                width: 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧 PDF 面板 -->
+        <div class="pdf-panel">
+            <div class="pdf-toolbar">
+                <span class="pdf-toolbar-title">📘 设计模式：可复用面向对象软件的基础.pdf</span>
+                <button class="quick-btn" title="上一页">◀</button>
+                <span style="font-size: 12px; color: #666;">23 / 395</span>
+                <button class="quick-btn" title="下一页">▶</button>
+            </div>
+
+            <div class="pdf-content">
+                <div class="pdf-page">
+                    <h2>第四章：结构型模式</h2>
+
+                    <p>
+                        结构型模式关注如何组合类和对象以获得更大的结构。结构型类模式采用继承机制来组合接口或实现，而结构型对象模式则描述了如何将一些对象组合成一个新的对象。
+                    </p>
+
+                    <p>
+                        <span class="excerpt-highlight" data-excerpt-id="1">适配器模式（Adapter Pattern）是将一个类的接口转换成客户希望的另外一个接口。适配器模式使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。</span>这种模式涉及到一个单一的类，该类负责加入独立的或不兼容的接口功能。
+                    </p>
+
+                    <p>
+                        举个真实的例子，<span class="excerpt-highlight" data-excerpt-id="2">读卡器是作为内存卡和笔记本之间的适配器。</span>你将内存卡插入读卡器，再将读卡器插入笔记本，这样就可以通过笔记本来读取内存卡。
+                    </p>
+
+                    <p>
+                        适配器模式有两种实现方式：<span class="excerpt-highlight" data-excerpt-id="3">类适配器使用继承，对象适配器使用组合。</span>在 Java 中，由于不支持多重继承，类适配器的使用受到限制。
+                    </p>
+
+                    <p>
+                        <span class="excerpt-highlight" data-excerpt-id="4">对象适配器通过组合方式实现，更加灵活，推荐使用。</span>这也是我们在实际开发中更常用的方式。
+                    </p>
+
+                    <p>
+                        适配器模式主要包含三个角色：目标接口（Target）、适配者（Adaptee）和适配器（Adapter）。目标接口是客户所期待的接口，适配者是需要被适配的类，适配器则负责将适配者转换为目标接口。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分割条 -->
+        <div class="divider"></div>
+
+        <!-- 右侧思维导图画布 -->
+        <div class="mindmap-panel">
+            <div class="mindmap-toolbar">
+                <span class="mindmap-title">🧠 设计模式笔记</span>
+
+                <div class="toolbar-group">
+                    <button class="active">自由布局</button>
+                    <button>树形布局</button>
+                    <button>大纲视图</button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button>展开全部</button>
+                    <button>折叠全部</button>
+                </div>
+
+                <button class="quick-btn" onclick="showSearch()" title="搜索节点 (⌘F)">🔍</button>
+                <button class="quick-btn primary" onclick="addNewNode()" title="添加节点">➕</button>
+            </div>
+
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div class="canvas" id="canvas">
+                    <div class="canvas-grid"></div>
+
+                    <!-- 连线层 -->
+                    <svg class="edges-layer" id="edgesLayer">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#999" />
+                            </marker>
+                        </defs>
+                    </svg>
+
+                    <!-- 节点层 - 初始示例节点 -->
+                    <div class="node-card root new" id="node-root" style="left: 400px; top: 50px;">
+                        <div class="node-actions">
+                            <button class="node-action-btn" onclick="addNewNode()" title="添加子节点">➕</button>
+                            <button class="node-action-btn" onclick="editNode()" title="编辑">✏️</button>
+                            <button class="node-action-btn" onclick="showColorPicker()" title="颜色">🎨</button>
+                        </div>
+                        <div class="node-header">
+                            <div class="node-source-icon">📘</div>
+                            <span class="node-source-info">设计模式.pdf · 第23页</span>
+                            <button class="node-jump-btn" onclick="jumpToPdf('root')" title="跳转到原文">↗</button>
+                        </div>
+                        <div class="node-content">结构型模式</div>
+                        <div class="connector bottom" onmousedown="startConnect(event, 'root')"></div>
+                    </div>
+
+                    <div class="node-card has-children" id="node-1" style="left: 150px; top: 200px;">
+                        <div class="node-actions">
+                            <button class="node-action-btn" onclick="addNewNode()" title="添加子节点">➕</button>
+                            <button class="node-action-btn" onclick="editNode()" title="编辑">✏️</button>
+                            <button class="node-action-btn" onclick="showColorPicker()" title="颜色">🎨</button>
+                        </div>
+                        <div class="node-header">
+                            <div class="node-source-icon">📘</div>
+                            <span class="node-source-info">设计模式.pdf · 第23页</span>
+                            <button class="node-jump-btn" onclick="jumpToPdf('1')" title="跳转到原文">↗</button>
+                        </div>
+                        <div class="node-content">适配器模式：将一个类的接口转换成客户希望的另外一个接口</div>
+                        <div class="node-tags">
+                            <span class="node-tag highlight">核心概念</span>
+                        </div>
+                        <div class="children-indicator">2</div>
+                        <div class="connector bottom" onmousedown="startConnect(event, '1')"></div>
+                    </div>
+
+                    <div class="node-card" id="node-2" style="left: 500px; top: 200px;">
+                        <div class="node-actions">
+                            <button class="node-action-btn" onclick="addNewNode()" title="添加子节点">➕</button>
+                            <button class="node-action-btn" onclick="editNode()" title="编辑">✏️</button>
+                            <button class="node-action-btn" onclick="showColorPicker()" title="颜色">🎨</button>
+                        </div>
+                        <div class="node-header">
+                            <div class="node-source-icon">📘</div>
+                            <span class="node-source-info">设计模式.pdf · 第23页</span>
+                            <button class="node-jump-btn" onclick="jumpToPdf('2')" title="跳转到原文">↗</button>
+                        </div>
+                        <div class="node-content">读卡器是作为内存卡和笔记本之间的适配器</div>
+                        <div class="node-tags">
+                            <span class="node-tag">示例</span>
+                        </div>
+                        <div class="connector bottom" onmousedown="startConnect(event, '2')"></div>
+                    </div>
+
+                    <div class="node-card color-red" id="node-3" style="left: 80px; top: 380px;">
+                        <div class="node-actions">
+                            <button class="node-action-btn" onclick="addNewNode()" title="添加子节点">➕</button>
+                            <button class="node-action-btn" onclick="editNode()" title="编辑">✏️</button>
+                            <button class="node-action-btn" onclick="showColorPicker()" title="颜色">🎨</button>
+                        </div>
+                        <div class="node-header">
+                            <div class="node-source-icon">📘</div>
+                            <span class="node-source-info">设计模式.pdf · 第23页</span>
+                            <button class="node-jump-btn" onclick="jumpToPdf('3')" title="跳转到原文">↗</button>
+                        </div>
+                        <div class="node-content">类适配器使用继承</div>
+                        <div class="node-tags">
+                            <span class="node-tag">实现方式</span>
+                        </div>
+                        <div class="connector bottom" onmousedown="startConnect(event, '3')"></div>
+                    </div>
+
+                    <div class="node-card color-green" id="node-4" style="left: 280px; top: 380px;">
+                        <div class="node-actions">
+                            <button class="node-action-btn" onclick="addNewNode()" title="添加子节点">➕</button>
+                            <button class="node-action-btn" onclick="editNode()" title="编辑">✏️</button>
+                            <button class="node-action-btn" onclick="showColorPicker()" title="颜色">🎨</button>
+                        </div>
+                        <div class="node-header">
+                            <div class="node-source-icon">📘</div>
+                            <span class="node-source-info">设计模式.pdf · 第23页</span>
+                            <button class="node-jump-btn" onclick="jumpToPdf('4')" title="跳转到原文">↗</button>
+                        </div>
+                        <div class="node-content">对象适配器通过组合方式实现，更加灵活，推荐使用</div>
+                        <div class="node-tags">
+                            <span class="node-tag">实现方式</span>
+                            <span class="node-tag highlight">推荐</span>
+                        </div>
+                        <div class="connector bottom" onmousedown="startConnect(event, '4')"></div>
+                    </div>
+
+                    <!-- 缩放控件 -->
+                    <div class="zoom-widget">
+                        <button class="zoom-btn" onclick="zoomIn()">+</button>
+                        <div class="zoom-level" id="zoomLevel">100%</div>
+                        <button class="zoom-btn" onclick="zoomOut()">−</button>
+                        <button class="zoom-btn" onclick="resetZoom()">⟲</button>
+                    </div>
+
+                    <!-- 小地图 -->
+                    <div class="minimap">
+                        <div class="minimap-viewport" id="minimapViewport"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 摘录拖拽预览 -->
+    <div class="excerpt-drag-preview" id="excerptDragPreview"></div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="addNewNode()">➕ 添加子节点</div>
+        <div class="context-menu-item" onclick="editNode()">✏️ 编辑内容</div>
+        <div class="context-menu-item" onclick="showColorPicker()">🎨 设置颜色</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="duplicateNode()">📋 复制节点</div>
+        <div class="context-menu-item danger" onclick="deleteNode()">🗑️ 删除节点</div>
+    </div>
+
+    <!-- 颜色选择器 -->
+    <div class="color-picker" id="colorPicker">
+        <div class="color-option" style="background: #4a90d9;" data-color="blue" onclick="setNodeColor('blue')"></div>
+        <div class="color-option" style="background: #ff6b6b;" data-color="red" onclick="setNodeColor('red')"></div>
+        <div class="color-option" style="background: #51cf66;" data-color="green" onclick="setNodeColor('green')"></div>
+        <div class="color-option" style="background: #9775fa;" data-color="purple" onclick="setNodeColor('purple')"></div>
+        <div class="color-option" style="background: #ffd700;" data-color="yellow" onclick="setNodeColor('yellow')"></div>
+        <div class="color-option" style="background: #888;" data-color="gray" onclick="setNodeColor('gray')"></div>
+    </div>
+
+    <!-- 搜索覆盖层 -->
+    <div class="search-overlay" id="searchOverlay" onclick="hideSearch(event)">
+        <div class="search-box" onclick="event.stopPropagation()">
+            <input type="text" class="search-input" placeholder="搜索节点内容..." id="searchInput">
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 状态管理
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let isPanning = false;
+        let isConnecting = false;
+        let selectedNode = null;
+        let dragStartX, dragStartY;
+        let nodeStartX, nodeStartY;
+        let connectingFrom = null;
+
+        // 节点数据
+        const nodes = {
+            'root': { x: 400, y: 50, parent: null },
+            'node-1': { x: 150, y: 200, parent: 'root' },
+            'node-2': { x: 500, y: 200, parent: 'root' },
+            'node-3': { x: 80, y: 380, parent: 'node-1' },
+            'node-4': { x: 280, y: 380, parent: 'node-1' }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateEdges();
+            setupNodeDragging();
+            setupCanvasPanning();
+            setupExcerptDragging();
+        });
+
+        // 更新连线
+        function updateEdges() {
+            const svg = document.getElementById('edgesLayer');
+            // 清除旧连线
+            svg.querySelectorAll('path:not(defs *)').forEach(p => p.remove());
+
+            // 绘制连线
+            Object.entries(nodes).forEach(([nodeId, data]) => {
+                if (data.parent) {
+                    const parentNode = document.getElementById(data.parent);
+                    const childNode = document.getElementById(nodeId);
+
+                    if (parentNode && childNode) {
+                        const parentRect = parentNode.getBoundingClientRect();
+                        const childRect = childNode.getBoundingClientRect();
+
+                        const canvas = document.getElementById('canvas');
+                        const canvasRect = canvas.getBoundingClientRect();
+
+                        const x1 = parentRect.left - canvasRect.left + parentRect.width / 2;
+                        const y1 = parentRect.bottom - canvasRect.top;
+                        const x2 = childRect.left - canvasRect.left + childRect.width / 2;
+                        const y2 = childRect.top - canvasRect.top;
+
+                        // 贝塞尔曲线
+                        const midY = (y1 + y2) / 2;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('class', 'edge-line');
+                        path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+                        path.dataset.from = data.parent;
+                        path.dataset.to = nodeId;
+                        svg.appendChild(path);
+                    }
+                }
+            });
+        }
+
+        // 节点拖拽
+        function setupNodeDragging() {
+            document.querySelectorAll('.node-card').forEach(node => {
+                node.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.node-action-btn') || e.target.closest('.node-jump-btn') || e.target.closest('.connector')) return;
+
+                    isDragging = true;
+                    selectedNode = node;
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+                    nodeStartX = node.offsetLeft;
+                    nodeStartY = node.offsetTop;
+
+                    // 选中状态
+                    document.querySelectorAll('.node-card').forEach(n => n.classList.remove('selected'));
+                    node.classList.add('selected');
+
+                    e.preventDefault();
+                });
+            });
+        }
+
+        // 画布平移
+        function setupCanvasPanning() {
+            const wrapper = document.getElementById('canvasWrapper');
+
+            wrapper.addEventListener('mousedown', (e) => {
+                if (e.target === wrapper || e.target.classList.contains('canvas-grid')) {
+                    isPanning = true;
+                    dragStartX = e.clientX - panX;
+                    dragStartY = e.clientY - panY;
+                    wrapper.style.cursor = 'grabbing';
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && selectedNode) {
+                    const dx = (e.clientX - dragStartX) / scale;
+                    const dy = (e.clientY - dragStartY) / scale;
+                    selectedNode.style.left = (nodeStartX + dx) + 'px';
+                    selectedNode.style.top = (nodeStartY + dy) + 'px';
+
+                    // 更新节点数据
+                    nodes[selectedNode.id] = {
+                        ...nodes[selectedNode.id],
+                        x: nodeStartX + dx,
+                        y: nodeStartY + dy
+                    };
+
+                    updateEdges();
+                }
+
+                if (isPanning) {
+                    panX = e.clientX - dragStartX;
+                    panY = e.clientY - dragStartY;
+                    updateCanvasTransform();
+                }
+
+                // 连接线预览
+                if (isConnecting && connectingFrom) {
+                    updateConnectingLine(e);
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                isPanning = false;
+                selectedNode = null;
+                wrapper.style.cursor = '';
+
+                if (isConnecting) {
+                    finishConnecting();
+                }
+            });
+
+            // 鼠标滚轮缩放
+            wrapper.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                scale = Math.max(0.3, Math.min(3, scale * delta));
+                updateCanvasTransform();
+                document.getElementById('zoomLevel').textContent = Math.round(scale * 100) + '%';
+            });
+        }
+
+        // 更新画布变换
+        function updateCanvasTransform() {
+            const canvas = document.getElementById('canvas');
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        // 缩放控制
+        function zoomIn() {
+            scale = Math.min(3, scale * 1.2);
+            updateCanvasTransform();
+            document.getElementById('zoomLevel').textContent = Math.round(scale * 100) + '%';
+        }
+
+        function zoomOut() {
+            scale = Math.max(0.3, scale / 1.2);
+            updateCanvasTransform();
+            document.getElementById('zoomLevel').textContent = Math.round(scale * 100) + '%';
+        }
+
+        function resetZoom() {
+            scale = 1;
+            panX = 0;
+            panY = 0;
+            updateCanvasTransform();
+            document.getElementById('zoomLevel').textContent = '100%';
+        }
+
+        // 摘录拖拽到画布
+        function setupExcerptDragging() {
+            document.querySelectorAll('.excerpt-highlight').forEach(highlight => {
+                let isDragExcerpt = false;
+                let preview = document.getElementById('excerptDragPreview');
+
+                highlight.addEventListener('mousedown', (e) => {
+                    isDragExcerpt = true;
+                    preview.textContent = highlight.textContent;
+                    preview.style.display = 'block';
+                    preview.style.left = e.clientX + 10 + 'px';
+                    preview.style.top = e.clientY + 10 + 'px';
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragExcerpt) {
+                        preview.style.left = e.clientX + 10 + 'px';
+                        preview.style.top = e.clientY + 10 + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', (e) => {
+                    if (isDragExcerpt) {
+                        preview.style.display = 'none';
+
+                        // 检查是否释放在画布上
+                        const canvasWrapper = document.getElementById('canvasWrapper');
+                        const rect = canvasWrapper.getBoundingClientRect();
+
+                        if (e.clientX > rect.left) {
+                            createNodeFromExcerpt(highlight.textContent, e.clientX - rect.left, e.clientY - rect.top);
+                        }
+
+                        isDragExcerpt = false;
+                    }
+                });
+            });
+        }
+
+        // 从摘录创建节点
+        function createNodeFromExcerpt(text, x, y) {
+            const id = 'node-' + Date.now();
+            const canvas = document.getElementById('canvas');
+
+            const node = document.createElement('div');
+            node.className = 'node-card new';
+            node.id = id;
+            node.style.left = (x - 100) / scale + 'px';
+            node.style.top = (y - 50) / scale + 'px';
+            node.innerHTML = `
+                <div class="node-actions">
+                    <button class="node-action-btn" onclick="addNewNode()">➕</button>
+                    <button class="node-action-btn" onclick="editNode()">✏️</button>
+                    <button class="node-action-btn" onclick="showColorPicker()">🎨</button>
+                </div>
+                <div class="node-header">
+                    <div class="node-source-icon">📘</div>
+                    <span class="node-source-info">设计模式.pdf · 第23页</span>
+                    <button class="node-jump-btn" onclick="jumpToPdf('${id}')">↗</button>
+                </div>
+                <div class="node-content">${text}</div>
+                <div class="connector bottom" onmousedown="startConnect(event, '${id}')"></div>
+            `;
+
+            canvas.appendChild(node);
+            nodes[id] = { x: x - 100, y: y - 50, parent: null };
+
+            // 重新绑定拖拽
+            node.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.node-action-btn') || e.target.closest('.node-jump-btn') || e.target.closest('.connector')) return;
+                isDragging = true;
+                selectedNode = node;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                nodeStartX = node.offsetLeft;
+                nodeStartY = node.offsetTop;
+                document.querySelectorAll('.node-card').forEach(n => n.classList.remove('selected'));
+                node.classList.add('selected');
+                e.preventDefault();
+            });
+
+            showToast('✅ 已创建节点');
+        }
+
+        // 添加新节点
+        function addNewNode() {
+            const id = 'node-' + Date.now();
+            const canvas = document.getElementById('canvas');
+
+            const node = document.createElement('div');
+            node.className = 'node-card new';
+            node.id = id;
+            node.style.left = '300px';
+            node.style.top = '300px';
+            node.innerHTML = `
+                <div class="node-actions">
+                    <button class="node-action-btn" onclick="addNewNode()">➕</button>
+                    <button class="node-action-btn" onclick="editNode()">✏️</button>
+                    <button class="node-action-btn" onclick="showColorPicker()">🎨</button>
+                </div>
+                <div class="node-header">
+                    <div class="node-source-icon">📝</div>
+                    <span class="node-source-info">手动创建</span>
+                </div>
+                <div class="node-content" contenteditable="true">新节点</div>
+                <div class="connector bottom" onmousedown="startConnect(event, '${id}')"></div>
+            `;
+
+            canvas.appendChild(node);
+            nodes[id] = { x: 300, y: 300, parent: null };
+
+            showToast('✅ 已添加新节点');
+            hideContextMenu();
+        }
+
+        // 编辑节点
+        function editNode() {
+            if (selectedNode) {
+                const content = selectedNode.querySelector('.node-content');
+                content.contentEditable = 'true';
+                content.focus();
+
+                // 选中所有文字
+                const range = document.createRange();
+                range.selectNodeContents(content);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+            hideContextMenu();
+        }
+
+        // 删除节点
+        function deleteNode() {
+            if (selectedNode) {
+                selectedNode.remove();
+                delete nodes[selectedNode.id];
+                updateEdges();
+                showToast('🗑️ 已删除节点');
+            }
+            hideContextMenu();
+        }
+
+        // 复制节点
+        function duplicateNode() {
+            if (selectedNode) {
+                const id = 'node-' + Date.now();
+                const clone = selectedNode.cloneNode(true);
+                clone.id = id;
+                clone.style.left = (selectedNode.offsetLeft + 30) + 'px';
+                clone.style.top = (selectedNode.offsetTop + 30) + 'px';
+                clone.classList.remove('selected');
+                document.getElementById('canvas').appendChild(clone);
+
+                nodes[id] = {
+                    x: selectedNode.offsetLeft + 30,
+                    y: selectedNode.offsetTop + 30,
+                    parent: null
+                };
+
+                showToast('📋 已复制节点');
+            }
+            hideContextMenu();
+        }
+
+        // 颜色选择器
+        function showColorPicker() {
+            const picker = document.getElementById('colorPicker');
+            const rect = selectedNode ? selectedNode.getBoundingClientRect() : { right: 100, top: 100 };
+            picker.style.left = rect.right + 'px';
+            picker.style.top = rect.top + 'px';
+            picker.classList.toggle('visible');
+            hideContextMenu();
+        }
+
+        function setNodeColor(color) {
+            if (selectedNode) {
+                selectedNode.className = selectedNode.className.replace(/color-\w+/g, '');
+                if (color !== 'blue') {
+                    selectedNode.classList.add('color-' + color);
+                }
+            }
+            document.getElementById('colorPicker').classList.remove('visible');
+        }
+
+        // 连接节点
+        function startConnect(e, fromId) {
+            isConnecting = true;
+            connectingFrom = fromId;
+            e.stopPropagation();
+        }
+
+        function updateConnectingLine(e) {
+            // 可以在这里添加连接线预览
+        }
+
+        function finishConnecting() {
+            isConnecting = false;
+            connectingFrom = null;
+        }
+
+        // 跳转到 PDF
+        function jumpToPdf(nodeId) {
+            showToast('↗ 跳转到 PDF 原文位置');
+        }
+
+        // 右键菜单
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('.node-card')) {
+                e.preventDefault();
+                selectedNode = e.target.closest('.node-card');
+                document.querySelectorAll('.node-card').forEach(n => n.classList.remove('selected'));
+                selectedNode.classList.add('selected');
+
+                const menu = document.getElementById('contextMenu');
+                menu.style.left = e.clientX + 'px';
+                menu.style.top = e.clientY + 'px';
+                menu.classList.add('visible');
+            }
+        });
+
+        document.addEventListener('click', () => {
+            hideContextMenu();
+            document.getElementById('colorPicker').classList.remove('visible');
+        });
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').classList.remove('visible');
+        }
+
+        // 搜索
+        function showSearch() {
+            document.getElementById('searchOverlay').classList.add('visible');
+            document.getElementById('searchInput').focus();
+        }
+
+        function hideSearch(e) {
+            if (e.target.id === 'searchOverlay') {
+                document.getElementById('searchOverlay').classList.remove('visible');
+            }
+        }
+
+        // Toast 提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2000);
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                showSearch();
+            }
+            if (e.key === 'Delete' && selectedNode) {
+                deleteNode();
+            }
+        });
+    </script>
+</body>
+</html>

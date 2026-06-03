@@ -1,5 +1,6 @@
 /// Multi-tab split panel layout models.
 /// Supports hierarchical splitting with LeafNode (tabs) and ParentNode (split containers).
+library;
 
 /// Base class for layout tree nodes.
 abstract class SplitNode {
@@ -50,7 +51,7 @@ class ParentNode extends SplitNode {
 }
 
 /// Type of content in a tab.
-enum TabType { home, pdf }
+enum TabType { home, pdf, mindmap }
 
 /// A single tab item.
 class TabItem {

@@ -54,6 +54,17 @@ class PdfCoordinates {
     );
   }
 
+  /// Converts a Flutter point to PDF coordinates with pan offset.
+  ///
+  /// Use this when the Flutter point is in screen coordinates
+  /// (relative to viewport, not relative to PDF page).
+  Offset screenToPdf(Offset screenPoint, double scale, Offset panOffset) {
+    return Offset(
+      (screenPoint.dx - panOffset.dx) / scale,
+      pdfHeight - (screenPoint.dy - panOffset.dy) / scale, // Y-flip
+    );
+  }
+
   /// Converts a PDF point to Flutter coordinates.
   Offset pdfToFlutterPoint(Offset pdfPoint, double scale) {
     return Offset(

@@ -2,6 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../rust/api/pdf.dart' show CharInfo;
 
+// Re-export CharInfo for convenience
+export '../rust/api/pdf.dart' show CharInfo;
+
 // Note: PdfHighlight is now in pdf_highlight.dart
 
 /// Manages text selection state for a PDF page.
@@ -28,6 +31,26 @@ class TextSelectionModel extends ChangeNotifier {
 
   Offset? _selectionToolbarPosition;
   Offset? get selectionToolbarPosition => _selectionToolbarPosition;
+
+  // ── Handle Dragging State ──
+  // When dragging handles, toolbar should be hidden
+
+  bool _isDraggingHandle = false;
+  bool get isDraggingHandle => _isDraggingHandle;
+
+  /// Start dragging a selection handle (toolbar will hide).
+  void startHandleDrag() {
+    _isDraggingHandle = true;
+    _selectionToolbarPosition = null;
+    notifyListeners();
+  }
+
+  /// End dragging a selection handle (toolbar will reappear).
+  void endHandleDrag(Offset toolbarPosition) {
+    _isDraggingHandle = false;
+    _selectionToolbarPosition = toolbarPosition;
+    notifyListeners();
+  }
 
   // ── Character Cache Reference ──
   // Set by parent before selection operations
@@ -96,6 +119,7 @@ class TextSelectionModel extends ChangeNotifier {
         _selectionStartCharIndex != null &&
         _selectionEndCharIndex != null) {
       _selectionToolbarPosition = globalToolbarOffset;
+      _isDraggingHandle = false;
       notifyListeners();
     }
   }
@@ -106,19 +130,19 @@ class TextSelectionModel extends ChangeNotifier {
     _selectionStartCharIndex = null;
     _selectionEndCharIndex = null;
     _selectionToolbarPosition = null;
+    _isDraggingHandle = false;
     notifyListeners();
   }
 
   /// Computes merged highlighted rectangles for active selection.
-  List<Rect> getSelectionRects(int pageIndex, Map<int, List<CharInfo>> pageChars) {
+  List<Rect> getSelectionRects(int pageIndex, List<CharInfo> chars) {
     if (_selectingPageIndex != pageIndex ||
         _selectionStartCharIndex == null ||
         _selectionEndCharIndex == null) {
       return [];
     }
 
-    final chars = pageChars[pageIndex];
-    if (chars == null || chars.isEmpty) return [];
+    if (chars.isEmpty) return [];
 
     final start = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
     final end = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
@@ -128,24 +152,119 @@ class TextSelectionModel extends ChangeNotifier {
   }
 
   /// Retrieves the selected text as a string.
-  String getSelectedText(Map<int, List<CharInfo>> pageChars) {
+  String getSelectedText(List<CharInfo> chars) {
     if (_selectingPageIndex == null ||
         _selectionStartCharIndex == null ||
         _selectionEndCharIndex == null) {
       return '';
     }
 
-    final chars = pageChars[_selectingPageIndex!];
-    if (chars == null || chars.isEmpty) return '';
+    if (chars.isEmpty) return '';
 
     final start = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
     final end = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
 
     final buffer = StringBuffer();
-    for (int i = start; i <= end; i++) {
+    for (int i = start; i <= end && i < chars.length; i++) {
       buffer.write(chars[i].text);
     }
     return buffer.toString();
+  }
+
+  // ── Handle Position Helpers ──
+
+  /// Get the position of the start handle (left/top of selection) in PDF coordinates.
+  /// Returns null if no active selection.
+  Offset? getStartHandlePdfPosition(List<CharInfo> chars) {
+    if (_selectingPageIndex == null ||
+        _selectionStartCharIndex == null ||
+        _selectionEndCharIndex == null) {
+      return null;
+    }
+
+    if (chars.isEmpty) return null;
+
+    final startIdx = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
+    if (startIdx >= chars.length) return null;
+    final startChar = chars[startIdx];
+
+    // Start handle at left-bottom of first character
+    return Offset(startChar.left, startChar.bottom);
+  }
+
+  /// Get the position of the end handle (right/bottom of selection) in PDF coordinates.
+  /// Returns null if no active selection.
+  Offset? getEndHandlePdfPosition(List<CharInfo> chars) {
+    if (_selectingPageIndex == null ||
+        _selectionStartCharIndex == null ||
+        _selectionEndCharIndex == null) {
+      return null;
+    }
+
+    if (chars.isEmpty) return null;
+
+    final endIdx = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
+    if (endIdx >= chars.length) return null;
+    final endChar = chars[endIdx];
+
+    // End handle at right-bottom of last character
+    return Offset(endChar.right, endChar.bottom);
+  }
+
+  /// Get the line height for the start handle (height of first selected character).
+  double getStartHandleLineHeight(List<CharInfo> chars) {
+    if (_selectingPageIndex == null ||
+        _selectionStartCharIndex == null ||
+        _selectionEndCharIndex == null) {
+      return 20.0; // Default
+    }
+
+    if (chars.isEmpty) return 20.0;
+
+    final startIdx = min(_selectionStartCharIndex!, _selectionEndCharIndex!);
+    if (startIdx >= chars.length) return 20.0;
+    final startChar = chars[startIdx];
+    return startChar.top - startChar.bottom;
+  }
+
+  /// Get the line height for the end handle (height of last selected character).
+  double getEndHandleLineHeight(List<CharInfo> chars) {
+    if (_selectingPageIndex == null ||
+        _selectionStartCharIndex == null ||
+        _selectionEndCharIndex == null) {
+      return 20.0; // Default
+    }
+
+    if (chars.isEmpty) return 20.0;
+
+    final endIdx = max(_selectionStartCharIndex!, _selectionEndCharIndex!);
+    if (endIdx >= chars.length) return 20.0;
+    final endChar = chars[endIdx];
+    return endChar.top - endChar.bottom;
+  }
+
+  /// Calculate selection bounds for toolbar positioning.
+  /// Returns (centerX, topY, bottomY) in screen coordinates.
+  (double, double, double) calculateSelectionBounds(
+    List<Rect> selectionRects,
+    double zoom,
+    Offset panOffset,
+  ) {
+    if (selectionRects.isEmpty) return (0, 0, 0);
+
+    // Find the top-most and bottom-most rects
+    final topRect = selectionRects.reduce((a, b) => a.top < b.top ? a : b);
+    final bottomRect = selectionRects.reduce((a, b) => a.bottom > b.bottom ? a : b);
+
+    // Center horizontally
+    final centerX = (topRect.left + topRect.right) / 2;
+
+    // Convert to screen coordinates
+    final screenCenterX = centerX * zoom + panOffset.dx;
+    final screenTopY = topRect.top * zoom + panOffset.dy;
+    final screenBottomY = bottomRect.bottom * zoom + panOffset.dy;
+
+    return (screenCenterX, screenTopY, screenBottomY);
   }
 
   // ── Internal Helpers ──

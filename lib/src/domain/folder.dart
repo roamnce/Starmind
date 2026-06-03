@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'tree_node.dart';
 
 /// Dart-side domain model for a Folder.

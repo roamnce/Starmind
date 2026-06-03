@@ -1,5 +1,6 @@
 // test/mindmap/ui/tree_layout_test.dart
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:starmind/src/mindmap/ui/tree_layout.dart';
 import 'package:starmind/src/mindmap/service/mindmap_service.dart';
@@ -7,18 +8,8 @@ import 'package:starmind/src/mindmap/domain/note.dart';
 
 void main() {
   group('TreeLayout', () {
-    late TreeLayout layout;
-
-    setUp(() {
-      layout = TreeLayout(
-        nodeWidth: 120,
-        nodeHeight: 40,
-        horizontalSpacing: 60,
-        verticalSpacing: 30,
-      );
-    });
-
     test('calculates single root position', () {
+      final layout = const TreeLayout();
       final root = NoteTreeNode(
         note: Note(
           id: '1-root',
@@ -35,36 +26,8 @@ void main() {
       expect(positions['1-root'], equals(const Offset(0, 0)));
     });
 
-    test('calculates parent-child positions vertically', () {
-      final child = NoteTreeNode(
-        note: Note(
-          id: '1-child',
-          topicId: '0-topic',
-          title: 'Child',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-      final root = NoteTreeNode(
-        note: Note(
-          id: '1-root',
-          topicId: '0-topic',
-          title: 'Root',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        children: [child],
-      );
-
-      final positions = layout.calculate(root);
-
-      // 根节点在顶部居中
-      expect(positions['1-root']?.dy, equals(0));
-      // 子节点在下方
-      expect(positions['1-child']?.dy, greaterThan(0));
-    });
-
-    test('calculates multiple children spread horizontally', () {
+    test('calculates positions for LayoutDirection.bothSides', () {
+      final layout = const TreeLayout(direction: LayoutDirection.bothSides);
       final child1 = NoteTreeNode(
         note: Note(
           id: '1-child1',
@@ -96,13 +59,80 @@ void main() {
 
       final positions = layout.calculate(root);
 
-      // 子节点应该水平分散
-      final child1X = positions['1-child1']!.dx;
-      final child2X = positions['1-child2']!.dx;
-      expect(child1X, isNot(equals(child2X)));
+      // Root is at (0, 0)
+      expect(positions['1-root'], equals(const Offset(0, 0)));
+      
+      // child1 is first child (index 0), goes to rightChildren
+      // right child X = horizontalSpacing + nodeWidth = 60 + 120 = 180
+      expect(positions['1-child1']?.dx, equals(180));
+      expect(positions['1-child1']?.dy, equals(0));
+
+      // child2 is second child (index 1), goes to leftChildren
+      // left child X = -horizontalSpacing - nodeWidth = -60 - 120 = -180
+      expect(positions['1-child2']?.dx, equals(-180));
+      expect(positions['1-child2']?.dy, equals(0));
     });
 
-    test('calculates bounding box', () {
+    test('calculates positions for LayoutDirection.left', () {
+      final layout = const TreeLayout(direction: LayoutDirection.left);
+      final child = NoteTreeNode(
+        note: Note(
+          id: '1-child',
+          topicId: '0-topic',
+          title: 'Child',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final root = NoteTreeNode(
+        note: Note(
+          id: '1-root',
+          topicId: '0-topic',
+          title: 'Root',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        children: [child],
+      );
+
+      final positions = layout.calculate(root);
+
+      expect(positions['1-root'], equals(const Offset(0, 0)));
+      // childX = -nodeWidth - horizontalSpacing = -180
+      expect(positions['1-child']?.dx, equals(-180));
+    });
+
+    test('calculates positions for LayoutDirection.horizontal', () {
+      final layout = const TreeLayout(direction: LayoutDirection.horizontal);
+      final child = NoteTreeNode(
+        note: Note(
+          id: '1-child',
+          topicId: '0-topic',
+          title: 'Child',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final root = NoteTreeNode(
+        note: Note(
+          id: '1-root',
+          topicId: '0-topic',
+          title: 'Root',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        children: [child],
+      );
+
+      final positions = layout.calculate(root);
+
+      expect(positions['1-root'], equals(const Offset(0, 0)));
+      // childX = nodeWidth + horizontalSpacing = 180
+      expect(positions['1-child']?.dx, equals(180));
+    });
+
+    test('calculates bounding box for bothSides', () {
+      final layout = const TreeLayout(direction: LayoutDirection.bothSides);
       final child = NoteTreeNode(
         note: Note(
           id: '1-child',
@@ -125,8 +155,132 @@ void main() {
 
       final bounds = layout.calculateBounds(root);
 
-      expect(bounds.width, greaterThanOrEqualTo(120));
-      expect(bounds.height, greaterThanOrEqualTo(70)); // 40 + 30 + 40
+      // Root center: (0,0), bounds: x in [-60, 60], y in [0, 40]
+      // Child center: (180,0), bounds: x in [120, 240], y in [0, 40]
+      // Total bounds: x in [-60, 240] (width 300), y in [0, 40] (height 40)
+      expect(bounds.width, equals(300));
+      expect(bounds.height, equals(40));
+    });
+
+    group('Nested Card Layout', () {
+      test('calculates size for empty nestedCard container', () {
+        final layout = const TreeLayout();
+        final root = NoteTreeNode(
+          note: Note(
+            id: '1-root',
+            topicId: '0-topic',
+            title: 'Root',
+            highlightStyle: 'nestedCard',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        layout.calculate(root);
+        final size = layout.nodeSizes['1-root'];
+        expect(size, equals(const Size(152, 72))); // 120 + 32, 40 + 32
+      });
+
+      test('calculates size and positions for nestedCard with children', () {
+        final layout = const TreeLayout(direction: LayoutDirection.horizontal);
+        final child1 = NoteTreeNode(
+          note: Note(
+            id: '1-child1',
+            topicId: '0-topic',
+            title: 'Child 1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final child2 = NoteTreeNode(
+          note: Note(
+            id: '1-child2',
+            topicId: '0-topic',
+            title: 'Child 2',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final container = NoteTreeNode(
+          note: Note(
+            id: '1-container',
+            topicId: '0-topic',
+            title: 'Container Group',
+            highlightStyle: 'nestedCard',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          children: [child1, child2],
+        );
+
+        final positions = layout.calculate(container);
+
+        // Children sizes: 120x40.
+        // childMaxW = 120.
+        // childTotalH = 40 (child1) + 12 (spacing) + 40 (child2) = 92.
+        // container size: w = max(120, 120) + 32 = 152.
+        //                 h = 40 (nodeHeight) + 92 (childTotalH) + 32 = 164.
+        final containerSize = layout.nodeSizes['1-container'];
+        expect(containerSize?.width, equals(152.0));
+        expect(containerSize?.height, equals(164.0));
+
+        // Container is placed at origin.
+        expect(positions['1-container'], equals(const Offset(0, 0)));
+
+        // Container bounds: left = -76 (0 - 152/2), top = 0.
+        // Child 1 starts at containerTop + nodeHeight + 16 = 0 + 40 + 16 = 56 (top edge).
+        // Child 1 center X = origin.dx = 0 (horizontal center aligned with container).
+        // Child 1 center Y = 56 + 40/2 = 76.
+        expect(positions['1-child1'], equals(const Offset(0, 76)));
+
+        // Child 2 starts at Child 1 top + child1Height + 12 = 56 + 40 + 12 = 108 (top edge).
+        // Child 2 center X = 0.
+        // Child 2 center Y = 108 + 40/2 = 128.
+        expect(positions['1-child2'], equals(const Offset(0, 128)));
+      });
+
+      test('does not draw connections inside nestedCard container', () {
+        final layout = const TreeLayout();
+        final child = NoteTreeNode(
+          note: Note(
+            id: '1-child',
+            topicId: '0-topic',
+            title: 'Child',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final container = NoteTreeNode(
+          note: Note(
+            id: '1-container',
+            topicId: '0-topic',
+            title: 'Container',
+            highlightStyle: 'nestedCard',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          children: [child],
+        );
+        final root = NoteTreeNode(
+          note: Note(
+            id: '1-root',
+            topicId: '0-topic',
+            title: 'Root',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          children: [container],
+        );
+
+        final positions = layout.calculate(root);
+        final connections = layout.calculateConnections(root, positions);
+
+        // Connections should only be between root and container.
+        // The connection between container and child should be skipped.
+        expect(connections.length, equals(1));
+        expect(connections.first.fromId, equals('1-root'));
+        expect(connections.first.toId, equals('1-container'));
+      });
     });
   });
 }

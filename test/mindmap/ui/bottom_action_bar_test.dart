@@ -26,42 +26,6 @@ void main() {
     });
 
     testWidgets('renders all buttons and controls correctly', (tester) async {
-      bool fitScreenCalled = false;
-
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ListenableBuilder(
-            listenable: controller,
-            builder: (_, __) => BottomActionBar(
-              controller: controller,
-              onFitToScreen: () => fitScreenCalled = true,
-            ),
-          ),
-        ),
-      ));
-
-      // Zoom out, zoom in, and zoom scale percentage text
-      expect(find.byKey(const ValueKey('zoom_out')), findsOneWidget);
-      expect(find.byKey(const ValueKey('zoom_in')), findsOneWidget);
-      expect(find.text('100%'), findsOneWidget);
-
-      // Fit screen button
-      expect(find.byKey(const ValueKey('zoom_fit')), findsOneWidget);
-
-      // Canvas mode toggle
-      expect(find.byKey(const ValueKey('mode_toggle')), findsOneWidget);
-      expect(find.byIcon(Icons.pan_tool_rounded), findsOneWidget);
-
-      // Layout popup selector
-      expect(find.byKey(const ValueKey('layout_selector')), findsOneWidget);
-      expect(find.text('两侧布局'), findsOneWidget);
-
-      // Lock button
-      expect(find.byKey(const ValueKey('edit_lock')), findsOneWidget);
-      expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
-    });
-
-    testWidgets('zooming in and out updates scale and UI', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: ListenableBuilder(
@@ -69,40 +33,28 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
+              onShowAddChildDialog: () {},
+              onShowAddSiblingDialog: () {},
+              onAddNote: () {},
             ),
           ),
         ),
       ));
 
-      expect(find.text('100%'), findsOneWidget);
+      // Drag tool button
+      expect(find.byIcon(Icons.pan_tool_rounded), findsOneWidget);
 
-      // Zoom in
-      await tester.tap(find.byKey(const ValueKey('zoom_in')));
-      await tester.pumpAndSettle();
-      expect(controller.viewportScale, greaterThan(1.0));
-      expect(find.text('${(controller.viewportScale * 100).toInt()}%'), findsOneWidget);
+      // Lasso tool button
+      expect(find.byIcon(Icons.crop_free_rounded), findsOneWidget);
 
-      // Zoom out
-      await tester.tap(find.byKey(const ValueKey('zoom_out')));
-      await tester.pumpAndSettle();
-      expect(find.text('100%'), findsOneWidget);
-    });
+      // Add child node button
+      expect(find.byIcon(Icons.add_circle_outline_rounded), findsOneWidget);
 
-    testWidgets('zoom fit calls onFitToScreen callback', (tester) async {
-      bool fitScreenCalled = false;
+      // Add sibling node button
+      expect(find.byIcon(Icons.control_point_duplicate_rounded), findsOneWidget);
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: BottomActionBar(
-            controller: controller,
-            onFitToScreen: () => fitScreenCalled = true,
-          ),
-        ),
-      ));
-
-      await tester.tap(find.byKey(const ValueKey('zoom_fit')));
-      await tester.pump();
-      expect(fitScreenCalled, isTrue);
+      // Lock button
+      expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
     });
 
     testWidgets('mode toggle changes interaction mode', (tester) async {
@@ -113,6 +65,9 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
+              onShowAddChildDialog: () {},
+              onShowAddSiblingDialog: () {},
+              onAddNote: () {},
             ),
           ),
         ),
@@ -121,17 +76,15 @@ void main() {
       expect(controller.interactMode, equals(CanvasInteractMode.drag));
       expect(find.byIcon(Icons.pan_tool_rounded), findsOneWidget);
 
-      // Tap toggle -> lasso mode
-      await tester.tap(find.byKey(const ValueKey('mode_toggle')));
+      // Tap lasso mode button
+      await tester.tap(find.byIcon(Icons.crop_free_rounded));
       await tester.pumpAndSettle();
       expect(controller.interactMode, equals(CanvasInteractMode.lasso));
-      expect(find.byIcon(Icons.crop_free_rounded), findsOneWidget);
 
-      // Tap toggle again -> drag mode
-      await tester.tap(find.byKey(const ValueKey('mode_toggle')));
+      // Tap drag mode button
+      await tester.tap(find.byIcon(Icons.pan_tool_rounded));
       await tester.pumpAndSettle();
       expect(controller.interactMode, equals(CanvasInteractMode.drag));
-      expect(find.byIcon(Icons.pan_tool_rounded), findsOneWidget);
     });
 
     testWidgets('lock button toggles lock state and icon', (tester) async {
@@ -142,6 +95,9 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
+              onShowAddChildDialog: () {},
+              onShowAddSiblingDialog: () {},
+              onAddNote: () {},
             ),
           ),
         ),
@@ -151,13 +107,13 @@ void main() {
       expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
 
       // Lock
-      await tester.tap(find.byKey(const ValueKey('edit_lock')));
+      await tester.tap(find.byIcon(Icons.lock_open_rounded));
       await tester.pumpAndSettle();
       expect(controller.isLocked, isTrue);
       expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
 
       // Unlock
-      await tester.tap(find.byKey(const ValueKey('edit_lock')));
+      await tester.tap(find.byIcon(Icons.lock_rounded));
       await tester.pumpAndSettle();
       expect(controller.isLocked, isFalse);
       expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
@@ -171,6 +127,9 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
+              onShowAddChildDialog: () {},
+              onShowAddSiblingDialog: () {},
+              onAddNote: () {},
             ),
           ),
         ),
@@ -179,21 +138,19 @@ void main() {
       expect(controller.layoutDirection, equals(LayoutDirection.bothSides));
 
       // Tap layout selector to open menu
-      await tester.tap(find.byKey(const ValueKey('layout_selector')));
+      await tester.tap(find.byIcon(Icons.account_tree_rounded));
       await tester.pumpAndSettle();
 
       // Verify menu items are present
-      expect(find.text('两侧布局'), findsWidgets); // One in button, one in menu
+      expect(find.text('两侧布局'), findsWidgets);
       expect(find.text('左侧布局'), findsOneWidget);
       expect(find.text('右侧布局'), findsOneWidget);
-      expect(find.text('嵌套卡片'), findsOneWidget);
 
       // Select Left layout
       await tester.tap(find.text('左侧布局'));
       await tester.pumpAndSettle();
 
       expect(controller.layoutDirection, equals(LayoutDirection.left));
-      expect(find.text('左侧布局'), findsOneWidget); // Displayed on button now
     });
 
     testWidgets('locking restricts node edits and keyboard key events', (tester) async {

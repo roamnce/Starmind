@@ -1,4 +1,9 @@
 // lib/src/mindmap/ui/bottom_action_bar.dart
+//
+// 底部浮动操作栏。
+//
+// 按原型设计包含 11 个按钮：拖动、套索、添加子节点、添加同级节点、
+// 创建概要、创建边框、关联线、创建标签、导图布局、添加节点笔记、锁定。
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -7,12 +12,18 @@ import 'tree_layout.dart';
 
 class BottomActionBar extends StatelessWidget {
   final MindMapController controller;
-  final VoidCallback onFitToScreen;
+  final VoidCallback? onFitToScreen;
+  final VoidCallback? onShowAddChildDialog;
+  final VoidCallback? onShowAddSiblingDialog;
+  final VoidCallback? onAddNote;
 
   const BottomActionBar({
     super.key,
     required this.controller,
-    required this.onFitToScreen,
+    this.onFitToScreen,
+    this.onShowAddChildDialog,
+    this.onShowAddSiblingDialog,
+    this.onAddNote,
   });
 
   String _getLayoutText(LayoutDirection direction) {
@@ -32,7 +43,6 @@ class BottomActionBar extends StatelessWidget {
     final Offset buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
     final Size buttonSize = button.size;
 
-    // Position exactly 2px above the button
     final RelativeRect position = RelativeRect.fromLTRB(
       buttonPosition.dx,
       buttonPosition.dy - 2,
@@ -43,27 +53,23 @@ class BottomActionBar extends StatelessWidget {
     showMenu<String>(
       context: context,
       position: position,
-      color: const Color(0xFF1C222B),
+      color: const Color(0xFF1C1710),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0x1F2A3547), width: 1),
+        side: const BorderSide(color: Color(0x14FFDC8C), width: 1),
       ),
       items: const [
         PopupMenuItem<String>(
           value: 'bothSides',
-          child: Text('两侧布局', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          child: Text('两侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
         ),
         PopupMenuItem<String>(
           value: 'left',
-          child: Text('左侧布局', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          child: Text('左侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
         ),
         PopupMenuItem<String>(
           value: 'horizontal',
-          child: Text('右侧布局', style: TextStyle(color: Colors.white70, fontSize: 13)),
-        ),
-        PopupMenuItem<String>(
-          value: 'nestedCard',
-          child: Text('嵌套卡片', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          child: Text('右侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
         ),
       ],
     ).then((value) {
@@ -74,8 +80,6 @@ class BottomActionBar extends StatelessWidget {
         controller.changeLayoutDirection(LayoutDirection.left);
       } else if (value == 'horizontal') {
         controller.changeLayoutDirection(LayoutDirection.horizontal);
-      } else if (value == 'nestedCard') {
-        // "嵌套卡片" -> does nothing or toggles default layout style (note: layout nestedCard is handled dynamically inside TreeLayout, but keeping standard tree direction is fine).
       }
     });
   }
@@ -85,143 +89,156 @@ class BottomActionBar extends StatelessWidget {
     final isLassoMode = controller.interactMode == CanvasInteractMode.lasso;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: const Color(0xCC141921),
-            borderRadius: BorderRadius.circular(20),
+            color: const Color(0xB814100C),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0x1F2A3547),
+              color: const Color(0x14FFDC8C),
               width: 1.0,
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Zoom out button
-              IconButton(
-                key: const ValueKey('zoom_out'),
-                icon: const Icon(Icons.remove_rounded, color: Colors.white70, size: 20),
-                onPressed: controller.zoomOut,
-                tooltip: '缩小',
-                splashRadius: 20,
-              ),
-              // Scale display
-              SizedBox(
-                width: 48,
-                child: Center(
-                  child: Text(
-                    '${(controller.viewportScale * 100).toInt()}%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. 拖动/手掌工具
+                _buildButton(
+                  icon: Icons.pan_tool_rounded,
+                  isActive: !isLassoMode,
+                  onPressed: () => controller.setInteractMode(CanvasInteractMode.drag),
+                  tooltip: '拖动工具',
                 ),
-              ),
-              // Zoom in button
-              IconButton(
-                key: const ValueKey('zoom_in'),
-                icon: const Icon(Icons.add_rounded, color: Colors.white70, size: 20),
-                onPressed: controller.zoomIn,
-                tooltip: '放大',
-                splashRadius: 20,
-              ),
-              // Separator
-              _buildVerticalDivider(),
-              // Zoom Fit
-              IconButton(
-                key: const ValueKey('zoom_fit'),
-                icon: const Icon(Icons.fit_screen_rounded, color: Colors.white70, size: 20),
-                onPressed: onFitToScreen,
-                tooltip: '适应屏幕',
-                splashRadius: 20,
-              ),
-              // Separator
-              _buildVerticalDivider(),
-              // Canvas mode toggle (hand/crop)
-              IconButton(
-                key: const ValueKey('mode_toggle'),
-                icon: Icon(
-                  isLassoMode ? Icons.crop_free_rounded : Icons.pan_tool_rounded,
-                  color: isLassoMode ? const Color(0xFF1862C6) : Colors.white70,
-                  size: 20,
+                // 2. 套索工具
+                _buildButton(
+                  icon: Icons.crop_free_rounded,
+                  isActive: isLassoMode,
+                  onPressed: () => controller.setInteractMode(CanvasInteractMode.lasso),
+                  tooltip: '套索批量选择',
                 ),
-                onPressed: () {
-                  final nextMode = isLassoMode ? CanvasInteractMode.drag : CanvasInteractMode.lasso;
-                  controller.setInteractMode(nextMode);
-                },
-                tooltip: isLassoMode ? '框选模式' : '拖拽模式',
-                splashRadius: 20,
-              ),
-              // Separator
-              _buildVerticalDivider(),
-              // Layout popup selector
-              Builder(
-                builder: (buttonContext) {
-                  return InkWell(
-                    key: const ValueKey('layout_selector'),
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      final RenderBox button = buttonContext.findRenderObject() as RenderBox;
-                      final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-                      _showLayoutMenu(buttonContext, button, overlay);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: Row(
-                        children: [
-                          Text(
-                            _getLayoutText(controller.layoutDirection),
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.arrow_drop_up_rounded,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Separator
-              _buildVerticalDivider(),
-              // Edit lock
-              IconButton(
-                key: const ValueKey('edit_lock'),
-                icon: Icon(
-                  controller.isLocked ? Icons.lock_rounded : Icons.lock_open_rounded,
-                  color: controller.isLocked ? Colors.redAccent : Colors.white70,
-                  size: 20,
+                _buildDivider(),
+                // 3. 添加子节点
+                _buildButton(
+                  icon: Icons.add_circle_outline_rounded,
+                  onPressed: onShowAddChildDialog,
+                  tooltip: '添加子节点 (Tab)',
                 ),
-                onPressed: controller.toggleLock,
-                tooltip: controller.isLocked ? '已锁定编辑' : '已启用编辑',
-                splashRadius: 20,
-              ),
-            ],
+                // 4. 添加同级节点
+                _buildButton(
+                  icon: Icons.control_point_duplicate_rounded,
+                  onPressed: onShowAddSiblingDialog,
+                  tooltip: '添加同级节点 (Enter)',
+                ),
+                _buildDivider(),
+                // 5. 创建概要
+                _buildButton(
+                  icon: Icons.subject_rounded,
+                  onPressed: null, // TODO: 实现创建概要
+                  tooltip: '创建概要',
+                ),
+                // 6. 创建边框
+                _buildButton(
+                  icon: Icons.rectangle_outlined,
+                  onPressed: null, // TODO: 实现创建边框
+                  tooltip: '创建边框',
+                ),
+                // 7. 关联线
+                _buildButton(
+                  icon: Icons.link_rounded,
+                  onPressed: null, // TODO: 实现关联线
+                  tooltip: '关联线',
+                ),
+                // 8. 创建标签
+                _buildButton(
+                  icon: Icons.local_offer_outlined,
+                  onPressed: null, // TODO: 实现创建标签
+                  tooltip: '创建标签',
+                ),
+                _buildDivider(),
+                // 9. 导图布局
+                Builder(
+                  builder: (buttonContext) {
+                    return _buildButton(
+                      icon: Icons.account_tree_rounded,
+                      onPressed: () {
+                        final RenderBox button = buttonContext.findRenderObject() as RenderBox;
+                        final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+                        _showLayoutMenu(buttonContext, button, overlay);
+                      },
+                      tooltip: '导图布局切换',
+                    );
+                  },
+                ),
+                // 10. 添加节点笔记
+                _buildButton(
+                  icon: Icons.note_add_outlined,
+                  onPressed: onAddNote,
+                  tooltip: '添加节点笔记',
+                ),
+                _buildDivider(),
+                // 11. 锁定编辑
+                _buildButton(
+                  icon: controller.isLocked ? Icons.lock_rounded : Icons.lock_open_rounded,
+                  isActive: controller.isLocked,
+                  onPressed: controller.toggleLock,
+                  tooltip: controller.isLocked ? '已锁定编辑' : '锁定编辑',
+                  isDanger: controller.isLocked,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVerticalDivider() {
+  Widget _buildButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+    bool isActive = false,
+    bool isDanger = false,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0x26C8841A) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: isActive
+                ? Border.all(color: const Color(0x33C8841A), width: 1)
+                : null,
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: isDanger
+                ? const Color(0xFFE05858)
+                : isActive
+                    ? const Color(0xFFE8A83C)
+                    : const Color(0xB3FFF8E6),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
     return Container(
       height: 16,
       width: 1,
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: const Color(0x1F2A3547),
+      color: const Color(0x14FFDC8C),
     );
   }
 }

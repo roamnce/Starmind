@@ -59,9 +59,7 @@ class PdfService {
     if (_initialized) return;
     try {
       String? targetPath = libraryPath;
-      if (targetPath == null) {
-        targetPath = await _findPdfiumPath();
-      }
+      targetPath ??= await _findPdfiumPath();
 
       debugPrint('Starmind: Initializing PDFium with path=$targetPath');
       await ffi.initPdfium(libraryPath: targetPath);

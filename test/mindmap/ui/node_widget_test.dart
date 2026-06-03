@@ -51,7 +51,7 @@ void main() {
         ),
       ));
 
-      expect(find.byIcon(Icons.picture_as_pdf), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
     });
 
     testWidgets('shows selection highlight when isSelected', (tester) async {
