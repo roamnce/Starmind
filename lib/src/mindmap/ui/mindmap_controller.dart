@@ -1,19 +1,29 @@
 import 'dart:convert';
+import 'dart:math' show min;
 import 'package:flutter/material.dart';
 import '../domain/topic.dart';
 import '../domain/note.dart';
+import '../domain/note_content.dart';
 import '../service/mindmap_service.dart';
+import '../utils/color_utils.dart';
+import '../layout/layout_engine.dart';
+import '../layout/tree_layout_engine.dart';
+import '../layout/layout_config.dart';
+import '../layout/layout_result.dart';
+import '../rendering/connection_renderer.dart';
 import 'tree_layout.dart';
+import 'mixins/tree_traversal.dart';
 
-enum SidebarTab { note, style, icon }
+enum SidebarTab { note, search, theme, config, icon }
 enum CanvasInteractMode { drag, lasso }
+enum LineStyle { bezier, straight, ortho }
 
 /// MindMap UI 状态管理 Controller。
 ///
 /// 管理笔记本列表、当前选中笔记本、节点树等 UI 状态。
 /// 同时管理视口变换（缩放、平移）。
 /// 遵循项目现有的 WorkspaceController 模式。
-class MindMapController extends ChangeNotifier {
+class MindMapController extends ChangeNotifier with TreeTraversal {
   final MindMapService _service;
   final String? _initialTopicId;
 
@@ -40,6 +50,7 @@ class MindMapController extends ChangeNotifier {
   /// 加载状态
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  int _loadTreeSession = 0;
 
   // ==================== UI & 主题状态 ====================
 
@@ -70,12 +81,120 @@ class MindMapController extends ChangeNotifier {
   double _gridSize = 40.0;
   double get gridSize => _gridSize;
 
+  // 小地图显示状态
+  bool _isMinimapVisible = false;
+  bool get isMinimapVisible => _isMinimapVisible;
+
+  // 彩虹分支颜色开关
+  bool _isRainbowBranch = false;
+  bool get isRainbowBranch => _isRainbowBranch;
+
+  // 导图线样式
+  LineStyle _lineStyle = LineStyle.bezier;
+  LineStyle get lineStyle => _lineStyle;
+
   void _resetThemeToDefaults() {
     _canvasBgColor = const Color(0xFF0C0A07);
     _gridColor = const Color(0x05FAD278);
     _showGrid = true;
     _gridSize = 40.0;
+    _isRainbowBranch = false;
+    _lineStyle = LineStyle.bezier;
   }
+
+  // ==================== 新布局引擎 ====================
+
+  /// 布局引擎实例
+  final LayoutEngine _layoutEngine = const TreeLayoutEngine();
+
+  /// 是否使用新布局引擎（开关）
+  bool useNewLayoutEngine = true;
+
+  /// 缓存的布局结果
+  LayoutResult? _cachedLayoutResult;
+
+  /// 获取布局结果
+  LayoutResult? get layoutResult => _cachedLayoutResult;
+
+  /// 连线样式
+  ConnectionStyle _connectionStyle = ConnectionStyle.bezier;
+  ConnectionStyle get connectionStyle => _connectionStyle;
+
+  /// 设置连线样式
+  void setConnectionStyle(ConnectionStyle style) {
+    _connectionStyle = style;
+    notifyListeners();
+  }
+
+  /// 重新计算布局
+  void recalculateLayout() {
+    if (_selectedTopic == null || _noteTree.isEmpty) {
+      _cachedLayoutResult = null;
+      return;
+    }
+
+    if (!useNewLayoutEngine) {
+      return;
+    }
+
+    if (_noteTree.isNotEmpty) {
+      final config = LayoutConfig(
+        strategy: _layoutDirectionToStrategy(_layoutDirection),
+        nodeWidth: 120.0,
+        nodeHeight: 40.0,
+        horizontalSpacing: 60.0,
+        verticalSpacing: 30.0,
+      );
+
+      _cachedLayoutResult = _layoutEngine.layout(_noteTree.first, config);
+    }
+
+    notifyListeners();
+  }
+
+  /// 转换布局方向到策略
+  LayoutStrategy _layoutDirectionToStrategy(LayoutDirection direction) {
+    switch (direction) {
+      case LayoutDirection.bothSides:
+        return LayoutStrategy.bothSides;
+      case LayoutDirection.horizontal:
+      case LayoutDirection.left:
+        return LayoutStrategy.rightOnly;
+      case LayoutDirection.vertical:
+        return LayoutStrategy.rightOnly;
+    }
+  }
+
+  // ==================== 双视口分屏状态 ====================
+
+  String? _splitType;
+  String? get splitType => _splitType;
+
+  String? _splitId;
+  String? get splitId => _splitId;
+
+  String? _splitTitle;
+  String? get splitTitle => _splitTitle;
+
+  String? _splitFilePath;
+  String? get splitFilePath => _splitFilePath;
+
+  void openSplitScreen(String type, String id, String title, [String? filePath]) {
+    _splitType = type;
+    _splitId = id;
+    _splitTitle = title;
+    _splitFilePath = filePath;
+    notifyListeners();
+  }
+
+  void closeSplitScreen() {
+    _splitType = null;
+    _splitId = null;
+    _splitTitle = null;
+    _splitFilePath = null;
+    notifyListeners();
+  }
+
 
 
   // ==================== 视口状态 ====================
@@ -116,6 +235,9 @@ class MindMapController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// 获取所有笔记本
+  Future<List<Topic>> getAllTopics() => _service.getAllTopics();
 
   /// Load a specific topic by ID (for tab-based navigation)
   Future<void> loadTopic() async {
@@ -206,14 +328,24 @@ class MindMapController extends ChangeNotifier {
 
   /// 加载笔记本的节点树
   Future<void> _loadNoteTree(String topicId) async {
+    final session = ++_loadTreeSession;
     _isLoading = true;
     notifyListeners();
 
     try {
-      _noteTree = await _service.getTopicTree(topicId);
+      final tree = await _service.getTopicTree(topicId);
+      if (session == _loadTreeSession) {
+        _noteTree = tree;
+      }
+      // 重新计算布局
+      if (session == _loadTreeSession && useNewLayoutEngine) {
+        recalculateLayout();
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (session == _loadTreeSession) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -410,7 +542,10 @@ class MindMapController extends ChangeNotifier {
 
     final scaleX = screenSize.width / contentBounds.width;
     final scaleY = screenSize.height / contentBounds.height;
-    _viewportScale = _min(scaleX, scaleY) * 0.9; // 留 10% 边距
+    _viewportScale = min(scaleX, scaleY) * 0.9; // 留 10% 边距
+
+    // 确保缩放比例在有效范围内
+    _viewportScale = _viewportScale.clamp(minScale, maxScale);
 
     // 居中
     _viewportOffset = Offset(
@@ -444,6 +579,24 @@ class MindMapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 切换小地图显示
+  void toggleMinimap() {
+    _isMinimapVisible = !_isMinimapVisible;
+    notifyListeners();
+  }
+
+  /// 切换彩虹分支颜色
+  void toggleRainbowBranch() {
+    _isRainbowBranch = !_isRainbowBranch;
+    notifyListeners();
+  }
+
+  /// 设置导图线样式
+  void setLineStyle(LineStyle style) {
+    _lineStyle = style;
+    notifyListeners();
+  }
+
   void setSelectedNotes(Set<String> noteIds) {
     _selectedNoteIds.clear();
     _selectedNoteIds.addAll(noteIds);
@@ -457,10 +610,10 @@ class MindMapController extends ChangeNotifier {
       final theme = data['theme'];
       if (theme != null) {
         if (theme['canvasBg'] != null) {
-          _canvasBgColor = _parseColor(theme['canvasBg']);
+          _canvasBgColor = ColorUtils.parseColor(theme['canvasBg']);
         }
         if (theme['gridColor'] != null) {
-          _gridColor = _parseColor(theme['gridColor']);
+          _gridColor = ColorUtils.parseColor(theme['gridColor']);
         }
         if (theme['gridShow'] != null) {
           _showGrid = theme['gridShow'] as bool;
@@ -476,8 +629,8 @@ class MindMapController extends ChangeNotifier {
   String exportThemeToJson() {
     final themeData = {
       'theme': {
-        'canvasBg': _colorToHex(_canvasBgColor),
-        'gridColor': _colorToRgba(_gridColor),
+        'canvasBg': ColorUtils.toHex(_canvasBgColor),
+        'gridColor': ColorUtils.toRgba(_gridColor),
         'gridShow': _showGrid,
         'gridSize': _gridSize,
       }
@@ -513,31 +666,83 @@ class MindMapController extends ChangeNotifier {
     }
   }
 
-  Color _parseColor(String colorStr) {
-    if (colorStr.startsWith('#')) {
-      final hex = colorStr.replaceAll('#', '');
-      return Color(int.parse('FF$hex', radix: 16));
-    } else if (colorStr.startsWith('rgba')) {
-      final matches = RegExp(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)').firstMatch(colorStr);
-      if (matches != null) {
-        final r = int.parse(matches.group(1)!);
-        final g = int.parse(matches.group(2)!);
-        final b = int.parse(matches.group(3)!);
-        final a = (double.parse(matches.group(4)!) * 255).toInt();
-        return Color.fromARGB(a, r, g, b);
+  /// 更新节点笔记内容 (plainText)
+  Future<void> updateNoteContent(String noteId, String newText) async {
+    final note = await _service.getNote(noteId);
+    if (note == null) return;
+
+    final updatedNote = note.copyWith(
+      content: NoteContent(segments: [
+        Segment(type: SegmentType.text, text: newText),
+      ]),
+      updatedAt: DateTime.now(),
+    );
+    await _service.updateNote(updatedNote);
+
+    // Update local _selectedNote if it is the one being updated
+    if (_selectedNote?.id == noteId) {
+      _selectedNote = updatedNote;
+    }
+
+    // Refresh tree
+    if (_selectedTopic != null) {
+      await _loadNoteTree(_selectedTopic!.id);
+    }
+  }
+
+  /// 导航到同级节点
+  void navigateSibling(String direction) {
+    if (_selectedNote == null || _selectedTopic == null) return;
+    final parentId = _selectedNote!.parentId;
+    List<String> siblingIds = [];
+    if (parentId == null) {
+      siblingIds = _selectedTopic!.rootNoteIds;
+    } else {
+      // Find parent note in tree to get childIds
+      final parentNode = findNoteTreeNode(_noteTree, parentId);
+      if (parentNode != null) {
+        siblingIds = parentNode.note.childIds;
       }
     }
-    return Colors.transparent;
+
+    if (siblingIds.isEmpty) return;
+
+    final currentIndex = siblingIds.indexOf(_selectedNote!.id);
+    if (currentIndex == -1) return;
+
+    int nextIndex = currentIndex;
+    if (direction == 'prev') {
+      nextIndex = currentIndex - 1;
+      if (nextIndex < 0) nextIndex = siblingIds.length - 1;
+    } else if (direction == 'next') {
+      nextIndex = currentIndex + 1;
+      if (nextIndex >= siblingIds.length) nextIndex = 0;
+    }
+
+    final nextNoteId = siblingIds[nextIndex];
+    // Find the note object
+    final nextNode = findNoteTreeNode(_noteTree, nextNoteId);
+    if (nextNode != null) {
+      selectNote(nextNode.note);
+    }
   }
 
-  String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).padLeft(6, "0")}';
-  }
+  /// 搜索节点
+  List<NoteTreeNode> searchNodes(String query) {
+    if (query.isEmpty) return [];
+    final lowerQuery = query.toLowerCase();
+    final results = <NoteTreeNode>[];
 
-  String _colorToRgba(Color color) {
-    return 'rgba(${color.red}, ${color.green}, ${color.blue}, ${(color.alpha / 255).toStringAsFixed(2)})';
+    void traverse(List<NoteTreeNode> nodes) {
+      for (final node in nodes) {
+        if (node.note.title.toLowerCase().contains(lowerQuery)) {
+          results.add(node);
+        }
+        traverse(node.children);
+      }
+    }
+
+    traverse(_noteTree);
+    return results;
   }
 }
-
-/// 辅助函数
-double _min(double a, double b) => a < b ? a : b;
