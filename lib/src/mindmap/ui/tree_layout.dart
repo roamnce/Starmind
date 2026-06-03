@@ -1,3 +1,12 @@
+// ============================================================================
+// DEPRECATED: This class is kept for backward compatibility.
+//
+// New code should use TreeLayoutEngine from layout/tree_layout_engine.dart
+// which provides better separation of concerns and anchor point calculation.
+//
+// This file will be removed in a future version.
+// ============================================================================
+
 // lib/src/mindmap/ui/tree_layout.dart
 
 import 'dart:math';
