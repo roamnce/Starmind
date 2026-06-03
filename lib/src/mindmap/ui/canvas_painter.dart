@@ -1,24 +1,40 @@
 // lib/src/mindmap/ui/canvas_painter.dart
 
 import 'package:flutter/material.dart';
-import 'tree_layout.dart';
+import '../layout/layout_result.dart';
+import '../rendering/connection_renderer.dart';
+import '../rendering/bezier_renderer.dart';
+import '../rendering/straight_renderer.dart';
+import '../rendering/ortho_renderer.dart';
+import 'mindmap_controller.dart' show LineStyle;
+import 'tree_layout.dart' show Connection;
 
 /// MindMap canvas painter.
 ///
-/// Draws connections between nodes using bezier curves.
-/// Supports multiple connection styles: straight, bezier, stepped.
+/// Draws connections between nodes using pluggable renderers.
+/// Supports multiple connection styles: bezier, straight, ortho.
+///
+/// This painter supports two input modes:
+/// 1. Legacy mode: Pass `connections` list (old Connection objects)
+/// 2. New mode: Pass `layoutResult` (new LayoutResult with ConnectionData)
 class MindMapCanvasPainter extends CustomPainter {
-  /// Connection data
-  final List<Connection> connections;
+  /// Layout result containing connections (new architecture)
+  final LayoutResult? layoutResult;
+
+  /// Legacy connections list (backward compatibility)
+  final List<Connection>? connections;
+
+  /// Connection style (from rendering module)
+  final ConnectionStyle? connectionStyle;
+
+  /// Line style (from controller - for backward compatibility)
+  final LineStyle? lineStyle;
 
   /// Line color
   final Color lineColor;
 
   /// Line width
   final double lineWidth;
-
-  /// Connection style
-  final ConnectionStyle connectionStyle;
 
   /// Show grid background
   final bool showGrid;
@@ -29,132 +45,145 @@ class MindMapCanvasPainter extends CustomPainter {
   /// Grid line color
   final Color gridColor;
 
+  /// Rainbow branch colors
+  final bool isRainbowBranch;
+
+  /// Renderer cache
+  final Map<ConnectionStyle, ConnectionRenderer> _renderers = {};
+
   MindMapCanvasPainter({
-    required this.connections,
-    this.lineColor = Colors.grey,
+    this.layoutResult,
+    this.connections,
+    this.connectionStyle,
+    this.lineStyle,
+    this.lineColor = const Color(0xFFC8841A),
     this.lineWidth = 2.0,
-    this.connectionStyle = ConnectionStyle.bezier,
     this.showGrid = false,
     this.gridSize = 40.0,
     this.gridColor = const Color(0x05FFFFFF),
-  });
+    this.isRainbowBranch = false,
+  }) {
+    _renderers[ConnectionStyle.bezier] = BezierConnectionRenderer();
+    _renderers[ConnectionStyle.straight] = StraightConnectionRenderer();
+    _renderers[ConnectionStyle.ortho] = OrthoConnectionRenderer();
+  }
+
+  /// Get effective connection style from either connectionStyle or lineStyle
+  ConnectionStyle get _effectiveStyle {
+    if (connectionStyle != null) return connectionStyle!;
+    if (lineStyle != null) {
+      switch (lineStyle!) {
+        case LineStyle.bezier:
+          return ConnectionStyle.bezier;
+        case LineStyle.straight:
+          return ConnectionStyle.straight;
+        case LineStyle.ortho:
+          return ConnectionStyle.ortho;
+      }
+    }
+    return ConnectionStyle.bezier;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Draw grid background
     if (showGrid) {
-      final gridPaint = Paint()
-        ..color = gridColor
-        ..strokeWidth = 1.0;
-      for (double x = 0; x < size.width; x += gridSize) {
-        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      _drawGrid(canvas, size);
+    }
+
+    // Get current renderer
+    final renderer = _renderers[_effectiveStyle] ?? BezierConnectionRenderer();
+
+    // Draw all connections
+    if (layoutResult != null) {
+      // New architecture: use ConnectionData
+      for (int i = 0; i < layoutResult!.connections.length; i++) {
+        final conn = layoutResult!.connections[i];
+        final config = ConnectionPaintConfig(
+          color: _getConnectionColor(i),
+          width: lineWidth,
+          isRainbow: isRainbowBranch,
+        );
+        renderer.render(canvas, conn, config);
       }
-      for (double y = 0; y < size.height; y += gridSize) {
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    } else if (connections != null && connections!.isNotEmpty) {
+      // Legacy mode: convert old Connection to ConnectionData
+      for (int i = 0; i < connections!.length; i++) {
+        final conn = connections![i];
+        final connData = ConnectionData(
+          fromId: conn.fromId,
+          toId: conn.toId,
+          startPoint: conn.start,
+          endPoint: conn.end,
+          fromCenter: conn.start,
+          toCenter: conn.end,
+        );
+        final config = ConnectionPaintConfig(
+          color: _getConnectionColor(i),
+          width: lineWidth,
+          isRainbow: isRainbowBranch,
+        );
+        renderer.render(canvas, connData, config);
       }
     }
+  }
 
-    if (connections.isEmpty) return;
+  /// Draw grid background
+  void _drawGrid(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1.0;
 
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = lineWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    for (double x = 0; x < size.width; x += gridSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
 
-    for (final conn in connections) {
-      final path = _createPath(conn);
-      canvas.drawPath(path, paint);
+    for (double y = 0; y < size.height; y += gridSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
   }
 
-  /// Create connection path
-  Path _createPath(Connection conn) {
-    switch (connectionStyle) {
-      case ConnectionStyle.straight:
-        return _createStraightPath(conn);
-      case ConnectionStyle.bezier:
-        return _createBezierPath(conn);
-      case ConnectionStyle.stepped:
-        return _createSteppedPath(conn);
-    }
-  }
+  /// Get connection color (supports rainbow colors)
+  Color _getConnectionColor(int index) {
+    if (!isRainbowBranch) return lineColor;
 
-  /// Straight line path
-  Path _createStraightPath(Connection conn) {
-    return Path()
-      ..moveTo(conn.start.dx, conn.start.dy)
-      ..lineTo(conn.end.dx, conn.end.dy);
-  }
+    const rainbowColors = [
+      Color(0xFFFF6B6B),
+      Color(0xFFFF9F43),
+      Color(0xFFFFD93D),
+      Color(0xFF6BCB77),
+      Color(0xFF4D96FF),
+      Color(0xFF9B59B6),
+    ];
 
-  /// Bezier curve path (improved)
-  ///
-  /// Uses cubic bezier curve with control points positioned based on
-  /// connection direction. Inspired by wanglin-mindmap implementation.
-  Path _createBezierPath(Connection conn) {
-    final path = Path();
-    path.moveTo(conn.start.dx, conn.start.dy);
-
-    // Determine connection direction
-    final dx = conn.end.dx - conn.start.dx;
-    final dy = conn.end.dy - conn.start.dy;
-    final isHorizontal = dx.abs() > dy.abs();
-
-    if (isHorizontal) {
-      // Horizontal direction: control points on horizontal axis
-      final midX = (conn.start.dx + conn.end.dx) / 2;
-      path.cubicTo(
-        midX, conn.start.dy,
-        midX, conn.end.dy,
-        conn.end.dx, conn.end.dy,
-      );
-    } else {
-      // Vertical direction: control points on vertical axis
-      final midY = (conn.start.dy + conn.end.dy) / 2;
-      path.cubicTo(
-        conn.start.dx, midY,
-        conn.end.dx, midY,
-        conn.end.dx, conn.end.dy,
-      );
-    }
-
-    return path;
-  }
-
-  /// Stepped path (orthogonal connection)
-  Path _createSteppedPath(Connection conn) {
-    final path = Path();
-    path.moveTo(conn.start.dx, conn.start.dy);
-
-    // Horizontal step midpoint
-    final midX = (conn.start.dx + conn.end.dx) / 2;
-
-    path.lineTo(midX, conn.start.dy);
-    path.lineTo(midX, conn.end.dy);
-    path.lineTo(conn.end.dx, conn.end.dy);
-
-    return path;
+    return rainbowColors[index % rainbowColors.length];
   }
 
   @override
   bool shouldRepaint(covariant MindMapCanvasPainter oldDelegate) {
-    return connections != oldDelegate.connections ||
+    // Compare layoutResult
+    if (layoutResult != null && oldDelegate.layoutResult != null) {
+      if (layoutResult!.connections.length != oldDelegate.layoutResult!.connections.length) {
+        return true;
+      }
+    }
+
+    // Compare connections list
+    if (connections != null && oldDelegate.connections != null) {
+      if (connections!.length != oldDelegate.connections!.length) {
+        return true;
+      }
+    }
+
+    return layoutResult != oldDelegate.layoutResult ||
+        connections != oldDelegate.connections ||
+        connectionStyle != oldDelegate.connectionStyle ||
+        lineStyle != oldDelegate.lineStyle ||
         lineColor != oldDelegate.lineColor ||
         lineWidth != oldDelegate.lineWidth ||
-        connectionStyle != oldDelegate.connectionStyle ||
         showGrid != oldDelegate.showGrid ||
         gridSize != oldDelegate.gridSize ||
-        gridColor != oldDelegate.gridColor;
+        gridColor != oldDelegate.gridColor ||
+        isRainbowBranch != oldDelegate.isRainbowBranch;
   }
-}
-
-/// Connection style
-enum ConnectionStyle {
-  /// Straight line
-  straight,
-
-  /// Bezier curve (default)
-  bezier,
-
-  /// Stepped line (orthogonal)
-  stepped,
 }
