@@ -1,5 +1,6 @@
 // lib/src/mindmap/layout/layout_engine.dart
 
+import 'dart:ui';
 import 'layout_config.dart';
 import 'layout_result.dart';
 import '../service/mindmap_service.dart';
@@ -14,14 +15,4 @@ abstract class LayoutEngine {
   /// [config] 布局配置
   /// 返回布局结果，包含节点位置、尺寸和连线数据
   LayoutResult layout(NoteTreeNode root, LayoutConfig config);
-
-  /// 计算布局边界框
-  ///
-  /// [root] 根节点
-  /// [config] 布局配置
-  /// 返回内容边界框
-  Rect calculateBounds(NoteTreeNode root, LayoutConfig config) {
-    final result = layout(root, config);
-    return result.contentBounds;
-  }
 }
