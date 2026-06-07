@@ -84,5 +84,21 @@ void main() {
       await tester.tap(find.byType(NodeWidget));
       expect(tapped, isTrue);
     });
+
+    testWidgets('uses customSize for normal nodes so connection anchors match visual bounds', (tester) async {
+      const customSize = Size(120, 40);
+
+      await tester.pumpWidget(MaterialApp(
+        home: Center(
+          child: NodeWidget(
+            note: testNote,
+            customSize: customSize,
+            onTap: () {},
+          ),
+        ),
+      ));
+
+      expect(tester.getSize(find.byType(NodeWidget)), equals(customSize));
+    });
   });
 }

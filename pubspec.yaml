@@ -47,6 +47,7 @@ dependencies:
   forui: ^0.22.3
 
   path: any
+  archive: ^4.0.9
 dev_dependencies:
   flutter_test:
     sdk: flutter

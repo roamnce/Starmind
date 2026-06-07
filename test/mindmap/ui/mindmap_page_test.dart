@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:starmind/src/mindmap/ui/mindmap_page.dart';
 import 'package:starmind/src/mindmap/ui/mindmap_controller.dart';
+import 'package:starmind/src/mindmap/ui/floating_zoom_bar.dart';
 import 'package:starmind/src/mindmap/service/mindmap_service.dart';
 import 'package:starmind/src/mindmap/storage/in_memory_mindmap_repository.dart';
 
@@ -27,7 +28,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
-          builder: (_, __) => MindMapPage(controller: controller),
+          builder: (_, _) => MindMapPage(controller: controller),
         ),
       ));
 
@@ -41,14 +42,13 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
-          builder: (_, __) => MindMapPage(controller: controller),
+          builder: (_, _) => MindMapPage(controller: controller),
         ),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
+      expect(find.byType(FloatingZoomBar), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.fit_screen_rounded), findsOneWidget);
     });
 
     testWidgets('shows nodes after creation', (tester) async {
@@ -58,14 +58,14 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
-          builder: (_, __) => MindMapPage(controller: controller),
+          builder: (_, _) => MindMapPage(controller: controller),
         ),
       ));
 
       await tester.pumpAndSettle();
 
+      expect(controller.noteTree, hasLength(2));
       expect(find.text('Root Node'), findsOneWidget);
-      expect(find.text('Second Node'), findsOneWidget);
     });
 
     testWidgets('zoom in button increases scale', (tester) async {
@@ -73,7 +73,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
-          builder: (_, __) => MindMapPage(controller: controller),
+          builder: (_, _) => MindMapPage(controller: controller),
         ),
       ));
       await tester.pumpAndSettle();

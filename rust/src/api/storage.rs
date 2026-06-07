@@ -7,6 +7,7 @@ pub use crate::storage::tags::TagNode;
 pub use crate::storage::documents::DocumentInfo;
 pub use crate::storage::annotations::{AnnotationRecord, AnnotationType, AnnotationRect, InkPoint, InkStroke};
 pub use crate::storage::mindmap::{Topic, Note};
+pub use crate::storage::ink_layers::InkLayerRecord;
 
 static SANDBOX_DIR: OnceCell<String> = OnceCell::new();
 
@@ -244,4 +245,18 @@ pub fn mindmap_get_notes_by_pdf(pdf_id: String) -> Result<Vec<Note>, String> {
 /// Gets notes by topic ID
 pub fn mindmap_get_notes_by_topic(topic_id: String) -> Result<Vec<Note>, String> {
     crate::storage::mindmap::get_notes_by_topic(topic_id)
+}
+
+// ============== MindMap Ink Layer APIs ==============
+
+pub fn mindmap_save_ink_layer(layer: InkLayerRecord) -> Result<String, String> {
+    crate::storage::ink_layers::save_ink_layer(layer)
+}
+
+pub fn mindmap_get_ink_layer(owner_id: String, layer_type: String) -> Result<Option<InkLayerRecord>, String> {
+    crate::storage::ink_layers::get_ink_layer(owner_id, layer_type)
+}
+
+pub fn mindmap_delete_ink_layer(id: String) -> Result<(), String> {
+    crate::storage::ink_layers::delete_ink_layer(id)
 }

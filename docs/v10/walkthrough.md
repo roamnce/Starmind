@@ -1,77 +1,43 @@
-# 思维导图高保真复刻交付文档 (v10.0) - Walkthrough
+﻿# Phase1–Phase4 规格审计与交付记录
 
-本期完成了思维导图模块 **Phase 2（右侧侧边栏及编辑器高保真还原）** 与 **Phase 3（底部悬浮操作栏与套索多选手势）** 的高保真复刻开发。所有组件均以解耦编排的架构在 Flutter 端干净落地，并通过了 60 项深度单元与集成 Widget 测试。
+## 规格正确性审视
 
----
+- Phase1 布局引擎重构：规格与当前项目结构一致，`layout/`、`rendering/`、`ui/canvas_painter.dart` 路径均可落地；性能和覆盖率门槛需要通过持续测试/benchmark 证明。
+- Phase2 手写层：规格方向正确；已补齐 Dart 手写模型/控制器/UI、JSON/内存仓储，并新增 Rust SQLite `ink_layers` 表、FRB API 与 Dart FFI 仓储。
+- Phase3 GuruMind 导入：规格正确；导入器支持真实样本 `D:\个人文件\Downloads\演示.gurumind`，可解析 `documents/<id>/meta.json + doc_*.hive`、manifest documents、图片资源和 topic hive 内导图节点。
+- Phase4 导出与刷题：规格正确；导出器生成规范 `documents/` 目录、mindMap/note `meta.json`、`doc_*.hive`、缩略图资源与 manifest documents；刷题模式已接入页面快捷键、更多菜单、进度面板、刷题题卡与节点级手写叠加。
 
-## 1. 交付成果概述
+## 当前完成映射
 
-在本次迭代中，我们对脑图画布进行了深度的功能扩展，打通了侧栏分栏、Markdown 编辑、色彩自定义、悬浮操作和套索多选等多项高级桌面级/平板级交互体验：
+| 阶段 | 规格任务 | 当前证据 |
+| --- | --- | --- |
+| Phase1 | LayoutEngine、TreeLayoutEngine、AnchorCalculator、三类 ConnectionRenderer、CanvasPainter 集成 | 已存在于 `lib/src/mindmap/layout/`、`lib/src/mindmap/rendering/`，并有 `test/mindmap/layout/`、`test/mindmap/rendering/` 覆盖 |
+| Phase2 | InkLayer、InkLayerController、画布手写、荧光笔、橡皮擦、套索移动、节点级手写、持久化、Rust FFI 存储 | `lib/src/mindmap/ink/`、`rust/src/storage/ink_layers.rs`、`lib/src/rust/storage/ink_layers.dart`、`test/mindmap/ink/`；画布手写与节点级手写均通过 `MindMapPage`/`StudyNoteWidget` 进入 UI 并保存到 FFI |
+| Phase3 | ZIP 解析、manifest/meta 解析、HiveDecoder、数据转换、导入主类、资源复制、UI 导入入口 | `lib/src/mindmap/import/`；`MindMapPage` 更多菜单“导入 GuruMind”；真实样本条件测试、导出回读测试和 `documents/` 结构验证测试 |
+| Phase4 | HiveEncoder、GuruMindDataExporter、资源导出、缩略图、StudyModeController、StudyNoteWidget、StudyModePanel、快捷键、UI 导出入口 | `lib/src/mindmap/export/`、`lib/src/mindmap/study/`、`lib/src/mindmap/ui/mindmap_page.dart` 集成；更多菜单“导出 GuruMind/进入刷题模式/开启画布手写”；测试 `test/mindmap/export/`、`test/mindmap/study/` |
 
-*   **文件路径与职责分配**：
-    *   **控制器扩展**：[mindmap_controller.dart](file:///d:/starmind/lib/src/mindmap/ui/mindmap_controller.dart)
-        *   新增侧栏状态、Canvas 交互模式（Drag/Lasso）、编辑锁定（Lock）、套索选中ID集合等字段。
-        *   集成基于 HSL/RGBA 与 Hex 的 JSON 主题编解码器，实现零数据库迁移的 `Topic.thumbnailPath` 主题配置持久化存储。
-    *   **弹性左右分栏与 Tab 固定栏**：[mindmap_page.dart](file:///d:/starmind/lib/src/mindmap/ui/mindmap_page.dart)
-        *   Scaffold `body` 重构为 Row 弹性布局。
-        *   画布视口随侧栏开闭自适应伸缩，并在右边缘添加深色高质感 vertical Tab 固定栏，激活时呈现蓝色发光 shadow。
-    *   **高保真侧边栏内容面板**：[mindmap_sidebar.dart](file:///d:/starmind/lib/src/mindmap/ui/mindmap_sidebar.dart)
-        *   **笔记面板 (Note)**：TextField 内容实时绑定控制器，顶部支持 `<` 和 `>` 兄弟节点循环跳转导航。
-        *   **样式面板 (Style)**：配置 4 个画布背景和 4 个网格色 HSL 预设圆形色块，并带发光高亮激活圈。提供自定义 RGB 背景及 RGBA 网格色 Slider 滑块进行无缝微调。
-        *   **图标面板 (Icon)**：支持一键将 20 种高频 emoji 插入或替换到节点标题头部。
-    *   **两行式 Markdown 编辑快捷工具栏**：[markdown_editor_toolbar.dart](file:///d:/starmind/lib/src/mindmap/ui/markdown_editor_toolbar.dart)
-        *   高保真复刻两行式常用 Markdown 快捷键（Row 1: 格式与列表，Row 2: 代码与表格/Undo/Redo）。
-        *   实现光标感知定位算法：支持选中文本时双端包裹，未选择文本时直接插入并在光标处自动重获焦点。
-    *   **磨砂玻璃悬浮底部操作栏**：[bottom_action_bar.dart](file:///d:/starmind/lib/src/mindmap/ui/bottom_action_bar.dart)
-        *   `ClipRRect` + `BackdropFilter` 实现高透明度磨砂物理模糊特效。
-        *   集成缩放比例微调、一键 Fit 视口自适应、编辑锁定按钮以及手势模式切换（手掌 vs 🎯 套索）。
-        *   **2px 绝对定位布局菜单**：布局切换按钮通过 RenderBox 自动换算，在按钮正上方 2px 处精确弹出布局选项 Overlay 菜单。
-    *   **套索手势蒙版与逆矩阵碰撞体检测**：
-        *   **套索虚线选区**：[lasso_painter.dart](file:///d:/starmind/lib/src/mindmap/ui/lasso_painter.dart) 负责实时绘制精致的金黄色虚线选框。
-        *   **矩阵逆映射与碰撞检测**：[mindmap_page.dart](file:///d:/starmind/lib/src/mindmap/ui/mindmap_page.dart) 激活套索时锁定 `InteractiveViewer` 位移，利用 `TransformationController` 逆矩阵将屏幕矩形转回画布物理 $Rect$，换算 $500\text{px}$ 冗余物理边距后进行 AABB 碰撞匹配，批量选中高亮所有框内节点。
-    *   **批量选中高亮**：[node_widget.dart](file:///d:/starmind/lib/src/mindmap/ui/node_widget.dart) 中多选命中的节点亮起金色发光流光边框 `#C8841A`。
+## 本次 review 后修正
 
----
+- UI 接入：确认原先 GuruMind 导入/导出没有用户入口，“更多操作”按钮为空；已接入导入、导出、刷题模式、画布手写开关。
+- 手写持久化：确认原先 `CanvasInkLayer` 只连到内存 controller；已加载/保存 canvas 与 node 两类 `ink_layers`。
+- 节点级手写：确认 `StudyNoteWidget`/`NodeNoteContent` 曾只创建文件未渲染；已在刷题模式右侧显示题卡，并支持在图片/正文上叠加手写。
+- 评审问题：多根布局只布局 `_noteTree.first` 的判断正确，已合并所有 root 布局结果；刷题候选包含纯标题节点的判断正确，已改为正文/图片/填空/摘录/媒体节点。
+- 评审过期点：`ink_layers` SQLite 表与 FRB API 已存在并通过 FFI 测试；“Phase1–4 100% 完成”的结论在 UI 接入口补齐前不准确，本轮已补齐主要入口。
 
-## 2. 自动化验证结果
+## 已运行验证
 
-我们在本地环境运行了思维导图 UI 模块的全部测试套件。全部 **60 个单元测试和集成 Widget 测试均 100% 绿卡通过**：
+- `flutter_rust_bridge_codegen generate`：通过，已生成 `lib/src/rust/storage/ink_layers.dart` 与对应 API。
+- `cargo build --release`：通过，生成 `rust/target/release/rust_lib_starmind.dll`。
+- `cargo check`：通过；仅保留既有 `rust/src/api/pdf.rs` 两条 warning。
+- `flutter test test/mindmap/storage/ffi_mindmap_repository_test.dart --reporter expanded`：15 项 FFI 集成测试实际通过。
+- `flutter test test/mindmap/ink`：通过，输出 `+3: All tests passed!`。
+- `flutter test test/mindmap/import`：通过，包含真实 GuruMind 样本条件测试。
+- `flutter test test/mindmap/export/gurumind_exporter_test.dart`：通过，输出 `+2: All tests passed!`。
+- `flutter test --reporter expanded`：通过，输出 `+465: All tests passed!`。
+- 定向 `dart analyze`：本轮新增/改动关键文件均输出 `No issues found!`。
+- `flutter test test/mindmap/study test/mindmap/export test/mindmap/import --reporter expanded`：通过，输出 `+5: All tests passed!`。
+- `flutter analyze`：仍有既有 warning/info，集中在 `lib/main.dart`、旧测试 unused import、旧 PDF 测试 override 等。
 
-```powershell
-$env:TEMP='D:\temp'; $env:TMP='D:\temp'; flutter test test/mindmap/ui/
-...
-00:00 +0: loading D:/starmind/test/mindmap/ui/bottom_action_bar_test.dart
-00:01 +4: D:/starmind/test/mindmap/ui/canvas_painter_test.dart: MindMapCanvasPainter paints bezier curves
-00:02 +5: D:/starmind/test/mindmap/ui/lasso_selection_test.dart: Lasso UI Selection and Interaction selection highlights node
-00:03 +21: D:/starmind/test/mindmap/ui/markdown_editor_toolbar_test.dart: MarkdownEditorToolbar Tests Heading button inserts prefix ### at cursor
-00:05 +32: D:/starmind/test/mindmap/ui/bottom_action_bar_test.dart: BottomActionBar & Edit Lock Tests locking restricts node edits and keyboard key events
-00:06 +41: D:/starmind/test/mindmap/ui/mindmap_page_test.dart: MindMapPage shows nodes after creation
-00:07 +44: D:/starmind/test/mindmap/ui/topic_card_test.dart: TopicCard displays topic title
-00:08 +46: D:/starmind/test/mindmap/ui/topic_list_page_test.dart: TopicListPage shows empty state when no topics
-00:09 +60: All tests passed!
-```
+## 仅剩外部验证
 
----
-
-## 3. 手动验证与交互操作指南
-
-您可以通过在本地启动 Starmind 应用程序进行以下手动交互体验：
-
-1.  **右侧侧栏 Tab 与兄弟跳转**：
-    *   在画布中选中任一节点，点击右边缘 Tab 栏最上方“纸飞机”按钮展开侧栏。
-    *   在 Markdown 笔记编辑区修改内容，确认标题及文本输入同步。
-    *   点击顶部栏 `<` 或 `>` 按钮，确认选中框以循环对齐方式在兄弟节点间切换，侧栏笔记内容无延迟更新。
-2.  **两行工具栏输入**：
-    *   将光标停留在编辑器中，选中任一文本，点击第一行 `B`，选中文本两端自动包裹 `**`；点击第二行 `Table`，立即在光标处渲染标准的 Markdown 表格样板，且文本框自动重获焦点。
-3.  **导图主题背景与网格微调**：
-    *   点击右侧第二个垂直 Tab（图钉图标），进入“导图主题”。
-    *   点击“深空灰蓝”，确认画布背景色立即刷新。
-    *   调节“网格大小”滑块，确认背景微小的细微网格密度立即跟随放大或收缩。
-    *   拖动“自定义背景色 (RGB)”或“自定义网格色 (RGBA)”滑块，画布与网格线的色彩渲染实时反映滑块变化。
-4.  **编辑锁定拦截**：
-    *   点击底部浮动栏右侧的“锁头”按钮（状态置为锁定 🔒）。
-    *   尝试按键盘 `Tab`、`Enter` 或点击右下角浮动的 `+` 悬浮按钮，确认界面弹出优雅的磨砂提示条“*思维导图已锁定，无法编辑*”，操作被安全阻断。
-5.  **套索多选碰撞**：
-    *   点击底部工具栏“模式切换”按钮切换为“套索模式”（🎯）。
-    *   此时 InteractiveViewer 拖动失效。在画布背景空白处长按并拖动手指，画出带有金色虚线框和半透明微黄背景的多选套索。
-    *   抬起手指后，凡是被套索框覆盖到的脑图节点，其边框均同步高亮发光，提示批量高亮选中！
+- 外部 GuruMind 应用打开导出的 `.gurumind` 文件：当前机器未找到 `GuruMind.exe`，无法执行最终应用级打开验证。

@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "agents",
+      "label": "agents",
+      "paths": [
+        "agents/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: agents",
+      "createdBy": "system"
+    },
+    {
+      "id": "analysis",
+      "label": "analysis",
+      "paths": [
+        "analysis/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: analysis",
+      "createdBy": "system"
+    },
+    {
+      "id": "inbox",
+      "label": "Inbox",
+      "paths": [
+        "Inbox/"
+      ],
+      "role": "inbox",
+      "confidence": 0.9,
+      "source": "learned",
+      "description": "Auto-detected inbox directory",
+      "createdBy": "system"
+    },
+    {
+      "id": "memory",
+      "label": "memory",
+      "paths": [
+        "memory/"
+      ],
+      "role": "memory",
+      "confidence": 0.9,
+      "source": "learned",
+      "description": "Auto-detected memory directory",
+      "createdBy": "system"
+    },
+    {
+      "id": "study",
+      "label": "study",
+      "paths": [
+        "study/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: study",
+      "createdBy": "system"
+    },
+    {
+      "id": "superpowers",
+      "label": "superpowers",
+      "paths": [
+        "superpowers/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: superpowers",
+      "createdBy": "system"
+    },
+    {
+      "id": "v1",
+      "label": "v1",
+      "paths": [
+        "v1/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v1",
+      "createdBy": "system"
+    },
+    {
+      "id": "v10",
+      "label": "v10",
+      "paths": [
+        "v10/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v10",
+      "createdBy": "system"
+    },
+    {
+      "id": "v11",
+      "label": "v11",
+      "paths": [
+        "v11/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v11",
+      "createdBy": "system"
+    },
+    {
+      "id": "v12",
+      "label": "v12",
+      "paths": [
+        "v12/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v12",
+      "createdBy": "system"
+    },
+    {
+      "id": "v13",
+      "label": "v13",
+      "paths": [
+        "v13/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v13",
+      "createdBy": "system"
+    },
+    {
+      "id": "v14",
+      "label": "v14",
+      "paths": [
+        "v14/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v14",
+      "createdBy": "system"
+    },
+    {
+      "id": "v2",
+      "label": "v2",
+      "paths": [
+        "v2/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v2",
+      "createdBy": "system"
+    },
+    {
+      "id": "v3",
+      "label": "v3",
+      "paths": [
+        "v3/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v3",
+      "createdBy": "system"
+    },
+    {
+      "id": "v4",
+      "label": "v4",
+      "paths": [
+        "v4/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v4",
+      "createdBy": "system"
+    },
+    {
+      "id": "v5",
+      "label": "v5",
+      "paths": [
+        "v5/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v5",
+      "createdBy": "system"
+    },
+    {
+      "id": "v6",
+      "label": "v6",
+      "paths": [
+        "v6/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v6",
+      "createdBy": "system"
+    },
+    {
+      "id": "v7",
+      "label": "v7",
+      "paths": [
+        "v7/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v7",
+      "createdBy": "system"
+    },
+    {
+      "id": "v8",
+      "label": "v8",
+      "paths": [
+        "v8/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v8",
+      "createdBy": "system"
+    },
+    {
+      "id": "v9",
+      "label": "v9",
+      "paths": [
+        "v9/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: v9",
+      "createdBy": "system"
+    }
+  ],
+  "evolutionRules": {
+    "allowAutoCreateCategory": false,
+    "allowAutoArchive": false,
+    "requireConfirmationForMoves": true
+  }
+}

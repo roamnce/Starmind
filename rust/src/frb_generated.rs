@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1362578036;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2022454548;
 
 // Section: executor
 
@@ -1038,6 +1038,39 @@ fn wire__crate__api__storage__mindmap_create_topic_impl(
         },
     )
 }
+fn wire__crate__api__storage__mindmap_delete_ink_layer_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "mindmap_delete_ink_layer",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_id = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::storage::mindmap_delete_ink_layer(api_id)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__storage__mindmap_delete_note_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1130,6 +1163,41 @@ fn wire__crate__api__storage__mindmap_get_children_impl(
             move |context| {
                 transform_result_sse::<_, String>((move || {
                     let output_ok = crate::api::storage::mindmap_get_children(api_parent_id)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__storage__mindmap_get_ink_layer_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "mindmap_get_ink_layer",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_owner_id = <String>::sse_decode(&mut deserializer);
+            let api_layer_type = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok =
+                        crate::api::storage::mindmap_get_ink_layer(api_owner_id, api_layer_type)?;
                     Ok(output_ok)
                 })())
             }
@@ -1297,6 +1365,40 @@ fn wire__crate__api__storage__mindmap_remove_child_impl(
                 transform_result_sse::<_, String>((move || {
                     let output_ok =
                         crate::api::storage::mindmap_remove_child(api_parent_id, api_child_id)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__storage__mindmap_save_ink_layer_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "mindmap_save_ink_layer",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_layer =
+                <crate::storage::ink_layers::InkLayerRecord>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::storage::mindmap_save_ink_layer(api_layer)?;
                     Ok(output_ok)
                 })())
             }
@@ -1721,6 +1823,28 @@ impl SseDecode for i64 {
     }
 }
 
+impl SseDecode for crate::storage::ink_layers::InkLayerRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_layerType = <String>::sse_decode(deserializer);
+        let mut var_ownerId = <String>::sse_decode(deserializer);
+        let mut var_strokesJson = <String>::sse_decode(deserializer);
+        let mut var_zIndex = <i32>::sse_decode(deserializer);
+        let mut var_createdAt = <i64>::sse_decode(deserializer);
+        let mut var_updatedAt = <i64>::sse_decode(deserializer);
+        return crate::storage::ink_layers::InkLayerRecord {
+            id: var_id,
+            layer_type: var_layerType,
+            owner_id: var_ownerId,
+            strokes_json: var_strokesJson,
+            z_index: var_zIndex,
+            created_at: var_createdAt,
+            updated_at: var_updatedAt,
+        };
+    }
+}
+
 impl SseDecode for Vec<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1952,6 +2076,19 @@ impl SseDecode for Option<i64> {
     }
 }
 
+impl SseDecode for Option<crate::storage::ink_layers::InkLayerRecord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::storage::ink_layers::InkLayerRecord>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::storage::mindmap::Note> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2146,54 +2283,69 @@ fn pde_ffi_dispatcher_primary_impl(
         28 => {
             wire__crate__api__storage__mindmap_create_topic_impl(port, ptr, rust_vec_len, data_len)
         }
-        29 => {
+        29 => wire__crate__api__storage__mindmap_delete_ink_layer_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        30 => {
             wire__crate__api__storage__mindmap_delete_note_impl(port, ptr, rust_vec_len, data_len)
         }
-        30 => wire__crate__api__storage__mindmap_get_all_topics_impl(
+        31 => wire__crate__api__storage__mindmap_get_all_topics_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => {
+        32 => {
             wire__crate__api__storage__mindmap_get_children_impl(port, ptr, rust_vec_len, data_len)
         }
-        32 => wire__crate__api__storage__mindmap_get_note_impl(port, ptr, rust_vec_len, data_len),
-        33 => wire__crate__api__storage__mindmap_get_notes_by_pdf_impl(
+        33 => {
+            wire__crate__api__storage__mindmap_get_ink_layer_impl(port, ptr, rust_vec_len, data_len)
+        }
+        34 => wire__crate__api__storage__mindmap_get_note_impl(port, ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__storage__mindmap_get_notes_by_pdf_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__api__storage__mindmap_get_notes_by_topic_impl(
+        36 => wire__crate__api__storage__mindmap_get_notes_by_topic_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        35 => wire__crate__api__storage__mindmap_get_topic_impl(port, ptr, rust_vec_len, data_len),
-        36 => {
+        37 => wire__crate__api__storage__mindmap_get_topic_impl(port, ptr, rust_vec_len, data_len),
+        38 => {
             wire__crate__api__storage__mindmap_remove_child_impl(port, ptr, rust_vec_len, data_len)
         }
-        37 => {
-            wire__crate__api__storage__mindmap_trash_topic_impl(port, ptr, rust_vec_len, data_len)
-        }
-        38 => {
-            wire__crate__api__storage__mindmap_update_note_impl(port, ptr, rust_vec_len, data_len)
-        }
-        39 => {
-            wire__crate__api__storage__mindmap_update_topic_impl(port, ptr, rust_vec_len, data_len)
-        }
-        40 => wire__crate__api__storage__remove_tag_from_document_impl(
+        39 => wire__crate__api__storage__mindmap_save_ink_layer_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        41 => wire__crate__api__storage__rename_folder_impl(port, ptr, rust_vec_len, data_len),
-        42 => wire__crate__api__storage__rename_tag_impl(port, ptr, rust_vec_len, data_len),
-        43 => wire__crate__api__pdf__render_viewport_impl(port, ptr, rust_vec_len, data_len),
-        44 => wire__crate__api__storage__update_annotation_impl(port, ptr, rust_vec_len, data_len),
+        40 => {
+            wire__crate__api__storage__mindmap_trash_topic_impl(port, ptr, rust_vec_len, data_len)
+        }
+        41 => {
+            wire__crate__api__storage__mindmap_update_note_impl(port, ptr, rust_vec_len, data_len)
+        }
+        42 => {
+            wire__crate__api__storage__mindmap_update_topic_impl(port, ptr, rust_vec_len, data_len)
+        }
+        43 => wire__crate__api__storage__remove_tag_from_document_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        44 => wire__crate__api__storage__rename_folder_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__api__storage__rename_tag_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__api__pdf__render_viewport_impl(port, ptr, rust_vec_len, data_len),
+        47 => wire__crate__api__storage__update_annotation_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2311,6 +2463,32 @@ impl flutter_rust_bridge::IntoIntoDart<crate::storage::folders::FolderNode>
     for crate::storage::folders::FolderNode
 {
     fn into_into_dart(self) -> crate::storage::folders::FolderNode {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::storage::ink_layers::InkLayerRecord {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.layer_type.into_into_dart().into_dart(),
+            self.owner_id.into_into_dart().into_dart(),
+            self.strokes_json.into_into_dart().into_dart(),
+            self.z_index.into_into_dart().into_dart(),
+            self.created_at.into_into_dart().into_dart(),
+            self.updated_at.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::storage::ink_layers::InkLayerRecord
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::storage::ink_layers::InkLayerRecord>
+    for crate::storage::ink_layers::InkLayerRecord
+{
+    fn into_into_dart(self) -> crate::storage::ink_layers::InkLayerRecord {
         self
     }
 }
@@ -2535,6 +2713,19 @@ impl SseEncode for i64 {
     }
 }
 
+impl SseEncode for crate::storage::ink_layers::InkLayerRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.layer_type, serializer);
+        <String>::sse_encode(self.owner_id, serializer);
+        <String>::sse_encode(self.strokes_json, serializer);
+        <i32>::sse_encode(self.z_index, serializer);
+        <i64>::sse_encode(self.created_at, serializer);
+        <i64>::sse_encode(self.updated_at, serializer);
+    }
+}
+
 impl SseEncode for Vec<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2708,6 +2899,16 @@ impl SseEncode for Option<i64> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <i64>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::storage::ink_layers::InkLayerRecord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::storage::ink_layers::InkLayerRecord>::sse_encode(value, serializer);
         }
     }
 }

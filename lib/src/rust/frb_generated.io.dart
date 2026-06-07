@@ -14,6 +14,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_io.dart';
 import 'storage/annotations.dart';
 import 'storage/documents.dart';
 import 'storage/folders.dart';
+import 'storage/ink_layers.dart';
 import 'storage/mindmap.dart';
 import 'storage/tags.dart';
 
@@ -53,6 +54,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  InkLayerRecord dco_decode_box_autoadd_ink_layer_record(dynamic raw);
+
+  @protected
   Note dco_decode_box_autoadd_note(dynamic raw);
 
   @protected
@@ -81,6 +85,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  InkLayerRecord dco_decode_ink_layer_record(dynamic raw);
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
@@ -129,6 +136,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  InkLayerRecord? dco_decode_opt_box_autoadd_ink_layer_record(dynamic raw);
 
   @protected
   Note? dco_decode_opt_box_autoadd_note(dynamic raw);
@@ -192,6 +202,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  InkLayerRecord sse_decode_box_autoadd_ink_layer_record(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Note sse_decode_box_autoadd_note(SseDeserializer deserializer);
 
   @protected
@@ -222,6 +237,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  InkLayerRecord sse_decode_ink_layer_record(SseDeserializer deserializer);
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
@@ -276,6 +294,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  InkLayerRecord? sse_decode_opt_box_autoadd_ink_layer_record(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer);
@@ -349,6 +372,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_ink_layer_record(
+    InkLayerRecord self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_note(Note self, SseSerializer serializer);
 
   @protected
@@ -380,6 +409,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ink_layer_record(
+    InkLayerRecord self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
@@ -444,6 +479,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_i_64(
     PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_ink_layer_record(
+    InkLayerRecord? self,
     SseSerializer serializer,
   );
 

@@ -7,3 +7,5 @@ pub mod annotations;
 pub mod mindmap;
 
 pub use mindmap::*;
+
+pub mod ink_layers;

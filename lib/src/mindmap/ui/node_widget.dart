@@ -146,6 +146,8 @@ class NodeWidget extends StatelessWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
+        width: customSize?.width,
+        height: customSize?.height,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0xFF242930), // 原型经典深灰色
@@ -172,7 +174,7 @@ class NodeWidget extends StatelessWidget {
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: customSize == null ? MainAxisSize.min : MainAxisSize.max,
           children: [
             // 卡片组折叠图标
             if (isNestedCard) ...[

@@ -2,9 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:starmind/src/mindmap/domain/note.dart';
-import 'package:starmind/src/mindmap/domain/topic.dart';
-import 'package:starmind/src/mindmap/ui/bottom_action_bar.dart';
 import 'package:starmind/src/mindmap/ui/info_statistics_modal.dart';
 import 'package:starmind/src/mindmap/ui/mindmap_controller.dart';
 import 'package:starmind/src/mindmap/ui/mindmap_page.dart';
@@ -110,7 +107,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: ListenableBuilder(
           listenable: controller,
-          builder: (_, __) => MindMapPage(controller: controller),
+          builder: (_, _) => MindMapPage(controller: controller),
         ),
       ));
       await tester.pumpAndSettle();

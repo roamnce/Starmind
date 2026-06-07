@@ -1,7 +1,11 @@
 // test/mindmap/storage/ffi_mindmap_repository_test.dart
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:starmind/src/mindmap/storage/ffi_mindmap_repository.dart';
+import 'package:starmind/src/rust/api/storage.dart';
+import 'package:starmind/src/rust/frb_generated.dart';
 
 /// FFI 集成测试
 ///
@@ -11,17 +15,43 @@ import 'package:starmind/src/mindmap/storage/ffi_mindmap_repository.dart';
 /// 注意：这些测试依赖于实际的 SQLite 数据库，
 /// 需要在测试环境中提供数据库路径。
 void main() {
+  final rustLibrary = File('rust/target/release/rust_lib_starmind.dll');
+  final skipReason = rustLibrary.existsSync()
+      ? false
+      : 'rust_lib_starmind.dll is not built; run the Rust build before FFI integration tests.';
+
   group('FfiMindMapRepository', () {
     late FfiMindMapRepository repository;
 
+    late Directory tempDir;
+    var rustInitialized = false;
+    var dbSequence = 0;
+
     setUpAll(() async {
-      // 初始化 Rust FFI
-      // 在实际测试中，需要提供数据库路径
-      // await RustLib.init();
-      // await init_storage(db_path: 'test.db', sandbox_dir: 'test_sandbox');
+      TestWidgetsFlutterBinding.ensureInitialized();
+      tempDir = await Directory.systemTemp.createTemp('starmind_ffi_mindmap_');
+      await RustLib.init();
+      rustInitialized = true;
     });
 
-    setUp(() {
+    tearDownAll(() async {
+      if (rustInitialized) {
+        RustLib.dispose();
+      }
+      if (await tempDir.exists()) {
+        try {
+          await tempDir.delete(recursive: true);
+        } on FileSystemException {
+          // SQLite may keep the DB handle open until process exit.
+        }
+      }
+    });
+
+    setUp(() async {
+      await initStorage(
+        dbPath: '${tempDir.path}/test_${++dbSequence}.db',
+        sandboxDir: '${tempDir.path}/sandbox',
+      );
       repository = FfiMindMapRepository();
     });
 
@@ -221,5 +251,5 @@ void main() {
         // 这个测试用例待 Rust API 扩展后再完善
       });
     });
-  });
+  }, skip: skipReason);
 }

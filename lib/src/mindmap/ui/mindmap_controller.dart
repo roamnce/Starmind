@@ -11,6 +11,7 @@ import '../layout/tree_layout_engine.dart';
 import '../layout/layout_config.dart';
 import '../layout/layout_result.dart';
 import '../rendering/connection_renderer.dart';
+import '../study/study_mode_controller.dart';
 import 'tree_layout.dart';
 import 'mixins/tree_traversal.dart';
 
@@ -28,6 +29,8 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   final String? _initialTopicId;
 
   MindMapController(this._service, [this._initialTopicId]);
+
+  late final StudyModeController studyModeController = StudyModeController(service: _service);
 
   // ==================== 状态 ====================
 
@@ -137,19 +140,59 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
       return;
     }
 
-    if (_noteTree.isNotEmpty) {
-      final config = LayoutConfig(
-        strategy: _layoutDirectionToStrategy(_layoutDirection),
-        nodeWidth: 120.0,
-        nodeHeight: 40.0,
-        horizontalSpacing: 60.0,
-        verticalSpacing: 30.0,
-      );
+    final config = LayoutConfig(
+      strategy: _layoutDirectionToStrategy(_layoutDirection),
+      nodeWidth: 120.0,
+      nodeHeight: 40.0,
+      horizontalSpacing: 60.0,
+      verticalSpacing: 30.0,
+    );
 
-      _cachedLayoutResult = _layoutEngine.layout(_noteTree.first, config);
-    }
+    _cachedLayoutResult = _layoutRoots(_noteTree, config);
 
     notifyListeners();
+  }
+
+  LayoutResult _layoutRoots(List<NoteTreeNode> roots, LayoutConfig config) {
+    if (roots.isEmpty) return LayoutResult.empty;
+    if (roots.length == 1) return _layoutEngine.layout(roots.first, config);
+
+    final positions = <String, Offset>{};
+    final sizes = <String, Size>{};
+    final connections = <ConnectionData>[];
+    var nextX = 0.0;
+    Rect? mergedBounds;
+
+    for (final root in roots) {
+      final result = _layoutEngine.layout(root, config);
+      final rootShift = Offset(nextX - result.contentBounds.left, 0);
+
+      for (final entry in result.nodePositions.entries) {
+        positions[entry.key] = entry.value + rootShift;
+      }
+      sizes.addAll(result.nodeSizes);
+      connections.addAll(result.connections.map((connection) {
+        return ConnectionData(
+          fromId: connection.fromId,
+          toId: connection.toId,
+          startPoint: connection.startPoint + rootShift,
+          endPoint: connection.endPoint + rootShift,
+          fromCenter: connection.fromCenter + rootShift,
+          toCenter: connection.toCenter + rootShift,
+        );
+      }));
+
+      final shiftedBounds = result.contentBounds.shift(rootShift);
+      mergedBounds = mergedBounds == null ? shiftedBounds : mergedBounds.expandToInclude(shiftedBounds);
+      nextX = shiftedBounds.right + config.horizontalSpacing;
+    }
+
+    return LayoutResult(
+      nodePositions: positions,
+      nodeSizes: sizes,
+      connections: connections,
+      contentBounds: mergedBounds ?? Rect.zero,
+    );
   }
 
   /// 转换布局方向到策略
@@ -238,6 +281,24 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
 
   /// 获取所有笔记本
   Future<List<Topic>> getAllTopics() => _service.getAllTopics();
+
+  Future<Topic?> importGuruMindFile(String filePath) async {
+    final result = await _service.importGuruMindFile(filePath);
+    if (!result.isSuccess || result.topic == null) {
+      throw result.error ?? StateError('GuruMind import failed');
+    }
+    await loadTopics();
+    selectTopic(result.topic);
+    return result.topic;
+  }
+
+  Future<void> exportCurrentTopicAsGuruMind(String outputPath) async {
+    final topic = _selectedTopic;
+    if (topic == null) {
+      throw StateError('No topic selected');
+    }
+    await _service.exportGuruMindTopic(topicId: topic.id, outputPath: outputPath);
+  }
 
   /// Load a specific topic by ID (for tab-based navigation)
   Future<void> loadTopic() async {

@@ -15,6 +15,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'storage/annotations.dart';
 import 'storage/documents.dart';
 import 'storage/folders.dart';
+import 'storage/ink_layers.dart';
 import 'storage/mindmap.dart';
 import 'storage/tags.dart';
 
@@ -71,7 +72,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1362578036;
+  int get rustContentHash => 2022454548;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -206,12 +207,19 @@ abstract class RustLibApi extends BaseApi {
     String? author,
   });
 
+  Future<void> crateApiStorageMindmapDeleteInkLayer({required String id});
+
   Future<void> crateApiStorageMindmapDeleteNote({required String id});
 
   Future<List<Topic>> crateApiStorageMindmapGetAllTopics();
 
   Future<List<Note>> crateApiStorageMindmapGetChildren({
     required String parentId,
+  });
+
+  Future<InkLayerRecord?> crateApiStorageMindmapGetInkLayer({
+    required String ownerId,
+    required String layerType,
   });
 
   Future<Note?> crateApiStorageMindmapGetNote({required String id});
@@ -229,6 +237,10 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiStorageMindmapRemoveChild({
     required String parentId,
     required String childId,
+  });
+
+  Future<String> crateApiStorageMindmapSaveInkLayer({
+    required InkLayerRecord layer,
   });
 
   Future<void> crateApiStorageMindmapTrashTopic({required String id});
@@ -1224,7 +1236,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiStorageMindmapDeleteNote({required String id}) {
+  Future<void> crateApiStorageMindmapDeleteInkLayer({required String id}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -1234,6 +1246,37 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             generalizedFrbRustBinding,
             serializer,
             funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteInkLayerConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteInkLayerConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_ink_layer",
+        argNames: ["id"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteNote({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 30,
             port: port_,
           );
         },
@@ -1260,7 +1303,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 31,
             port: port_,
           );
         },
@@ -1290,7 +1333,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 31,
+            funcId: 32,
             port: port_,
           );
         },
@@ -1312,6 +1355,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<InkLayerRecord?> crateApiStorageMindmapGetInkLayer({
+    required String ownerId,
+    required String layerType,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(ownerId, serializer);
+          sse_encode_String(layerType, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 33,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_ink_layer_record,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetInkLayerConstMeta,
+        argValues: [ownerId, layerType],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetInkLayerConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_get_ink_layer",
+        argNames: ["ownerId", "layerType"],
+      );
+
+  @override
   Future<Note?> crateApiStorageMindmapGetNote({required String id}) {
     return handler.executeNormal(
       NormalTask(
@@ -1321,7 +1399,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 32,
+            funcId: 34,
             port: port_,
           );
         },
@@ -1351,7 +1429,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 33,
+            funcId: 35,
             port: port_,
           );
         },
@@ -1384,7 +1462,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 34,
+            funcId: 36,
             port: port_,
           );
         },
@@ -1415,7 +1493,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 35,
+            funcId: 37,
             port: port_,
           );
         },
@@ -1447,7 +1525,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 36,
+            funcId: 38,
             port: port_,
           );
         },
@@ -1469,6 +1547,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<String> crateApiStorageMindmapSaveInkLayer({
+    required InkLayerRecord layer,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_ink_layer_record(layer, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 39,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapSaveInkLayerConstMeta,
+        argValues: [layer],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapSaveInkLayerConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_save_ink_layer",
+        argNames: ["layer"],
+      );
+
+  @override
   Future<void> crateApiStorageMindmapTrashTopic({required String id}) {
     return handler.executeNormal(
       NormalTask(
@@ -1478,7 +1589,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 37,
+            funcId: 40,
             port: port_,
           );
         },
@@ -1506,7 +1617,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 38,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1534,7 +1645,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 39,
+            funcId: 42,
             port: port_,
           );
         },
@@ -1569,7 +1680,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 40,
+            funcId: 43,
             port: port_,
           );
         },
@@ -1604,7 +1715,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 41,
+            funcId: 44,
             port: port_,
           );
         },
@@ -1639,7 +1750,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 42,
+            funcId: 45,
             port: port_,
           );
         },
@@ -1667,7 +1778,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 43,
+            funcId: 46,
             port: port_,
           );
         },
@@ -1699,7 +1810,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 44,
+            funcId: 47,
             port: port_,
           );
         },
@@ -1798,6 +1909,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  InkLayerRecord dco_decode_box_autoadd_ink_layer_record(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_ink_layer_record(raw);
+  }
+
+  @protected
   Note dco_decode_box_autoadd_note(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_note(raw);
@@ -1883,6 +2000,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 dco_decode_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeI64(raw);
+  }
+
+  @protected
+  InkLayerRecord dco_decode_ink_layer_record(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return InkLayerRecord(
+      id: dco_decode_String(arr[0]),
+      layerType: dco_decode_String(arr[1]),
+      ownerId: dco_decode_String(arr[2]),
+      strokesJson: dco_decode_String(arr[3]),
+      zIndex: dco_decode_i_32(arr[4]),
+      createdAt: dco_decode_i_64(arr[5]),
+      updatedAt: dco_decode_i_64(arr[6]),
+    );
   }
 
   @protected
@@ -2004,6 +2138,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
+  }
+
+  @protected
+  InkLayerRecord? dco_decode_opt_box_autoadd_ink_layer_record(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_ink_layer_record(raw);
   }
 
   @protected
@@ -2203,6 +2343,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  InkLayerRecord sse_decode_box_autoadd_ink_layer_record(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_ink_layer_record(deserializer));
+  }
+
+  @protected
   Note sse_decode_box_autoadd_note(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_note(deserializer));
@@ -2297,6 +2445,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  InkLayerRecord sse_decode_ink_layer_record(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_layerType = sse_decode_String(deserializer);
+    var var_ownerId = sse_decode_String(deserializer);
+    var var_strokesJson = sse_decode_String(deserializer);
+    var var_zIndex = sse_decode_i_32(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    return InkLayerRecord(
+      id: var_id,
+      layerType: var_layerType,
+      ownerId: var_ownerId,
+      strokesJson: var_strokesJson,
+      zIndex: var_zIndex,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
   }
 
   @protected
@@ -2525,6 +2694,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  InkLayerRecord? sse_decode_opt_box_autoadd_ink_layer_record(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_ink_layer_record(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2736,6 +2918,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_ink_layer_record(
+    InkLayerRecord self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_ink_layer_record(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_note(Note self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_note(self, serializer);
@@ -2809,6 +3000,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_ink_layer_record(
+    InkLayerRecord self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.layerType, serializer);
+    sse_encode_String(self.ownerId, serializer);
+    sse_encode_String(self.strokesJson, serializer);
+    sse_encode_i_32(self.zIndex, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
   }
 
   @protected
@@ -2993,6 +3199,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_i_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_ink_layer_record(
+    InkLayerRecord? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_ink_layer_record(self, serializer);
     }
   }
 

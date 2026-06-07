@@ -307,7 +307,7 @@ pub fn get_note_children(parent_id: String) -> Result<Vec<Note>, String> {
                     start_page, end_page, start_pos, end_pos, highlight_text, highlight_style,
                     media_ids, position_x, position_y, z_index, is_collapsed,
                     created_at, updated_at, sync_version
-             FROM mindmap_notes WHERE id IN ({}) ORDER BY z_index;",
+             FROM mindmap_notes WHERE id IN ({});",
             placeholders
         );
 
@@ -341,6 +341,12 @@ pub fn get_note_children(parent_id: String) -> Result<Vec<Note>, String> {
                 sync_version: row.get(20)?,
             });
         }
+
+        notes.sort_by_key(|note| {
+            ids.iter()
+                .position(|id| *id == note.id)
+                .unwrap_or(usize::MAX)
+        });
 
         Ok(notes)
     })

@@ -1,4 +1,4 @@
-// lib/src/mindmap/ui/framework_layout.dart
+﻿// lib/src/mindmap/ui/framework_layout.dart
 
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -11,6 +11,8 @@ import 'tree_layout.dart' show Connection; // 复用 TreeLayout 的 Connection �
 /// - 子节点在容器内网格排列
 /// - 支持用户自定义位置
 /// - 递归嵌套子框架
+///
+/// **坐标系**：所有坐标均为节点中心坐标（与 TreeLayoutEngine 一致）
 class FrameworkLayout {
   /// 框架容器内边距
   final double containerPadding;
@@ -119,10 +121,10 @@ class FrameworkLayout {
 
   /// 计算框架式节点的子节点位置
   ///
-  /// 返回的 positions 是节点顶部中心坐标（与 TreeLayout 一致）
+  /// 返回的 positions 是节点中心坐标（与 TreeLayoutEngine 一致）
   Map<String, Offset> calculateChildPositions(
     NoteTreeNode node,
-    Offset frameworkOrigin,
+    Offset frameworkCenter,
   ) {
     final positions = <String, Offset>{};
 
@@ -134,9 +136,12 @@ class FrameworkLayout {
     final frameworkSize = _nodeSizes[node.note.id] ?? calculateFrameworkSize(node);
 
     // 框架内部起始位置（考虑 padding 和 header）
-    // frameworkOrigin 是框架顶部中心坐标
-    final innerTop = frameworkOrigin.dy + headerHeight + nodeHeight;
-    final innerLeft = frameworkOrigin.dx - frameworkSize.width / 2 + containerPadding;
+    // frameworkCenter 是框架中心坐标
+    final frameworkTop = frameworkCenter.dy - frameworkSize.height / 2;
+    final frameworkLeft = frameworkCenter.dx - frameworkSize.width / 2;
+    
+    final innerTop = frameworkTop + headerHeight + nodeHeight;
+    final innerLeft = frameworkLeft + containerPadding;
 
     double currentY = innerTop;
 
@@ -150,11 +155,11 @@ class FrameworkLayout {
       for (final child in row) {
         final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
-        // 返回节点顶部中心坐标（与 TreeLayout 一致）
-        final childTopX = currentX + childSize.width / 2;
-        final childTopY = currentY;
+        // 返回节点中心坐标
+        final childCenterX = currentX + childSize.width / 2;
+        final childCenterY = currentY + childSize.height / 2;
 
-        positions[child.note.id] = Offset(childTopX, childTopY);
+        positions[child.note.id] = Offset(childCenterX, childCenterY);
 
         currentX += childSize.width + nodeSpacing;
       }
@@ -171,6 +176,7 @@ class FrameworkLayout {
 
     calculateNodeSizes(node);
 
+    // origin 现在是节点中心坐标
     positions[node.note.id] = origin;
 
     final childPositions = calculateChildPositions(node, origin);
@@ -189,7 +195,7 @@ class FrameworkLayout {
 
   /// 计算框架内部的连线
   ///
-  /// positions 存储的是节点顶部中心坐标
+  /// positions 存储的是节点中心坐标
   List<Connection> calculateConnections(
     NoteTreeNode node,
     Map<String, Offset> positions,
@@ -200,27 +206,27 @@ class FrameworkLayout {
       return connections;
     }
 
-    final parentPos = positions[node.note.id];
-    if (parentPos == null) return connections;
+    final parentCenter = positions[node.note.id];
+    if (parentCenter == null) return connections;
 
     final parentSize = _nodeSizes[node.note.id] ?? calculateFrameworkSize(node);
 
     // 父节点连线锚点：标题栏底部中心
-    // parentPos.dy 是框架顶部，anchorY = top + headerHeight + nodeHeight
-    final anchorY = parentPos.dy + headerHeight + nodeHeight;
+    // parentCenter 是框架中心，需要计算标题栏底部的位置
+    final anchorY = parentCenter.dy - parentSize.height / 2 + headerHeight + nodeHeight;
 
     for (final child in node.children) {
-      final childPos = positions[child.note.id];
-      if (childPos == null) continue;
+      final childCenter = positions[child.note.id];
+      if (childCenter == null) continue;
 
       final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
-      // 锚点 Y = top + height/2（节点中心）
+      // 子节点锚点：顶部中心
       connections.add(Connection(
         fromId: node.note.id,
         toId: child.note.id,
-        start: Offset(parentPos.dx, anchorY),
-        end: Offset(childPos.dx, childPos.dy + childSize.height / 2),
+        start: Offset(parentCenter.dx, anchorY),
+        end: Offset(childCenter.dx, childCenter.dy - childSize.height / 2),
       ));
 
       if (child.note.layoutStyle == 'framework') {

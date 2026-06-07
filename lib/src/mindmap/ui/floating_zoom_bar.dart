@@ -92,6 +92,7 @@ class FloatingZoomBar extends StatelessWidget {
                 ),
                 // 关于导图按钮
                 _buildButton(
+                  key: const ValueKey('info_statistics'),
                   icon: Icons.info_outline_rounded,
                   onPressed: onShowInfo,
                   tooltip: '关于导图',
@@ -118,6 +119,7 @@ class FloatingZoomBar extends StatelessWidget {
   }
 
   Widget _buildButton({
+    Key? key,
     required IconData icon,
     required VoidCallback? onPressed,
     required String tooltip,
@@ -126,6 +128,7 @@ class FloatingZoomBar extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
+        key: key,
         onTap: onPressed,
         borderRadius: BorderRadius.circular(8),
         child: Container(

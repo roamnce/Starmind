@@ -1,8 +1,9 @@
-// lib/src/mindmap/ui/mindmap_page.dart
+﻿// lib/src/mindmap/ui/mindmap_page.dart
 
 import 'dart:math' show min, max;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import 'mindmap_controller.dart';
 import 'node_widget.dart';
 import 'tree_layout.dart';
@@ -13,6 +14,13 @@ import 'bottom_action_bar.dart';
 import 'floating_zoom_bar.dart';
 import '../domain/note.dart';
 import '../layout/layout_result.dart';
+import '../study/study_mode_shortcut_handler.dart';
+import '../study/study_mode_panel.dart';
+import '../study/study_note_widget.dart';
+import '../ink/ink_layer_controller.dart';
+import '../ink/ink_layer.dart';
+import '../ink/canvas_ink_layer.dart';
+import '../ink/ink_layer_repository.dart';
 import 'info_statistics_modal.dart';
 import 'navigation_radar.dart';
 import '../../home/workspace_controller_provider.dart';
@@ -49,7 +57,12 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   late final TransformationController _transformationController;
   late final TextEditingController _noteTextEditingController;
   late final FocusNode _noteFocusNode;
+  late final InkLayerController _inkLayerController;
+  late final InkLayerRepository _inkLayerRepository;
+  late final StudyModeShortcutHandler _studyShortcutHandler;
   String? _lastNoteId;
+  String? _loadedInkTopicId;
+  final Set<String> _loadedInkNodeIds = {};
 
   Offset? _lassoStart;
   Offset? _lassoCurrent;
@@ -58,6 +71,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   bool _showShortcutsModal = false;
   bool _isLocalSplitMode = false;
   bool _isStarred = true;
+  bool _isInkMode = false;
 
 
   @override
@@ -67,7 +81,11 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     _transformationController.addListener(_onTransformationChanged);
     _noteTextEditingController = TextEditingController();
     _noteFocusNode = FocusNode();
+    _inkLayerController = InkLayerController();
+    _inkLayerRepository = const FfiInkLayerRepository();
+    _studyShortcutHandler = StudyModeShortcutHandler(widget.controller.studyModeController);
     widget.controller.addListener(_syncFromController);
+    widget.controller.studyModeController.addListener(_onStudyModeChanged);
 
     // Set initial matrix
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,9 +97,11 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   void dispose() {
     _transformationController.removeListener(_onTransformationChanged);
     widget.controller.removeListener(_syncFromController);
+    widget.controller.studyModeController.removeListener(_onStudyModeChanged);
     _transformationController.dispose();
     _noteTextEditingController.dispose();
     _noteFocusNode.dispose();
+    _inkLayerController.dispose();
     super.dispose();
   }
 
@@ -125,12 +145,53 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     }
 
     setState(() {});
+    _loadCanvasInkForSelectedTopic();
+  }
+
+  Future<void> _loadCanvasInkForSelectedTopic() async {
+    final topicId = widget.controller.selectedTopic?.id;
+    if (topicId == null || topicId == _loadedInkTopicId) return;
+    _loadedInkTopicId = topicId;
+    final layer = await _tryLoadInkLayer(topicId, InkLayerOwnerType.canvas);
+    if (!mounted || layer == null) return;
+    _inkLayerController.loadLayer(layer);
+  }
+
+  Future<void> _saveInkLayer(InkLayer layer) async {
+    try {
+      await _inkLayerRepository.saveInkLayer(layer);
+    } on StateError {
+      return;
+    }
+  }
+
+  void _onStudyModeChanged() {
+    if (!mounted) return;
+    setState(() {});
+    _loadNodeInkForStudyQuestion();
+  }
+
+  Future<void> _loadNodeInkForStudyQuestion() async {
+    final noteId = widget.controller.studyModeController.currentQuestion?.note.id;
+    if (noteId == null || !_loadedInkNodeIds.add(noteId)) return;
+    final layer = await _tryLoadInkLayer(noteId, InkLayerOwnerType.node);
+    if (!mounted || layer == null) return;
+    _inkLayerController.loadLayer(layer);
+  }
+
+  Future<InkLayer?> _tryLoadInkLayer(String ownerId, InkLayerOwnerType ownerType) async {
+    try {
+      return await _inkLayerRepository.loadInkLayer(ownerId, ownerType);
+    } on StateError {
+      return null;
+    }
   }
 
   bool _isNodeVisible(Rect visibleRect, Offset pos, Size size) {
+    // 坐标系已改为中心坐标，需要减去高度一半得到顶部
     final nodeRect = Rect.fromLTWH(
       pos.dx - size.width / 2 + 500,
-      pos.dy + 500,
+      pos.dy - size.height / 2 + 500,  // 修复：中心坐标减去高度一半
       size.width,
       size.height,
     );
@@ -147,6 +208,24 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
         final isCtrl = HardwareKeyboard.instance.isControlPressed;
         final isAlt = HardwareKeyboard.instance.isAltPressed;
         final isShift = HardwareKeyboard.instance.isShiftPressed;
+
+        if (widget.controller.studyModeController.isStudyMode &&
+            _studyShortcutHandler.handleKey(event.logicalKey)) {
+          return KeyEventResult.handled;
+        }
+
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.keyI) {
+          setState(() => _isInkMode = !_isInkMode);
+          return KeyEventResult.handled;
+        }
+
+        if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.keyT) {
+          final topicId = widget.controller.selectedTopic?.id;
+          if (topicId != null) {
+            widget.controller.studyModeController.enterStudyMode(topicId);
+          }
+          return KeyEventResult.handled;
+        }
 
         // Alt + Q -> 锁定/解锁编辑画布 (MUST be before lock check!)
         if (isAlt && event.logicalKey == LogicalKeyboardKey.keyQ) {
@@ -481,7 +560,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
 
                         return Positioned(
                           left: pos.dx - size.width / 2 + 500,
-                          top: pos.dy + 500,
+                          top: pos.dy - size.height / 2 + 500,
                           child: RepaintBoundary(
                             child: NodeWidget(
                               note: note,
@@ -498,12 +577,47 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                           ),
                         );
                       }),
+                      if (widget.controller.selectedTopic != null)
+                        Positioned.fill(
+                          child: CanvasInkLayer(
+                            controller: _inkLayerController,
+                            ownerType: InkLayerOwnerType.canvas,
+                            ownerId: widget.controller.selectedTopic!.id,
+                            enabled: _isInkMode && !widget.controller.isLocked,
+                            onLayerChanged: _saveInkLayer,
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               if (widget.controller.interactMode == CanvasInteractMode.lasso)
                 _buildLassoGestureOverlay(),
+              if (widget.controller.studyModeController.isStudyMode)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  child: StudyModePanel(controller: widget.controller.studyModeController),
+                ),
+              if (widget.controller.studyModeController.currentQuestion != null)
+                Positioned(
+                  top: 72,
+                  right: 24,
+                  bottom: 24,
+                  width: 420,
+                  child: StudyNoteWidget(
+                    question: widget.controller.studyModeController.currentQuestion!,
+                    inkController: _inkLayerController,
+                    onLayerChanged: _saveInkLayer,
+                  ),
+                ),
+              if (_isInkMode)
+                const Positioned(
+                  top: 16,
+                  left: 16,
+                  child: _InkModeBadge(),
+                ),
               // 左下角浮动缩放条
               FloatingZoomBar(
                 controller: widget.controller,
@@ -663,7 +777,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
       // Align with stack offsets: A node's bounding box inside the Stack is Rect.fromLTWH(...)
       final nodeBounds = Rect.fromLTWH(
         pos.dx - size.width / 2 + 500,
-        pos.dy + 500,
+        pos.dy - size.height / 2 + 500,
         size.width,
         size.height,
       );
@@ -709,10 +823,11 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
       final pos = entry.value;
       final size = nodeSizes[id] ?? const Size(120, 40);
 
+      // 坐标系已改为中心坐标
       minX = min(minX, pos.dx - size.width / 2);
       maxX = max(maxX, pos.dx + size.width / 2);
-      minY = min(minY, pos.dy);
-      maxY = max(maxY, pos.dy + size.height);
+      minY = min(minY, pos.dy - size.height / 2);
+      maxY = max(maxY, pos.dy + size.height / 2);
     }
 
     return Rect.fromLTWH(minX, minY, maxX - minX, maxY - minY);
@@ -860,8 +975,9 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     final screenSize = renderBox.size;
 
     // 计算节点在 Stack 中的中心位置（需要 +500 偏移）
+    // nodePos 现在已经是节点中心坐标
     final nodeCenterX = nodePos.dx + 500;
-    final nodeCenterY = nodePos.dy + 500 + nodeSize.height / 2;
+    final nodeCenterY = nodePos.dy + 500;
 
     // 计算新的偏移量，使节点居中
     final newTx = screenSize.width / 2 - nodeCenterX * scale;
@@ -1028,7 +1144,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
               ),
               IconButton(
                 icon: const Icon(Icons.more_horiz_rounded, size: 16),
-                onPressed: () {},
+                onPressed: () => _showMoreActionsMenu(context),
                 tooltip: '更多操作',
                 color: Colors.white60,
                 splashRadius: 20,
@@ -1051,6 +1167,108 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
         ],
       ),
     );
+  }
+
+  Future<void> _showMoreActionsMenu(BuildContext context) async {
+    final selected = await showMenu<_MindMapMoreAction>(
+      context: context,
+      position: const RelativeRect.fromLTRB(1000, 80, 16, 0),
+      color: const Color(0xFF1A1A1A),
+      items: [
+        PopupMenuItem(
+          value: _MindMapMoreAction.importGuruMind,
+          child: _buildMoreActionItem(Icons.file_upload_outlined, '导入 GuruMind'),
+        ),
+        PopupMenuItem(
+          value: _MindMapMoreAction.exportGuruMind,
+          enabled: widget.controller.selectedTopic != null,
+          child: _buildMoreActionItem(Icons.file_download_outlined, '导出 GuruMind'),
+        ),
+        PopupMenuItem(
+          value: _MindMapMoreAction.studyMode,
+          enabled: widget.controller.selectedTopic != null,
+          child: _buildMoreActionItem(Icons.school_outlined, '进入刷题模式'),
+        ),
+        PopupMenuItem(
+          value: _MindMapMoreAction.toggleInk,
+          enabled: widget.controller.selectedTopic != null,
+          child: _buildMoreActionItem(_isInkMode ? Icons.draw : Icons.draw_outlined, _isInkMode ? '关闭画布手写' : '开启画布手写'),
+        ),
+      ],
+    );
+    if (!mounted || selected == null) return;
+
+    switch (selected) {
+      case _MindMapMoreAction.importGuruMind:
+        await _importGuruMindFile();
+      case _MindMapMoreAction.exportGuruMind:
+        await _exportCurrentTopicAsGuruMind();
+      case _MindMapMoreAction.studyMode:
+        final topicId = widget.controller.selectedTopic?.id;
+        if (topicId != null) await widget.controller.studyModeController.enterStudyMode(topicId);
+      case _MindMapMoreAction.toggleInk:
+        setState(() => _isInkMode = !_isInkMode);
+    }
+  }
+
+  Widget _buildMoreActionItem(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: Colors.white70),
+        const SizedBox(width: 10),
+        Text(label, style: const TextStyle(color: Colors.white70)),
+      ],
+    );
+  }
+
+  Future<void> _importGuruMindFile() async {
+    final result = await FilePicker.pickFiles(
+      dialogTitle: '选择 GuruMind 文件',
+      type: FileType.custom,
+      allowedExtensions: const ['gurumind'],
+    );
+    final filePath = result?.files.single.path;
+    if (filePath == null) return;
+
+    try {
+      final topic = await widget.controller.importGuruMindFile(filePath);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已导入：${topic?.title ?? 'GuruMind 文件'}')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('导入失败：$error')),
+      );
+    }
+  }
+
+  Future<void> _exportCurrentTopicAsGuruMind() async {
+    final topic = widget.controller.selectedTopic;
+    if (topic == null) return;
+    final directory = await FilePicker.getDirectoryPath(dialogTitle: '选择导出位置');
+    if (directory == null) return;
+    final outputPath = '$directory/${_safeFileName(topic.title)}.gurumind';
+
+    try {
+      await widget.controller.exportCurrentTopicAsGuruMind(outputPath);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已导出：$outputPath')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('导出失败：$error')),
+      );
+    }
+  }
+
+  String _safeFileName(String value) {
+    final sanitized = value.trim().replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    return sanitized.isEmpty ? 'mindmap' : sanitized;
   }
 
   void _showSplitScreenMenu(BuildContext context) async {
@@ -1090,3 +1308,25 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     );
   }
 }
+
+
+
+class _InkModeBadge extends StatelessWidget {
+  const _InkModeBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text('Ink mode', style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+}
+
+enum _MindMapMoreAction { importGuruMind, exportGuruMind, studyMode, toggleInk }

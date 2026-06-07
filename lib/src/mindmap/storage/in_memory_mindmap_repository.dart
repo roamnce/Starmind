@@ -10,10 +10,12 @@ import 'mindmap_repository.dart';
 class InMemoryMindMapRepository implements MindMapRepository {
   final Map<String, Topic> _topics = {};
   final Map<String, Note> _notes = {};
+  int _topicSequence = 0;
+  int _noteSequence = 0;
 
   @override
   Future<String> createTopic(String title, {String? author}) async {
-    final id = '0-${DateTime.now().millisecondsSinceEpoch}';
+    final id = '0-${++_topicSequence}';
     final now = DateTime.now();
 
     _topics[id] = Topic(
@@ -68,7 +70,7 @@ class InMemoryMindMapRepository implements MindMapRepository {
     String title, {
     String? parentId,
   }) async {
-    final id = '1-${DateTime.now().millisecondsSinceEpoch}';
+    final id = '1-${++_noteSequence}';
     final now = DateTime.now();
 
     _notes[id] = Note(

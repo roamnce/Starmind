@@ -1,0 +1,20 @@
+{
+  "onboardingComplete": false,
+  "lastHeartbeatDate": null,
+  "heartbeatEnabled": false,
+  "schemaVersion": 5,
+  "buddy": {
+    "species": "octopus",
+    "rarity": "uncommon",
+    "stats": {
+      "precision": 71,
+      "patience": 12,
+      "insight": 42,
+      "humor": 38,
+      "creativity": 33
+    },
+    "emoji": "🐙",
+    "peakStat": "precision",
+    "hatchedAt": "2026-06-07T03:32:49.013Z"
+  }
+}

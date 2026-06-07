@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // DEPRECATED: This class is kept for backward compatibility.
 //
 // New code should use TreeLayoutEngine from layout/tree_layout_engine.dart
@@ -26,6 +26,8 @@ enum LayoutDirection {
 }
 
 /// 树形自动布局算法
+/// 
+/// **重要：positions 存储的是节点中心坐标（与 TreeLayoutEngine 一致）**
 class TreeLayout {
   final double nodeWidth;
   final double nodeHeight;
@@ -109,6 +111,8 @@ class TreeLayout {
   }
 
   /// 计算所有节点中心位置坐标
+  /// 
+  /// **返回的 positions 存储节点中心坐标（不是顶部中心）**
   Map<String, Offset> calculate(NoteTreeNode root) {
     final positions = <String, Offset>{};
     _nodeSizes.clear();
@@ -120,7 +124,16 @@ class TreeLayout {
     // 2. 自底向上计算树形占位空间高度
     _calculateSubtreeLayoutHeight(root);
     
+
+    if (root.note.highlightStyle == 'nestedCard') {
+      positions[root.note.id] = Offset.zero;
+      if (root.children.isNotEmpty && !root.note.isCollapsed) {
+        _layoutNestedCardChildren(root, Offset.zero, positions, true);
+      }
+      return positions;
+    }
     if (direction == LayoutDirection.bothSides) {
+      // 根节点中心在原点
       positions[root.note.id] = Offset.zero;
       final children = root.children;
       if (children.isEmpty) return positions;
@@ -137,21 +150,33 @@ class TreeLayout {
       }
 
       final rootWidth = _nodeSizes[root.note.id]?.width ?? nodeWidth;
-      final rootHeight = _nodeSizes[root.note.id]?.height ?? nodeHeight;
 
       // 右侧子树自顶向下横向排布
-      _layoutSubtrees(rightChildren, Offset(horizontalSpacing + rootWidth / 2, rootHeight / 2), positions, true);
+      // 传入根节点中心坐标 (0, 0)
+      _layoutSubtrees(rightChildren, Offset(horizontalSpacing + rootWidth / 2, 0), positions, true);
       // 左侧子树自顶向下横向排布
-      _layoutSubtrees(leftChildren, Offset(-horizontalSpacing - rootWidth / 2, rootHeight / 2), positions, false);
-    } else {
-      // 垂直或单侧布局
-      final isRight = direction != LayoutDirection.left;
-      _layoutSubtreeSingle(root, Offset.zero, positions, isRight);
+      _layoutSubtrees(leftChildren, Offset(-horizontalSpacing - rootWidth / 2, 0), positions, false);
+
+      return positions;
     }
+
+    // 单侧布局
+    final rootWidth = _nodeSizes[root.note.id]?.width ?? nodeWidth;
+    positions[root.note.id] = Offset.zero;
+
+    if (root.children.isEmpty) return positions;
+
+    final isRight = direction == LayoutDirection.horizontal;
+    final startX = isRight
+        ? rootWidth / 2 + horizontalSpacing
+        : -rootWidth / 2 - horizontalSpacing;
+
+    _layoutSubtrees(root.children, Offset(startX, 0), positions, isRight);
+
     return positions;
   }
 
-  /// 横向对称多子树排列 (两侧布局辅助)
+  /// 递归布局子树列表
   void _layoutSubtrees(
     List<NoteTreeNode> nodes,
     Offset origin,
@@ -160,92 +185,83 @@ class TreeLayout {
   ) {
     if (nodes.isEmpty) return;
 
-    double totalLayoutHeight = 0;
+    double totalHeight = 0;
     for (final node in nodes) {
-      totalLayoutHeight += (_subtreeLayoutHeights[node.note.id] ?? nodeHeight) + verticalSpacing;
+      totalHeight += _subtreeLayoutHeights[node.note.id] ?? nodeHeight;
+      totalHeight += verticalSpacing;
     }
-    totalLayoutHeight -= verticalSpacing;
+    totalHeight -= verticalSpacing;
 
-    double currentY = origin.dy - totalLayoutHeight / 2;
+    // origin 是父节点的中心坐标
+    // currentY 是当前子树布局的起始 Y（从总高度的顶部开始）
+    double currentY = origin.dy - totalHeight / 2;
 
-    for (final child in nodes) {
-      final childLayoutHeight = _subtreeLayoutHeights[child.note.id] ?? nodeHeight;
-      final childHeight = _nodeSizes[child.note.id]?.height ?? nodeHeight;
-      final childWidth = _nodeSizes[child.note.id]?.width ?? nodeWidth;
+    for (final node in nodes) {
+      final nodeSize = _nodeSizes[node.note.id] ?? Size(nodeWidth, nodeHeight);
+      final nodeH = nodeSize.height;
+      final layoutHeight = _subtreeLayoutHeights[node.note.id] ?? nodeH;
 
-      final childY = currentY + (childLayoutHeight - childHeight) / 2;
-      final childX = isRight ? origin.dx + childWidth / 2 : origin.dx - childWidth / 2;
+      // 计算节点中心坐标
+      // childY 是节点中心的 Y 坐标
+      final childY = currentY + (layoutHeight - nodeH) / 2 + nodeH / 2;
+      final childX = isRight
+          ? origin.dx + nodeSize.width / 2
+          : origin.dx - nodeSize.width / 2;
 
-      _layoutSubtreeSingle(child, Offset(childX, childY), positions, isRight);
-      currentY += childLayoutHeight + verticalSpacing;
+      _layoutSubtreeSingle(node, Offset(childX, childY), positions, isRight);
+      currentY += layoutHeight + verticalSpacing;
     }
   }
 
-  /// 单侧布局坐标计算 (自顶向下递归)
-  double _layoutSubtreeSingle(
+  /// 递归布局单个子树
+  void _layoutSubtreeSingle(
     NoteTreeNode node,
-    Offset origin,
+    Offset centerPos,
     Map<String, Offset> positions,
     bool isRight,
   ) {
-    positions[node.note.id] = origin;
+    // centerPos 是节点中心坐标
+    positions[node.note.id] = centerPos;
 
-    // 如果是嵌套容器卡片，将其子节点布局在内部
+    if (node.children.isEmpty || node.note.isCollapsed) return;
+
+    final nodeSize = _nodeSizes[node.note.id] ?? Size(nodeWidth, nodeHeight);
+
+    // 嵌套卡片组：子节点在容器内紧凑排布
     if (node.note.highlightStyle == 'nestedCard') {
-      _layoutNestedCardChildren(node, origin, positions, isRight);
-      return _nodeSizes[node.note.id]?.height ?? nodeHeight;
+      _layoutNestedCardChildren(node, centerPos, positions, isRight);
+      return;
     }
 
-    if (node.children.isEmpty || node.note.isCollapsed) {
-      return _nodeSizes[node.note.id]?.height ?? nodeHeight;
-    }
+    // 普通节点：子节点在左/右两侧排布
+    final startX = isRight
+        ? centerPos.dx + nodeSize.width / 2 + horizontalSpacing
+        : centerPos.dx - nodeSize.width / 2 - horizontalSpacing;
 
-    final parentSize = _nodeSizes[node.note.id] ?? Size(nodeWidth, nodeHeight);
-    final centerY = origin.dy + parentSize.height / 2;
-
-    double childrenTotalLayoutHeight = 0;
-    for (final child in node.children) {
-      childrenTotalLayoutHeight += (_subtreeLayoutHeights[child.note.id] ?? nodeHeight) + verticalSpacing;
-    }
-    childrenTotalLayoutHeight -= verticalSpacing;
-
-    double currentY = centerY - childrenTotalLayoutHeight / 2;
-
-    for (final child in node.children) {
-      final childLayoutHeight = _subtreeLayoutHeights[child.note.id] ?? nodeHeight;
-      final childHeight = _nodeSizes[child.note.id]?.height ?? nodeHeight;
-      final childWidth = _nodeSizes[child.note.id]?.width ?? nodeWidth;
-
-      final childY = currentY + (childLayoutHeight - childHeight) / 2;
-      final childX = isRight
-          ? origin.dx + parentSize.width / 2 + horizontalSpacing + childWidth / 2
-          : origin.dx - parentSize.width / 2 - horizontalSpacing - childWidth / 2;
-
-      _layoutSubtreeSingle(child, Offset(childX, childY), positions, isRight);
-      currentY += childLayoutHeight + verticalSpacing;
-    }
-
-    return _subtreeLayoutHeights[node.note.id] ?? parentSize.height;
+    _layoutSubtrees(node.children, Offset(startX, centerPos.dy), positions, isRight);
   }
 
   /// 嵌套卡片内部子卡片紧凑排布
   void _layoutNestedCardChildren(
     NoteTreeNode node,
-    Offset origin,
+    Offset centerPos,
     Map<String, Offset> positions,
     bool isRight,
   ) {
-    final containerTop = origin.dy;
-
+    // centerPos 是容器中心坐标
+    // 容器顶部 Y = 中心 Y - 高度/2
+    final containerTop = centerPos.dy - (_nodeSizes[node.note.id]?.height ?? nodeHeight) / 2;
+    
+    // 子节点起始 Y = 容器顶部 + 标题栏高度(40) + padding(16)
     double currentY = containerTop + nodeHeight + 16;
 
     for (final child in node.children) {
       final childHeight = _nodeSizes[child.note.id]?.height ?? nodeHeight;
 
       // 水平居中于容器内
-      // 子节点中心与容器中心对齐
-      final childX = origin.dx;
-      final childY = currentY + childHeight / 2;  // currentY 是子节点顶部，中心需要 + childHeight/2
+      final childX = centerPos.dx;
+      // childY 是子节点中心的 Y 坐标
+      final childY = currentY + childHeight / 2;
 
       _layoutSubtreeSingle(child, Offset(childX, childY), positions, isRight);
       currentY += childHeight + 12;
@@ -253,6 +269,8 @@ class TreeLayout {
   }
 
   /// 计算树的连线
+  /// 
+  /// **positions 必须是节点中心坐标**
   List<Connection> calculateConnections(
     NoteTreeNode root,
     Map<String, Offset> positions,
@@ -284,24 +302,19 @@ class TreeLayout {
         final parentSize = _nodeSizes[node.note.id] ?? Size(nodeWidth, nodeHeight);
         final childSize = _nodeSizes[child.note.id] ?? Size(nodeWidth, nodeHeight);
 
+        // positions 存储的是节点中心坐标
         // 连线锚点连接到节点边缘中心点
-        // parentPos/childPos 是节点顶部中心坐标（Y 是顶部，不是中心）
-        // 需要加上 height/2 得到节点中心 Y，再加 width/2 或减 width/2 得到边缘锚点
         final isRightSide = childPos.dx > parentPos.dx;
-
-        // 节点中心 Y = top + height / 2
-        final parentCenterY = parentPos.dy + parentSize.height / 2;
-        final childCenterY = childPos.dy + childSize.height / 2;
 
         Offset start, end;
         if (isRightSide) {
           // 子节点在右侧：从父节点右边缘中心连到子节点左边缘中心
-          start = Offset(parentPos.dx + parentSize.width / 2, parentCenterY);
-          end = Offset(childPos.dx - childSize.width / 2, childCenterY);
+          start = Offset(parentPos.dx + parentSize.width / 2, parentPos.dy);
+          end = Offset(childPos.dx - childSize.width / 2, childPos.dy);
         } else {
           // 子节点在左侧：从父节点左边缘中心连到子节点右边缘中心
-          start = Offset(parentPos.dx - parentSize.width / 2, parentCenterY);
-          end = Offset(childPos.dx + childSize.width / 2, childCenterY);
+          start = Offset(parentPos.dx - parentSize.width / 2, parentPos.dy);
+          end = Offset(childPos.dx + childSize.width / 2, childPos.dy);
         }
 
         connections.add(Connection(
@@ -335,13 +348,13 @@ class TreeLayout {
 
     for (final entry in positions.entries) {
       final id = entry.key;
-      final pos = entry.value;
+      final pos = entry.value;  // 中心坐标
       final size = _nodeSizes[id] ?? Size(nodeWidth, nodeHeight);
 
       minX = pos.dx - size.width / 2 < minX ? pos.dx - size.width / 2 : minX;
       maxX = pos.dx + size.width / 2 > maxX ? pos.dx + size.width / 2 : maxX;
-      minY = pos.dy < minY ? pos.dy : minY;
-      maxY = pos.dy + size.height > maxY ? pos.dy + size.height : maxY;
+      minY = pos.dy - size.height / 2 < minY ? pos.dy - size.height / 2 : minY;
+      maxY = pos.dy + size.height / 2 > maxY ? pos.dy + size.height / 2 : maxY;
     }
 
     return Rect.fromLTWH(minX, minY, maxX - minX, maxY - minY);

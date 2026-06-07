@@ -172,6 +172,28 @@ pub fn init_db(db_path: &str) -> Result<(), String> {
         [],
     ).map_err(|e| format!("Failed to create idx_notes_pdf index: {}", e))?;
 
+    // MindMap Ink Layers table
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS ink_layers (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            owner_id TEXT NOT NULL,
+            strokes_json TEXT NOT NULL,
+            z_index INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(owner_id, type)
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create ink_layers table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ink_layers_owner ON ink_layers(owner_id, type)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_ink_layers_owner index: {}", e))?;
+
     // Media Assets table
     conn.execute(
         r#"

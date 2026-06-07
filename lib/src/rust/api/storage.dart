@@ -7,6 +7,7 @@ import '../frb_generated.dart';
 import '../storage/annotations.dart';
 import '../storage/documents.dart';
 import '../storage/folders.dart';
+import '../storage/ink_layers.dart';
 import '../storage/mindmap.dart';
 import '../storage/tags.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
@@ -255,3 +256,17 @@ Future<List<Note>> mindmapGetNotesByTopic({required String topicId}) => RustLib
     .instance
     .api
     .crateApiStorageMindmapGetNotesByTopic(topicId: topicId);
+
+Future<String> mindmapSaveInkLayer({required InkLayerRecord layer}) =>
+    RustLib.instance.api.crateApiStorageMindmapSaveInkLayer(layer: layer);
+
+Future<InkLayerRecord?> mindmapGetInkLayer({
+  required String ownerId,
+  required String layerType,
+}) => RustLib.instance.api.crateApiStorageMindmapGetInkLayer(
+  ownerId: ownerId,
+  layerType: layerType,
+);
+
+Future<void> mindmapDeleteInkLayer({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapDeleteInkLayer(id: id);

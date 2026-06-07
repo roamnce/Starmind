@@ -224,19 +224,21 @@ void main() {
         expect(containerSize?.width, equals(152.0));
         expect(containerSize?.height, equals(164.0));
 
-        // Container is placed at origin.
+        // 新坐标系统：positions 存储节点中心坐标
+        // Container is placed at origin (center at 0, 0).
         expect(positions['1-container'], equals(const Offset(0, 0)));
 
-        // Container bounds: left = -76 (0 - 152/2), top = 0.
-        // Child 1 starts at containerTop + nodeHeight + 16 = 0 + 40 + 16 = 56 (top edge).
-        // Child 1 center X = origin.dx = 0 (horizontal center aligned with container).
-        // Child 1 center Y = 56 + 40/2 = 76.
-        expect(positions['1-child1'], equals(const Offset(0, 76)));
+        // Container center is at (0, 0), container height = 164.
+        // Container top = 0 - 164/2 = -82.
+        // Child 1 starts at containerTop + nodeHeight + 16 = -82 + 40 + 16 = -26 (top edge).
+        // Child 1 center X = 0 (horizontal center aligned with container).
+        // Child 1 center Y = -26 + 40/2 = -6.
+        expect(positions['1-child1'], equals(const Offset(0, -6)));
 
-        // Child 2 starts at Child 1 top + child1Height + 12 = 56 + 40 + 12 = 108 (top edge).
+        // Child 2 starts at Child 1 top + child1Height + 12 = -26 + 40 + 12 = 26 (top edge).
         // Child 2 center X = 0.
-        // Child 2 center Y = 108 + 40/2 = 128.
-        expect(positions['1-child2'], equals(const Offset(0, 128)));
+        // Child 2 center Y = 26 + 40/2 = 46.
+        expect(positions['1-child2'], equals(const Offset(0, 46)));
       });
 
       test('does not draw connections inside nestedCard container', () {

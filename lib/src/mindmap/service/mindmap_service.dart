@@ -2,6 +2,8 @@
 
 import '../domain/topic.dart';
 import '../domain/note.dart';
+import '../export/gurumind_exporter.dart';
+import '../import/gurumind_importer.dart';
 import '../storage/mindmap_repository.dart';
 
 /// 节点树结构（用于 UI 渲染）
@@ -35,6 +37,26 @@ class MindMapService {
   final MindMapRepository _repository;
 
   MindMapService(this._repository);
+
+  Future<ImportResult> importGuruMindFile(String filePath) {
+    return GuruMindImporter(repository: _repository).importFile(filePath);
+  }
+
+  Future<void> exportGuruMindTopic({
+    required String topicId,
+    required String outputPath,
+  }) async {
+    final topic = await _repository.getTopic(topicId);
+    if (topic == null) {
+      throw StateError('Topic not found: $topicId');
+    }
+    final notes = await _repository.getNotesByTopic(topicId);
+    await GuruMindDataExporter().exportTopic(
+      topic: topic,
+      notes: notes,
+      outputPath: outputPath,
+    );
+  }
 
   // ==================== Topic 操作 ====================
 
