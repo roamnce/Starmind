@@ -1,4 +1,4 @@
-// lib/src/mindmap/domain/topic.dart
+﻿// lib/src/mindmap/domain/topic.dart
 
 /// 思维导图笔记本（对应 MarginNote ZTOPIC）。
 ///
@@ -7,7 +7,7 @@
 /// - 支持多 PDF 关联（pdfIds）
 /// - ID前缀: "0-{UUID}" (GuruMind 风格)
 class Topic {
-  /// 笔记本 ID（格式: "0-{UUID}"）
+  /// 笔记本 ID（格式 "0-{UUID}"）
   final String id;
 
   /// 笔记本标题
@@ -16,11 +16,17 @@ class Topic {
   /// 作者（可选）
   final String? author;
 
-  /// 关联的 PDF 文档 MD5 列表（管道分隔存储）
+  /// 关联的 PDF 文档 MD5 列表（竖道分隔存储）
   final List<String> pdfIds;
 
-  /// 根节点 ID 列表（管道分隔存储）
+  /// 根节点 ID 列表（竖道分隔存储）
   final List<String> rootNoteIds;
+
+  /// 布局方向: 'both', 'left', 'right' (默认 'both')
+  final String layoutDirection;
+
+  /// 布局样式: 'tree', 'framework' (默认 'tree')
+  final String layoutStyle;
 
   /// 缩略图路径
   final String? thumbnailPath;
@@ -46,6 +52,8 @@ class Topic {
     this.author,
     this.pdfIds = const [],
     this.rootNoteIds = const [],
+    this.layoutDirection = 'both',
+    this.layoutStyle = 'tree',
     this.thumbnailPath,
     required this.createdAt,
     required this.updatedAt,
@@ -54,7 +62,7 @@ class Topic {
     this.syncVersion = 0,
   });
 
-  /// 从数据库 Map 创建（支持管道分隔字段）
+  /// 从数据库 Map 创建（支持竖道分隔字段）
   factory Topic.fromMap(Map<String, dynamic> map) {
     return Topic(
       id: map['id'] as String,
@@ -62,6 +70,8 @@ class Topic {
       author: map['author'] as String?,
       pdfIds: _parsePipedList(map['pdf_ids'] as String?),
       rootNoteIds: _parsePipedList(map['root_note_ids'] as String?),
+      layoutDirection: map['layout_direction'] as String? ?? 'both',
+      layoutStyle: map['layout_style'] as String? ?? 'tree',
       thumbnailPath: map['thumbnail_path'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -73,13 +83,15 @@ class Topic {
     );
   }
 
-  /// 转为数据库 Map（管道分隔字段）
+  /// 转换为数据库 Map（竖道分隔字段）
   Map<String, dynamic> toMap() => {
         'id': id,
         'title': title,
         'author': author,
         'pdf_ids': pdfIds.isEmpty ? null : pdfIds.join('|'),
         'root_note_ids': rootNoteIds.isEmpty ? null : rootNoteIds.join('|'),
+        'layout_direction': layoutDirection,
+        'layout_style': layoutStyle,
         'thumbnail_path': thumbnailPath,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
@@ -88,7 +100,7 @@ class Topic {
         'sync_version': syncVersion,
       };
 
-  /// 解析管道分隔字符串
+  /// 解析管道分隔字符串为列表
   static List<String> _parsePipedList(String? value) {
     if (value == null || value.isEmpty) return [];
     return value.split('|').where((s) => s.isNotEmpty).toList();
@@ -99,6 +111,8 @@ class Topic {
     String? title,
     List<String>? pdfIds,
     List<String>? rootNoteIds,
+    String? layoutDirection,
+    String? layoutStyle,
     String? thumbnailPath,
     DateTime? updatedAt,
     DateTime? lastVisitAt,
@@ -110,6 +124,8 @@ class Topic {
       author: author,
       pdfIds: pdfIds ?? this.pdfIds,
       rootNoteIds: rootNoteIds ?? this.rootNoteIds,
+      layoutDirection: layoutDirection ?? this.layoutDirection,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
