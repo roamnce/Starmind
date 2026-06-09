@@ -100,6 +100,33 @@ void main() {
     });
 
     group('Note CRUD', () {
+      test('selectNote stores the note and replaces selectedNoteIds in drag mode', () async {
+        await controller.createTopic('Note Topic');
+        final parent = await controller.createNote(title: 'Parent Note');
+        final child = await controller.createNote(
+          title: 'Child Note',
+          parentId: parent.id,
+        );
+
+        controller.setSelectedNotes({'old-note'});
+        controller.setInteractMode(CanvasInteractMode.drag);
+        controller.selectNote(child);
+
+        expect(controller.selectedNote, equals(child));
+        expect(controller.selectedNoteIds, equals({child.id}));
+      });
+
+      test('selectNote null clears selectedNote and selectedNoteIds', () async {
+        await controller.createTopic('Note Topic');
+        final parent = await controller.createNote(title: 'Parent Note');
+
+        controller.selectNote(parent);
+        controller.selectNote(null);
+
+        expect(controller.selectedNote, isNull);
+        expect(controller.selectedNoteIds, isEmpty);
+      });
+
       test('createChildNode adds child node to selected parent and selects it', () async {
         await controller.createTopic('Note Topic');
         final parent = await controller.createNote(title: 'Parent Note');
@@ -157,17 +184,16 @@ void main() {
         expect(controller.isSidebarExpanded, isFalse);
       });
 
-      test('setInteractMode changes mode and clears selection on drag mode', () {
+      test('setInteractMode changes mode and preserves selection on drag mode', () {
         controller.setInteractMode(CanvasInteractMode.lasso);
         expect(controller.interactMode, equals(CanvasInteractMode.lasso));
 
         controller.setSelectedNotes({'note1', 'note2'});
         expect(controller.selectedNoteIds, equals({'note1', 'note2'}));
 
-        // Switching back to drag mode should clear selectedNoteIds
         controller.setInteractMode(CanvasInteractMode.drag);
         expect(controller.interactMode, equals(CanvasInteractMode.drag));
-        expect(controller.selectedNoteIds, isEmpty);
+        expect(controller.selectedNoteIds, equals({'note1', 'note2'}));
       });
 
       test('toggleLock toggles lock state', () {
