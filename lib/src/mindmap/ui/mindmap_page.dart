@@ -39,6 +39,7 @@ import 'components/vertical_tab_bar.dart';
 import 'components/lasso_overlay.dart';
 import 'components/ink_toolbar.dart';
 import 'node_context_menu.dart';
+import 'panels/node_detail_panel.dart';
 
 /// MindMap canvas page.
 ///
@@ -743,6 +744,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                                 widget.controller.selectNote(note);
                                 widget.controller.setInteractMode(CanvasInteractMode.ink);
                               },
+                              onEditDetail: () => _showNodeDetailPanel(context, note),
                               onDelete: () => _handleDeleteSelected(context),
                               child: NodeWidget(
                                 note: note,
@@ -1285,6 +1287,19 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     if (widget.controller.selectedNote != null) {
       await widget.controller.deleteNote(widget.controller.selectedNote!.id);
     }
+  }
+
+  /// 显示节点详情面板。
+  void _showNodeDetailPanel(BuildContext context, Note note) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => NodeDetailPanel(
+        note: note,
+        onClose: () => Navigator.pop(context),
+      ),
+    );
   }
 
   Widget _buildVerticalTabBar() {
