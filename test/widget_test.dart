@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:starmind/main.dart';
+import 'package:starmind/src/home/widgets/orb_background.dart';
 
 void main() {
   testWidgets('OrbBackground rendering test', (WidgetTester tester) async {
