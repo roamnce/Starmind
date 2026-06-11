@@ -36,6 +36,7 @@ import 'dialogs/split_screen_menu.dart';
 import 'dialogs/shortcuts_modal.dart';
 import 'components/vertical_tab_bar.dart';
 import 'components/lasso_overlay.dart';
+import 'components/ink_toolbar.dart';
 import 'node_context_menu.dart';
 
 /// MindMap canvas page.
@@ -70,7 +71,6 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   bool _showShortcutsModal = false;
   bool _isLocalSplitMode = false;
   bool _isStarred = true;
-  bool _isInkMode = false;
   bool _isTagPickerVisible = false;
 
   @override
@@ -212,7 +212,9 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
         }
 
         if (isCtrl && isAlt && event.logicalKey == LogicalKeyboardKey.keyI) {
-          setState(() => _isInkMode = !_isInkMode);
+          widget.controller.setInteractMode(
+            widget.controller.isInkMode ? CanvasInteractMode.drag : CanvasInteractMode.ink,
+          );
           return KeyEventResult.handled;
         }
 
@@ -843,7 +845,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                       if (widget.controller.selectedTopic != null)
                         Positioned.fill(
                           child: Listener(
-                            onPointerDown: _isInkMode && !widget.controller.isLocked
+                            onPointerDown: widget.controller.isInkMode && !widget.controller.isLocked
                                 ? (event) {
                                     if (StylusInputHandler.isPalmTouch(event)) return;
                                     final pressure = StylusInputHandler.getPressure(event);
@@ -855,7 +857,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                                     );
                                   }
                                 : null,
-                            onPointerMove: _isInkMode && !widget.controller.isLocked
+                            onPointerMove: widget.controller.isInkMode && !widget.controller.isLocked
                                 ? (event) {
                                     if (_inkLayerController.currentStroke == null) return;
                                     if (StylusInputHandler.isPalmTouch(event)) return;
@@ -866,7 +868,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                                     );
                                   }
                                 : null,
-                            onPointerUp: _isInkMode && !widget.controller.isLocked
+                            onPointerUp: widget.controller.isInkMode && !widget.controller.isLocked
                                 ? (event) {
                                     final stroke = _inkLayerController.endStroke(
                                       InkLayerOwnerType.canvas,
@@ -882,12 +884,12 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                                   }
                                 : null,
                             child: IgnorePointer(
-                              ignoring: !_isInkMode || widget.controller.isLocked,
+                              ignoring: !widget.controller.isInkMode || widget.controller.isLocked,
                               child: CanvasInkLayer(
                                 controller: _inkLayerController,
                                 ownerType: InkLayerOwnerType.canvas,
                                 ownerId: widget.controller.selectedTopic!.id,
-                                enabled: _isInkMode && !widget.controller.isLocked,
+                                enabled: widget.controller.isInkMode && !widget.controller.isLocked,
                               ),
                             ),
                           ),
@@ -920,7 +922,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                     onLayerChanged: _saveInkLayer,
                   ),
                 ),
-              if (_isInkMode)
+              if (widget.controller.isInkMode)
                 const Positioned(top: 16, left: 16, child: _InkModeBadge()),
               // 左下角浮动缩放条
               FloatingZoomBar(
@@ -953,6 +955,20 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                   ),
                 ),
               ),
+              // InkToolbar 在 isInkMode 时显示，同步 InkTool 到 InkLayerController
+              if (widget.controller.isInkMode)
+                Positioned(
+                  bottom: 80,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: InkToolbar(
+                      controller: widget.controller,
+                      onToolChanged: (tool) => _inkLayerController.setTool(tool),
+                      onColorChanged: (color) => _inkLayerController.setStyle(color: color),
+                    ),
+                  ),
+                ),
               // 导航雷达 (根据 isMinimapVisible 控制显示)
               if (widget.controller.isMinimapVisible)
                 Positioned(
@@ -1461,8 +1477,8 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
           value: _MindMapMoreAction.toggleInk,
           enabled: widget.controller.selectedTopic != null,
           child: _buildMoreActionItem(
-            _isInkMode ? Icons.draw : Icons.draw_outlined,
-            _isInkMode ? '关闭画布手写' : '开启画布手写',
+            widget.controller.isInkMode ? Icons.draw : Icons.draw_outlined,
+            widget.controller.isInkMode ? '关闭画布手写' : '开启画布手写',
           ),
         ),
       ],
@@ -1478,7 +1494,9 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
           await widget.controller.studyModeController.enterStudyMode(topicId);
         }
       case _MindMapMoreAction.toggleInk:
-        setState(() => _isInkMode = !_isInkMode);
+        widget.controller.setInteractMode(
+          widget.controller.isInkMode ? CanvasInteractMode.drag : CanvasInteractMode.ink,
+        );
     }
   }
 

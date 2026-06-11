@@ -83,6 +83,7 @@ class BottomActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLassoMode = controller.interactMode == CanvasInteractMode.lasso;
+    final isInkMode = controller.isInkMode;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -116,6 +117,15 @@ class BottomActionBar extends StatelessWidget {
                   isActive: isLassoMode,
                   onPressed: () => controller.setInteractMode(CanvasInteractMode.lasso),
                   tooltip: '套索批量选择',
+                ),
+                // 3. 手写工具
+                _buildButton(
+                  icon: Icons.edit,
+                  isActive: isInkMode,
+                  onPressed: () => controller.setInteractMode(
+                    isInkMode ? CanvasInteractMode.drag : CanvasInteractMode.ink,
+                  ),
+                  tooltip: '手写工具',
                 ),
                 _buildDivider(),
                 // 3. 添加子节点

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math' show min;
 import 'package:flutter/material.dart';
+import '../ink/ink_layer.dart' show InkTool;
 import '../domain/topic.dart';
 import '../domain/note.dart';
 import '../domain/note_content.dart';
@@ -19,7 +20,7 @@ import 'tree_layout.dart';
 import 'mixins/tree_traversal.dart';
 
 enum SidebarTab { note, search, theme, config, icon }
-enum CanvasInteractMode { drag, lasso }
+enum CanvasInteractMode { drag, lasso, ink }
 enum LineStyle { bezier, straight, ortho }
 enum RelationCreationMode { idle, choosingTarget }
 
@@ -77,6 +78,13 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
 
   CanvasInteractMode _interactMode = CanvasInteractMode.drag;
   CanvasInteractMode get interactMode => _interactMode;
+
+  /// 派生 getter：是否在手写模式
+  bool get isInkMode => _interactMode == CanvasInteractMode.ink;
+
+  /// 手写工具状态（与 interactMode 正交，可独立存）
+  InkTool _inkTool = InkTool.pen;
+  InkTool get inkTool => _inkTool;
 
   bool _isLocked = false;
   bool get isLocked => _isLocked;
@@ -1082,6 +1090,12 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   void setInteractMode(CanvasInteractMode mode) {
     _interactMode = mode;
     // Preserve selection when switching modes
+    notifyListeners();
+  }
+
+  /// 设置手写工具
+  void setInkTool(InkTool tool) {
+    _inkTool = tool;
     notifyListeners();
   }
 
