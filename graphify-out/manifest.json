@@ -228,16 +228,16 @@
     "hash": "9f2a90ec4309c12eebeffa8b24159f49"
   },
   "D:\\starmind\\lib\\src\\mindmap\\ink\\canvas_ink_layer.dart": {
-    "mtime": 1780803660.6341035,
-    "hash": "c2a017a9a7aa21ff5aa1c1dd3747cb60"
+    "mtime": 1781170279.2082982,
+    "hash": "ee0435a976cda3ac322359ef6dea953c"
   },
   "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer.dart": {
     "mtime": 1780766991.7120967,
     "hash": "f1fabbf35c43bb29d0e1563f39ad097a"
   },
   "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer_controller.dart": {
-    "mtime": 1780767351.6063454,
-    "hash": "b04d7a21cebeaa0d5c1c81075b696d00"
+    "mtime": 1781174727.6893454,
+    "hash": "0504d79ba8d994318ec527864785bafb"
   },
   "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer_repository.dart": {
     "mtime": 1780997795.101234,
@@ -246,6 +246,14 @@
   "D:\\starmind\\lib\\src\\mindmap\\ink\\node_note_content.dart": {
     "mtime": 1780803963.423429,
     "hash": "d6837f18cb673fa0ec3857f4fcb746c4"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\stroke_renderer.dart": {
+    "mtime": 1781170229.7998123,
+    "hash": "3b07d517b0f3d52f68c75a36cd6d5239"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\stroke_stabilizer.dart": {
+    "mtime": 1781174641.21963,
+    "hash": "93835b18596b647314f254393fca4eef"
   },
   "D:\\starmind\\lib\\src\\mindmap\\layout\\anchor_calculator.dart": {
     "mtime": 1780499395.4144845,
@@ -950,6 +958,14 @@
   "D:\\starmind\\test\\mindmap\\ink\\ink_layer_repository_test.dart": {
     "mtime": 1780769034.1304536,
     "hash": "ba6568bc30adb71e0fe99340b55277ff"
+  },
+  "D:\\starmind\\test\\mindmap\\ink\\stroke_renderer_test.dart": {
+    "mtime": 1781170122.9561698,
+    "hash": "3a5b212003dee540c32dd28c73962bfd"
+  },
+  "D:\\starmind\\test\\mindmap\\ink\\stroke_stabilizer_test.dart": {
+    "mtime": 1781174541.1091137,
+    "hash": "2b40dd71948b33b850afce0716d86b11"
   },
   "D:\\starmind\\test\\mindmap\\layout\\anchor_calculator_test.dart": {
     "mtime": 1780499417.6465268,
