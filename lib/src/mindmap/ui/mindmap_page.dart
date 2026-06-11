@@ -638,9 +638,11 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                 maxScale: MindMapController.maxScale,
                 boundaryMargin: const EdgeInsets.all(500),
                 scaleEnabled:
-                    widget.controller.interactMode != CanvasInteractMode.lasso,
+                    widget.controller.interactMode != CanvasInteractMode.lasso &&
+                    widget.controller.interactMode != CanvasInteractMode.ink,
                 panEnabled:
-                    widget.controller.interactMode != CanvasInteractMode.lasso,
+                    widget.controller.interactMode != CanvasInteractMode.lasso &&
+                    widget.controller.interactMode != CanvasInteractMode.ink,
                 child: Container(
                     width: bounds.width + 1000,
                     height: bounds.height + 1000,
