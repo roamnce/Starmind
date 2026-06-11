@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StarMind — 思维导图</title>
+<title>StarMind — 手写思维导图</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -22,8 +22,7 @@
   --danger:#e05858;
   --success:#5ce8a0;
   --info:#5cb8fc;
-  --tab-active-bg:rgba(43, 85, 142, 0.2);
-  --tab-active-border:rgba(65, 137, 222, 0.4);
+  --blue:#4D96FF;
 }
 body{
   font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
@@ -35,1138 +34,265 @@ body{
 .o2{width:360px;height:360px;background:#3d1f02;opacity:.1;bottom:-80px;right:-60px;}
 .o3{width:280px;height:280px;background:#1a2820;opacity:.07;top:35%;left:42%;}
 
-/* ── app shell ── */
 .app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1;}
-.app-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
+.app-body{display:flex;flex:1;overflow:hidden;position:relative;}
 
 /* ── tab bar ── */
-.tab-bar{
-  display:flex;align-items:center;
-  height:40px;padding:0 8px;
-  background:rgba(12,10,7,0.95);
-  border-bottom:1px solid var(--border);
-  gap:2px;z-index:50;flex-shrink:0;
-}
+.tab-bar{display:flex;align-items:center;height:40px;padding:0 8px;background:rgba(12,10,7,0.95);border-bottom:1px solid var(--border);gap:2px;z-index:50;flex-shrink:0;}
 .tab-tabs{display:flex;align-items:center;gap:1px;flex:1;overflow-x:auto;scrollbar-width:none;}
 .tab-tabs::-webkit-scrollbar{display:none;}
-.tab-it{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 12px;height:30px;border-radius:7px 7px 0 0;
-  background:transparent;border:1px solid transparent;
-  border-bottom:none;
-  color:var(--ts);font-size:11.5px;
-  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;
-}
+.tab-it{display:flex;align-items:center;gap:6px;padding:5px 12px;height:30px;border-radius:7px 7px 0 0;background:transparent;border:1px solid transparent;border-bottom:none;color:var(--ts);font-size:11.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;}
 .tab-it:hover{background:var(--glass-h);color:var(--tp);}
-.tab-it.active{
-  background:var(--tab-active-bg);color:var(--tp);
-  border-color:var(--tab-active-border);
-  box-shadow:0 -2px 10px rgba(65, 137, 222, 0.1);
-}
+.tab-it.active{background:rgba(43,85,142,0.2);color:var(--tp);border-color:rgba(65,137,222,0.4);}
 .tab-it svg{width:13px;height:13px;flex-shrink:0;}
-.tab-it .pdf-icon{color:var(--accent);}
-.tab-it .map-icon{color:var(--info);}
-.tab-x{
-  width:16px;height:16px;display:flex;align-items:center;justify-content:center;
-  border-radius:4px;background:transparent;border:none;
-  color:var(--tm);cursor:pointer;transition:all .15s;margin-left:4px;
-}
+.tab-x{width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:transparent;border:none;color:var(--tm);cursor:pointer;transition:all .15s;margin-left:4px;}
 .tab-x:hover{background:rgba(224,88,88,.2);color:var(--danger);}
 .tab-x svg{width:10px;height:10px;}
-.win-ctrls{
-  display:flex;align-items:center;gap:2px;margin-left:auto;flex-shrink:0;
-}
-.wc{
-  width:36px;height:30px;display:flex;align-items:center;justify-content:center;
-  background:transparent;border:none;color:var(--ts);cursor:pointer;
-  transition:all .15s;border-radius:4px;
-}
+.win-ctrls{display:flex;align-items:center;gap:2px;margin-left:auto;flex-shrink:0;}
+.wc{width:36px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--ts);cursor:pointer;transition:all .15s;border-radius:4px;}
 .wc:hover{background:var(--glass-h);color:var(--tp);}
 .wc svg{width:13px;height:13px;}
 
 /* ── breadcrumb bar ── */
-.breadcrumb-bar{
-  display:flex;align-items:center;
-  height:44px;padding:0 12px;
-  background:rgba(16,13,8,0.92);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-  z-index:40;flex-shrink:0;
-}
-.bb-left{display:flex;align-items:center;gap:3px;flex:1;transition:opacity 0.2s ease;}
-.bb-btn{
-  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
-  border-radius:7px;background:transparent;border:1px solid transparent;
-  color:var(--ts);cursor:pointer;transition:all .18s;position:relative;
-}
+.breadcrumb-bar{display:flex;align-items:center;height:44px;padding:0 12px;background:rgba(16,13,8,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:40;flex-shrink:0;}
+.bb-left{display:flex;align-items:center;gap:3px;flex:1;}
+.bb-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:transparent;border:1px solid transparent;color:var(--ts);cursor:pointer;transition:all .18s;}
 .bb-btn:hover{background:var(--glass-h);color:var(--tp);border-color:var(--border);}
 .bb-btn svg{width:16px;height:16px;}
-.bb-path{
-  font-size:12.5px;color:var(--tp);font-weight:600;margin-left:8px;
-  display:flex;align-items:center;gap:4px;
-}
+.bb-path{font-size:12.5px;color:var(--tp);font-weight:600;margin-left:8px;display:flex;align-items:center;gap:4px;}
 .bb-right{display:flex;align-items:center;gap:3px;margin-left:auto;}
 
 /* ── workspace canvas ── */
-.workspace {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background-color: var(--bg0);
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 20px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.connectors-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-.canvas-content {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  transform-origin: center center;
-  z-index: 2;
-  padding: 200px;
-}
-.canvas-content.draggable-active {
-  cursor: grab;
-}
-.canvas-content.draggable-active:active {
-  cursor: grabbing;
-}
-.canvas-content.lasso-active {
-  cursor: crosshair;
-}
+.workspace{flex:1;position:relative;overflow:hidden;background-color:var(--bg0);background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:20px 20px;display:flex;align-items:center;justify-content:center;}
+.connectors-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+.canvas-content{position:absolute;display:flex;align-items:center;transform-origin:center center;z-index:2;padding:200px;}
+.canvas-content.draggable-active{cursor:grab;}
+.canvas-content.draggable-active:active{cursor:grabbing;}
+.canvas-content.lasso-active{cursor:crosshair;}
+.canvas-content.ink-active{cursor:crosshair;}
 
-/* ── mind map tree elements ── */
-.tree-container {
-  display: flex;
-  align-items: center;
-  gap: 80px; /* Space between parent and child level */
-  transition: flex-direction 0.3s ease;
-}
-.tree-container.layout-left {
-  flex-direction: row-reverse;
-}
-.tree-children {
-  display: flex;
-  flex-direction: column;
-  gap: 20px; /* Space between siblings */
-  position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.tree-children.collapsed {
-  display: none !important;
-}
-.tree-branch {
-  display: flex;
-  align-items: center;
-  gap: 80px;
-}
-.tree-container.layout-left .tree-branch {
-  flex-direction: row-reverse;
-}
-.node-wrapper {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
+/* ── mind map tree ── */
+.tree-container{display:flex;align-items:center;gap:80px;transition:flex-direction 0.3s ease;}
+.tree-container.layout-left{flex-direction:row-reverse;}
+.tree-children{display:flex;flex-direction:column;gap:20px;position:relative;}
+.tree-children.collapsed{display:none!important;}
+.tree-branch{display:flex;align-items:center;gap:80px;}
+.tree-container.layout-left .tree-branch{flex-direction:row-reverse;}
+.node-wrapper{display:flex;align-items:center;position:relative;}
 
-.tree-node {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 500;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  user-select: none;
-}
-.tree-node:hover {
-  transform: translateY(-1.5px);
-  border-color: var(--border-h);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-}
-.tree-node.active {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 12px var(--accent-glow) !important;
-}
+.tree-node{padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:500;text-align:center;cursor:pointer;position:relative;border:1px solid transparent;transition:all 0.2s ease;box-shadow:0 4px 15px rgba(0,0,0,0.4);white-space:nowrap;display:flex;align-items:center;gap:6px;user-select:none;}
+.tree-node:hover{transform:translateY(-1.5px);border-color:var(--border-h);box-shadow:0 6px 20px rgba(0,0,0,0.6);}
+.tree-node.active{border-color:var(--accent)!important;box-shadow:0 0 12px var(--accent-glow)!important;}
 
-/* Node specifics */
-.root-node {
-  background-color: #242930;
-  border-color: rgba(255,220,140,0.12);
-  font-size: 17px;
-  font-weight: 700;
-  padding: 14px 28px;
-  border-radius: 10px;
-}
-.red-node {
-  background-color: #e05858;
-  color: #fff;
-  font-weight: 600;
-}
-.purple-node {
-  background-color: #7b61ff;
-  color: #fff;
-  font-weight: 600;
-}
-.dark-node {
-  background-color: #000;
-  color: var(--tp);
-  border-color: rgba(255,255,255,0.12);
-}
+.root-node{background-color:#242930;border-color:rgba(255,220,140,0.12);font-size:17px;font-weight:700;padding:14px 28px;border-radius:10px;}
+.red-node{background-color:#e05858;color:#fff;font-weight:600;}
+.purple-node{background-color:#7b61ff;color:#fff;font-weight:600;}
+.dark-node{background-color:#000;color:var(--tp);border-color:rgba(255,255,255,0.12);}
 
-.flag-icon {
-  width: 13px;
-  height: 13px;
-  color: #f1c40f;
-  flex-shrink: 0;
-}
-.node-emoji {
-  margin-right: 4px;
-  font-size: 14px;
-}
+.flag-icon{width:13px;height:13px;color:#f1c40f;flex-shrink:0;}
+.node-emoji{margin-right:4px;font-size:14px;}
 
-/* Folding control */
-.toggle-btn {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: var(--bg2);
-  border: 1.5px solid var(--accent);
-  position: absolute;
-  right: -7px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.tree-container.layout-left .toggle-btn {
-  right: auto;
-  left: -7px;
-}
-.node-wrapper:hover .toggle-btn {
-  opacity: 1;
-}
-.toggle-btn::after {
-  content: '-';
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--accent);
-  line-height: 1;
-  display: block;
-  margin-top: -1px;
-}
-.tree-node.collapsed-state .toggle-btn {
-  opacity: 1;
-}
-.tree-node.collapsed-state .toggle-btn::after {
-  content: '+';
-}
+/* 标签芯片 */
+.tag-chip{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;font-size:9px;font-weight:500;background:rgba(255,200,0,0.12);color:var(--accent2);margin-left:4px;}
+.tag-chip.blue{background:rgba(77,150,255,0.15);color:var(--blue);}
+.tag-chip.green{background:rgba(92,232,160,0.15);color:var(--success);}
 
-/* Locked mode */
-.workspace.locked-state .tree-node {
-  cursor: not-allowed;
-  pointer-events: none;
-  opacity: 0.85;
-}
-.workspace.locked-state .toggle-btn {
-  display: none !important;
-}
+/* 关联线标签 */
+.relation-label{position:absolute;padding:2px 8px;border-radius:4px;background:rgba(20,16,12,0.85);border:1px solid rgba(255,140,0,0.3);font-size:10px;color:var(--ts);pointer-events:none;white-space:nowrap;}
+
+/* 概要标注 */
+.summary-brace{position:absolute;pointer-events:none;}
+
+/* 折叠控制 */
+.toggle-btn{width:14px;height:14px;border-radius:50%;background-color:var(--bg2);border:1.5px solid var(--accent);position:absolute;right:-7px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s ease;}
+.tree-container.layout-left .toggle-btn{right:auto;left:-7px;}
+.node-wrapper:hover .toggle-btn{opacity:1;}
+.toggle-btn::after{content:'-';font-size:11px;font-weight:bold;color:var(--accent);line-height:1;display:block;margin-top:-1px;}
+.tree-node.collapsed-state .toggle-btn{opacity:1;}
+.tree-node.collapsed-state .toggle-btn::after{content:'+';}
+
+/* 锁定模式 */
+.workspace.locked-state .tree-node{cursor:not-allowed;pointer-events:none;opacity:0.85;}
+.workspace.locked-state .toggle-btn{display:none!important;}
 
 /* ── left zoom bar ── */
-.floating-zoom {
-  position: absolute;
-  bottom: 24px;
-  left: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  background: rgba(20, 16, 12, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 6px;
-  z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  transition: display 0.2s ease;
-}
-.fz-btn {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: var(--ts);
-  cursor: pointer;
-  transition: all 0.18s;
-  font-size: 15px;
-  position: relative;
-}
-.fz-btn:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-}
-.fz-btn svg {
-  width: 15px;
-  height: 15px;
-  stroke-width: 2.2;
-}
-.fz-val {
-  font-size: 10.5px;
-  color: var(--ts);
-  font-weight: 700;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  cursor: pointer;
-}
-.fz-val:hover {
-  color: var(--tp);
-}
-.fz-sep {
-  width: 18px;
-  height: 1px;
-  background: var(--border);
-  margin: 3px 0;
-}
-.fz-btn.active {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid rgba(200, 132, 26, 0.2);
-}
+.floating-zoom{position:absolute;bottom:24px;left:24px;display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(20,16,12,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.fz-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--ts);cursor:pointer;transition:all 0.18s;font-size:15px;position:relative;}
+.fz-btn:hover{background:var(--glass-h);color:var(--tp);}
+.fz-btn svg{width:15px;height:15px;stroke-width:2.2;}
+.fz-val{font-size:10.5px;color:var(--ts);font-weight:700;height:24px;display:flex;align-items:center;justify-content:center;min-width:36px;cursor:pointer;}
+.fz-val:hover{color:var(--tp);}
+.fz-sep{width:18px;height:1px;background:var(--border);margin:3px 0;}
+.fz-btn.active{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(200,132,26,0.2);}
 
 /* ── bottom toolbar ── */
-.floating-toolbar {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  background: rgba(20, 16, 12, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 5px 10px;
-  z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  transition: opacity 0.3s, display 0.2s ease;
-}
-.workspace.locked-state .floating-toolbar .ft-btn:not(.lock-btn) {
-  opacity: 0.35;
-  pointer-events: none;
-}
-.ft-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: var(--ts);
-  cursor: pointer;
-  transition: all 0.18s;
-  position: relative;
-}
-.ft-btn:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-  transform: translateY(-1px);
-}
-.ft-btn.active {
-  background: var(--accent-bg);
-  color: var(--accent2);
-  border: 1px solid rgba(200, 132, 26, 0.25);
-}
-.ft-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2.2;
-}
+.floating-toolbar{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px;background:rgba(20,16,12,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:12px;padding:5px 10px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.workspace.locked-state .floating-toolbar .ft-btn:not(.lock-btn){opacity:0.35;pointer-events:none;}
+.ft-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--ts);cursor:pointer;transition:all 0.18s;position:relative;}
+.ft-btn:hover{background:var(--glass-h);color:var(--tp);transform:translateY(-1px);}
+.ft-btn.active{background:var(--accent-bg);color:var(--accent2);border:1px solid rgba(200,132,26,0.25);}
+.ft-btn svg{width:16px;height:16px;stroke-width:2.2;}
+.ft-sep{width:1px;height:16px;background:var(--border);margin:0 2px;}
 
-/* ── right sidebar layout ── */
-.right-sidebar {
-  width: 320px; /* 默认展开以贴合截图状态 */
-  min-width: 0px;
-  height: 100%;
-  display: flex;
-  background: rgba(20, 16, 12, 0.6);
-  border-left: 1px solid var(--border);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
-  overflow: hidden;
-  z-index: 10;
-  flex-shrink: 0;
-}
-.right-sidebar.collapsed-sidebar {
-  width: 0px;
-  border-left-color: transparent;
-}
-.rs-panel {
-  flex: 1;
-  height: 100%;
-  background: rgba(22, 17, 10, 0.95);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.rs-tabs {
-  width: 44px;
-  height: 100%;
-  background: rgba(14, 10, 7, 0.98);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 10px;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.rst-tab {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  color: var(--ts);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.rst-tab:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-}
-.rst-tab.active {
-  background: #1862c6 !important;
-  color: #ffffff !important;
-  border: none !important;
-  box-shadow: 0 2px 8px rgba(24, 98, 198, 0.4);
-}
-.rst-tab svg {
-  width: 16px;
-  height: 16px;
-}
+/* ── right ink toolbar ── */
+.ink-sidebar{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(20,16,12,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.ink-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--ts);cursor:pointer;transition:all 0.18s;}
+.ink-btn:hover{background:var(--glass-h);color:var(--tp);}
+.ink-btn.active{background:var(--accent-bg);color:var(--accent2);border:1px solid rgba(200,132,26,0.25);}
+.ink-btn svg{width:16px;height:16px;stroke-width:2;}
+.ink-sep{width:18px;height:1px;background:var(--border);margin:2px 0;}
+.color-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;}
+.color-dot:hover{transform:scale(1.2);}
+.color-dot.active{border-color:#fff;box-shadow:0 0 6px rgba(255,255,255,0.3);}
+.ink-thickness{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;}
+.ink-thickness-dot{border-radius:50%;background:var(--tp);cursor:pointer;transition:all 0.15s;}
+.ink-thickness-dot:hover{opacity:0.8;}
+.ink-thickness-dot.active{box-shadow:0 0 4px var(--accent2);}
 
-/* Panel content specifics */
-.rs-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-.rs-header {
-  height: 44px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  flex-shrink: 0;
-}
-.rsh-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tp);
-}
-.rsh-icon {
-  width: 15px;
-  height: 15px;
-  color: var(--info);
-}
-.rsh-right {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.rsh-btn {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  color: var(--ts);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.rsh-btn:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-}
-.rsh-btn svg {
-  width: 14px;
-  height: 14px;
-}
+/* ── node detail panel (bottom sheet) ── */
+.detail-panel{position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(14,10,7,0.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border-h);border-radius:16px 16px 0 0;z-index:200;display:none;flex-direction:column;box-shadow:0 -8px 32px rgba(0,0,0,0.5);}
+.detail-panel.show{display:flex;}
+.detail-drag{display:flex;justify-content:center;padding:8px 0;cursor:grab;}
+.detail-drag-bar{width:36px;height:4px;border-radius:2px;background:rgba(255,200,0,0.25);}
+.detail-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px;border-bottom:1px solid var(--border);}
+.detail-title{font-size:14px;font-weight:600;color:var(--tp);display:flex;align-items:center;gap:6px;}
+.detail-title svg{width:14px;height:14px;color:var(--accent2);}
+.detail-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:transparent;border:none;color:var(--ts);cursor:pointer;}
+.detail-close:hover{background:var(--glass-h);color:var(--tp);}
+.detail-body{flex:1;position:relative;overflow:hidden;}
+.detail-markdown{position:absolute;inset:0;padding:16px;overflow-y:auto;color:var(--ts);font-size:13px;line-height:1.7;}
+.detail-markdown h3{color:var(--tp);font-size:15px;margin-bottom:8px;}
+.detail-markdown strong{color:var(--tp);}
+.detail-markdown ul{padding-left:18px;margin:4px 0;}
+.detail-ink-overlay{position:absolute;inset:0;pointer-events:none;}
+.detail-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-top:1px solid var(--border);background:rgba(14,10,7,0.98);}
+.detail-tool{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--ts);cursor:pointer;transition:all 0.15s;}
+.detail-tool:hover{background:var(--glass-h);color:var(--tp);}
+.detail-tool.active{background:var(--accent-bg);color:var(--accent2);}
+.detail-tool svg{width:16px;height:16px;stroke-width:2;}
 
-/* Markdown editor styles */
-.md-toolbar {
-  background: rgba(0, 0, 0, 0.25);
-  border-bottom: 1px solid var(--border);
-  padding: 6px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.mdt-row {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.mdt-btn {
-  height: 24px;
-  min-width: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--ts);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
-  transition: all 0.15s;
-}
-.mdt-btn:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-  border-color: var(--border);
-}
-.mdt-btn svg {
-  width: 13px;
-  height: 13px;
-}
-.mdt-sep {
-  width: 1px;
-  height: 14px;
-  background: var(--border);
-  margin: 0 4px;
-}
-.note-textarea {
-  flex: 1;
-  background: transparent;
-  border: none;
-  resize: none;
-  padding: 16px;
-  color: var(--tp);
-  font-size: 13px;
-  line-height: 1.6;
-  outline: none;
-}
+/* ── 套索路径 ── */
+.lasso-svg{position:absolute;inset:0;pointer-events:none;z-index:50;}
+.lasso-path{stroke:var(--blue);stroke-width:2;stroke-dasharray:8,4;fill:rgba(77,150,255,0.08);animation:lasso-dash 1s linear infinite;}
+@keyframes lasso-dash{to{stroke-dashoffset:-12;}}
 
-/* Sidebar panel paddings */
-.rs-body-pad {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  flex: 1;
-}
+/* ── 手势轨迹 ── */
+.gesture-hint{position:absolute;pointer-events:none;z-index:60;}
+.gesture-circle{stroke:rgba(255,200,0,0.6);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-dasharray:200;stroke-dashoffset:200;animation:gesture-draw 2s ease-out forwards;}
+@keyframes gesture-draw{to{stroke-dashoffset:0;}}
+.gesture-label{font-size:11px;color:var(--accent2);font-weight:500;}
 
-/* Search styling */
-.rs-search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--glass);
-  border: 1px solid var(--border);
-  color: var(--tp);
-  font-size: 12px;
-  outline: none;
-}
-.rs-search-input:focus {
-  border-color: var(--info);
-}
-.rs-search-results {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.search-result-item {
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.01);
-  border: 1px solid var(--border);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.search-result-item:hover {
-  background: var(--accent-bg);
-  border-color: var(--accent);
-}
+/* ── 手写墨迹模拟 ── */
+.ink-canvas{position:absolute;inset:0;pointer-events:none;z-index:3;}
+.ink-stroke{stroke-linecap:round;stroke-linejoin:round;fill:none;}
+.ink-stroke.pen{stroke:var(--tp);stroke-width:2;opacity:0.85;}
+.ink-stroke.highlight{stroke:rgba(255,200,0,0.35);stroke-width:12;opacity:0.6;}
+.ink-stroke.highlight-green{stroke:rgba(92,232,160,0.3);stroke-width:12;opacity:0.5;}
 
-/* Themes styling */
-.theme-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255,255,255,0.01);
-  transition: all 0.2s;
-}
-.theme-card:hover, .theme-card.active {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-}
-.theme-color-dots {
-  display: flex;
-  gap: 4px;
-}
-.theme-color-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.theme-name {
-  font-size: 12px;
-  color: var(--tp);
-}
+/* ── 缩略图 ── */
+.thumbnail{width:48px;height:48px;border-radius:6px;border:1px solid rgba(255,200,0,0.15);background:rgba(20,16,12,0.7);overflow:hidden;margin-top:4px;}
 
-/* Settings styling */
-.setting-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-  margin-bottom: 4px;
-}
-.setting-label {
-  font-size: 12.5px;
-  color: var(--ts);
-}
-.setting-switch {
-  width: 32px;
-  height: 18px;
-  border-radius: 9px;
-  background: rgba(255,255,255,0.1);
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s;
-}
-.setting-switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s;
-}
-.setting-switch.active {
-  background: var(--info);
-}
-.setting-switch.active::after {
-  transform: translateX(14px);
-}
-.style-select {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--tp);
-  font-size: 11.5px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  outline: none;
-}
-.style-range {
-  width: 80px;
-  accent-color: var(--info);
-}
+/* ── 更多操作弹窗 ── */
+.more-dropdown{position:fixed;background:rgba(22,17,10,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-h);border-radius:10px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,0.6);display:none;z-index:200;width:170px;}
+.more-dropdown.show{display:block;}
+.more-dropdown::after{content:'';position:absolute;top:-6px;right:14px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid rgba(22,17,10,0.95);}
+.md-item{display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:12px;color:var(--ts);cursor:pointer;border-radius:6px;transition:all 0.15s;}
+.md-item:hover{background:var(--glass-h);color:var(--tp);}
+.md-item svg{width:14px;height:14px;color:var(--ts);flex-shrink:0;}
+.md-sep{height:1px;background:var(--border);margin:4px 6px;}
 
-/* Emoji / Icons styling */
-.emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.emoji-item {
-  font-size: 20px;
-  padding: 6px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-.emoji-item:hover {
-  background: var(--glass-h);
-}
-.emoji-note {
-  font-size: 10px;
-  color: var(--tm);
-  line-height: 1.4;
-  margin-top: 10px;
-  text-align: center;
-}
+/* ── 布局切换弹窗 ── */
+.layout-dropdown{position:fixed;background:rgba(22,17,10,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-h);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:none;z-index:120;width:110px;}
+.layout-dropdown.show{display:block;}
+.layout-opt{padding:6px 10px;font-size:11.5px;color:var(--ts);cursor:pointer;border-radius:5px;text-align:center;transition:background 0.15s,color 0.15s;}
+.layout-opt:hover{background:var(--glass-h);color:var(--tp);}
+.layout-opt.active{background:var(--accent-bg);color:var(--accent2);}
 
-/* ── popups & modals ── */
+/* ── 关于弹窗 ── */
+.info-popup{position:absolute;left:80px;bottom:84px;width:230px;background:rgba(22,17,10,0.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border-h);border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:120;display:none;font-size:11.5px;}
+.info-popup.show{display:block;}
+.popup-title{font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+.info-row{display:flex;justify-content:space-between;margin-bottom:5px;color:var(--ts);}
+.info-row span:last-child{color:var(--tp);font-weight:500;}
 
-/* 关于导图弹窗 (与关于导图UI间隙配合，不重叠) */
-.info-popup {
-  position: absolute;
-  left: 80px;
-  bottom: 84px;
-  width: 230px;
-  background: rgba(22, 17, 10, 0.95);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border-h);
-  border-radius: 10px;
-  padding: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  z-index: 120;
-  display: none;
-  font-size: 11.5px;
-}
-.info-popup.show {
-  display: block;
-}
-.popup-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent2);
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
-}
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-  color: var(--ts);
-}
-.info-row span:last-child {
-  color: var(--tp);
-  font-weight: 500;
-}
+/* ── 小地图 ── */
+.minimap-popup{position:absolute;right:24px;bottom:24px;width:170px;height:120px;background:rgba(20,16,12,0.85);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border:1px solid var(--border-h);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:110;display:none;overflow:hidden;padding:8px;}
+.minimap-popup.show{display:block;}
+.minimap-title{font-size:10px;color:var(--ts);margin-bottom:4px;}
+.minimap-viewport-container{width:100%;height:calc(100% - 16px);background:rgba(0,0,0,0.4);border-radius:6px;position:relative;}
+.mini-node-rep{position:absolute;border-radius:2px;background:rgba(255,255,255,0.15);}
+.mini-node-rep.root{background:var(--info);width:12px;height:6px;left:15px;top:45px;}
+.mini-node-rep.red-branch{background:var(--danger);width:10px;height:5px;left:45px;top:25px;}
+.mini-node-rep.purple-branch{background:#7b61ff;width:10px;height:5px;left:45px;top:65px;}
+.minimap-viewbox{position:absolute;border:1.2px solid var(--accent);background:rgba(200,132,26,0.08);width:90px;height:60px;left:30px;top:15px;pointer-events:none;}
 
-/* 居中全屏遮罩及快捷键大弹窗 (幕布样式) */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.22s ease;
-}
-.modal-overlay.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-.shortcuts-modal {
-  width: 520px;
-  height: 600px;
-  background: rgba(30, 26, 22, 0.96);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid var(--border-h);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.75);
-  overflow: hidden;
-  transform: scale(0.94);
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.modal-overlay.show .shortcuts-modal {
-  transform: scale(1);
-}
-.sm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.sm-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--tp);
-}
-.sm-btn {
-  font-size: 13.5px;
-  cursor: pointer;
-  user-select: none;
-  font-weight: 500;
-}
-.sm-btn.cancel {
-  color: var(--info);
-}
-.sm-btn.reset {
-  color: var(--danger);
-  margin-right: 16px;
-}
-.sm-btn.save {
-  color: var(--ts);
-}
-.sm-right-group {
-  display: flex;
-  align-items: center;
-}
-.sm-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,200,80,.1) transparent;
-}
-.sm-content::-webkit-scrollbar {
-  width: 4px;
-}
-.sm-content::-webkit-scrollbar-thumb {
-  background: rgba(255,200,80,.1);
-  border-radius: 2px;
-}
-.sm-section-title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--accent2);
-  margin-bottom: 12px;
-  text-align: left;
-  letter-spacing: 0.5px;
-}
-.sm-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-}
-.sm-label {
-  font-size: 12.5px;
-  color: var(--ts);
-}
-.sm-keys {
-  font-size: 11px;
-  font-family: monospace;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  padding: 3px 8px;
-  border-radius: 4px;
-  color: var(--tp);
-}
-.sm-edit-btn {
-  font-size: 12px;
-  color: var(--info);
-  text-align: right;
-  cursor: pointer;
-  margin-top: 8px;
-  font-weight: 500;
-}
-.sm-edit-btn:hover {
-  text-decoration: underline;
-}
+/* ── 套索选择框 ── */
+.selection-box{position:absolute;border:1.5px dashed var(--accent);background:rgba(200,132,26,0.12);pointer-events:none;display:none;z-index:1000;}
 
-/* 导航小地图雷达 (右下角) */
-.minimap-popup {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  width: 170px;
-  height: 120px;
-  background: rgba(20, 16, 12, 0.85);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid var(--border-h);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-  z-index: 110;
-  display: none;
-  overflow: hidden;
-  padding: 8px;
-}
-.minimap-popup.show {
-  display: block;
-}
-.minimap-title {
-  font-size: 10px;
-  color: var(--ts);
-  margin-bottom: 4px;
-}
-.minimap-viewport-container {
-  width: 100%;
-  height: calc(100% - 16px);
-  background: rgba(0,0,0,0.4);
-  border-radius: 6px;
-  position: relative;
-}
-.mini-node-rep {
-  position: absolute;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.15);
-}
-.mini-node-rep.root {
-  background: var(--info);
-  width: 12px; height: 6px;
-  left: 15px; top: 45px;
-}
-.mini-node-rep.red-branch {
-  background: var(--danger);
-  width: 10px; height: 5px;
-  left: 45px; top: 25px;
-}
-.mini-node-rep.purple-branch {
-  background: #7b61ff;
-  width: 10px; height: 5px;
-  left: 45px; top: 65px;
-}
-.mini-node-rep.domestic-rep {
-  background: rgba(255,255,255,0.3);
-  width: 8px; height: 4px;
-  left: 75px; top: 15px;
-}
-.mini-node-rep.foreign-rep {
-  background: rgba(255,255,255,0.3);
-  width: 8px; height: 4px;
-  left: 75px; top: 35px;
-}
-.mini-node-rep.leaf {
-  background: rgba(255,255,255,0.2);
-  width: 6px; height: 3px;
-}
-.minimap-viewbox {
-  position: absolute;
-  border: 1.2px solid var(--accent);
-  background: rgba(200, 132, 26, 0.08);
-  width: 90px;
-  height: 60px;
-  left: 30px;
-  top: 15px;
-  pointer-events: none;
-  transition: all 0.1s ease-out;
-}
+/* ── 标签选择器弹窗 ── */
+.tag-picker{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:220px;background:rgba(22,17,10,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-h);border-radius:10px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:150;display:none;}
+.tag-picker.show{display:block;}
+.tag-picker-input{width:100%;padding:6px 10px;border-radius:6px;background:var(--glass);border:1px solid var(--border);color:var(--tp);font-size:12px;outline:none;}
+.tag-picker-input:focus{border-color:var(--info);}
+.tag-picker-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.tag-picker-tag{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;background:var(--accent-bg);color:var(--accent2);cursor:pointer;}
+.tag-picker-tag:hover{background:rgba(200,132,26,0.25);}
+.tag-picker-tag .tag-x{font-size:10px;opacity:0.6;}
 
-/* 布局切换弹窗 (在操作栏正上方，紧贴8px空隙，不重合) */
-.layout-dropdown {
-  position: fixed;
-  background: rgba(22, 17, 10, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-h);
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  display: none;
-  z-index: 120;
-  width: 100px;
-}
-.layout-dropdown.show {
-  display: block;
-}
-.layout-opt {
-  padding: 6px 10px;
-  font-size: 11.5px;
-  color: var(--ts);
-  cursor: pointer;
-  border-radius: 5px;
-  text-align: center;
-  transition: background 0.15s, color 0.15s;
-}
-.layout-opt:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-}
-.layout-opt.active {
-  background: var(--accent-bg);
-  color: var(--accent2);
-}
+/* ── 快捷键弹窗 ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity 0.22s ease;}
+.modal-overlay.show{opacity:1;pointer-events:auto;}
+.shortcuts-modal{width:520px;height:600px;background:rgba(30,26,22,0.96);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid var(--border-h);border-radius:16px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.75);overflow:hidden;transform:scale(0.94);transition:transform 0.22s cubic-bezier(0.4,0,0.2,1);}
+.modal-overlay.show .shortcuts-modal{transform:scale(1);}
+.sm-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sm-title{font-size:15px;font-weight:700;color:var(--tp);}
+.sm-btn{font-size:13.5px;cursor:pointer;user-select:none;font-weight:500;}
+.sm-btn.cancel{color:var(--info);}
+.sm-btn.save{color:var(--ts);}
+.sm-content{flex:1;overflow-y:auto;padding:20px;}
+.sm-section-title{font-size:12.5px;font-weight:600;color:var(--accent2);margin-bottom:12px;letter-spacing:0.5px;}
+.sm-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-bottom:8px;}
+.sm-label{font-size:12.5px;color:var(--ts);}
+.sm-keys{font-size:11px;font-family:monospace;background:rgba(255,255,255,0.06);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--tp);}
 
-/* 更多操作弹窗 */
-.more-dropdown {
-  position: fixed;
-  background: rgba(22, 17, 10, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-h);
-  border-radius: 10px;
-  padding: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-  display: none;
-  z-index: 200;
-  width: 170px;
-}
-.more-dropdown::after {
-  content: '';
-  position: absolute;
-  top: -6px;
-  right: 14px;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 6px solid rgba(22, 17, 10, 0.95);
-}
-.md-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--ts);
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.15s;
-}
-.md-item:hover {
-  background: var(--glass-h);
-  color: var(--tp);
-}
-.md-item svg {
-  width: 14px;
-  height: 14px;
-  color: var(--ts);
-  flex-shrink: 0;
-}
-.md-sep {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 6px;
-}
+/* ── 右侧侧边栏 ── */
+.right-sidebar{width:320px;min-width:0;height:100%;display:flex;background:rgba(20,16,12,0.6);border-left:1px solid var(--border);transition:width 0.3s cubic-bezier(0.4,0,0.2,1);overflow:hidden;z-index:10;flex-shrink:0;}
+.right-sidebar.collapsed-sidebar{width:0px;border-left-color:transparent;}
+.rs-panel{flex:1;height:100%;background:rgba(22,17,10,0.95);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);display:flex;flex-direction:column;overflow:hidden;}
+.rs-tabs{width:44px;height:100%;background:rgba(14,10,7,0.98);border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:12px;flex-shrink:0;}
+.rst-tab{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--ts);cursor:pointer;transition:all 0.2s;}
+.rst-tab:hover{background:var(--glass-h);color:var(--tp);}
+.rst-tab.active{background:#1862c6!important;color:#fff!important;box-shadow:0 2px 8px rgba(24,98,198,0.4);}
+.rst-tab svg{width:16px;height:16px;}
+.rs-content{display:flex;flex-direction:column;height:100%;width:100%;overflow:hidden;}
+.rs-header{height:44px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
+.rsh-left{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--tp);}
+.rsh-icon{width:15px;height:15px;color:var(--info);}
+.rsh-right{display:flex;align-items:center;gap:3px;}
+.rsh-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:5px;color:var(--ts);cursor:pointer;transition:all 0.15s;}
+.rsh-btn:hover{background:var(--glass-h);color:var(--tp);}
+.rsh-btn svg{width:14px;height:14px;}
+.md-toolbar{background:rgba(0,0,0,0.25);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.mdt-row{display:flex;align-items:center;gap:3px;}
+.mdt-btn{height:24px;min-width:24px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--ts);border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;transition:all 0.15s;}
+.mdt-btn:hover{background:var(--glass-h);color:var(--tp);border-color:var(--border);}
+.mdt-btn svg{width:13px;height:13px;}
+.mdt-sep{width:1px;height:14px;background:var(--border);margin:0 4px;}
+.note-textarea{flex:1;background:transparent;border:none;resize:none;padding:16px;color:var(--tp);font-size:13px;line-height:1.6;outline:none;}
+.rs-body-pad{padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.rs-connector-link{position:absolute;left:-13px;top:50%;transform:translateY(-50%);width:26px;height:20px;background:#1c1710;border:1px solid var(--border-h);border-radius:4px;display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer;color:var(--ts);box-shadow:-4px 0 10px rgba(0,0,0,0.3);}
+.rs-connector-link:hover{color:var(--tp);background:var(--glass-h);}
+.rs-connector-link svg{width:12px;height:12px;}
 
-/* 鼠标框选的套索视觉盒子 */
-.selection-box {
-  position: absolute;
-  border: 1.5px dashed var(--accent);
-  background: rgba(200, 132, 26, 0.12);
-  pointer-events: none;
-  display: none;
-  z-index: 1000;
-}
+/* ── 隐藏/显示控制 ── */
+.hidden{display:none!important;}
 
-/* Sidebar divider connector link visual */
-.rs-connector-link {
-  position: absolute;
-  left: -13px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 26px;
-  height: 20px;
-  background: #1c1710;
-  border: 1px solid var(--border-h);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  cursor: pointer;
-  color: var(--ts);
-  box-shadow: -4px 0 10px rgba(0,0,0,0.3);
-}
-.rs-connector-link:hover {
-  color: var(--tp);
-  background: var(--glass-h);
-}
-.rs-connector-link svg {
-  width: 12px;
-  height: 12px;
-}
-.setting-item.flex-col {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-.color-preset-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 4px;
-}
-.color-preset-circle {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  transition: all 0.15s ease;
-  box-sizing: border-box;
-}
-.color-preset-circle:hover {
-  transform: scale(1.2);
-  border-color: rgba(255,255,255,0.5);
-}
-.color-preset-circle.active {
-  box-shadow: 0 0 0 2px var(--info);
-  transform: scale(1.1);
-}
-.color-picker-wrapper {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.color-picker-wrapper input[type="color"] {
-  position: absolute;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-.color-picker-label {
-  font-size: 14px;
-  cursor: pointer;
-  line-height: 1;
+/* ── 响应式 ── */
+@media(max-width:768px){
+  .right-sidebar{display:none;}
+  .ink-sidebar{right:6px;padding:4px;}
+  .ink-btn{width:28px;height:28px;}
+  .color-dot{width:14px;height:14px;}
 }
 </style>
 </head>
@@ -1176,666 +302,498 @@ body{
 <div class="orb o3"></div>
 
 <div class="app">
-  <!-- ── 顶部标签栏 (Tab Bar) ── -->
+  <!-- ── 顶部标签栏 ── -->
   <div class="tab-bar">
     <div class="tab-tabs">
-      <div class="tab-it" onclick="location.reload()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <div class="tab-it">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         首页
       </div>
       <div class="tab-it">
-        <svg class="pdf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         2026考研数学高数-姜…
       </div>
       <div class="tab-it active">
-        <svg class="map-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="9.5" y1="10" x2="6.5" y2="7.5"/><line x1="14.5" y1="10" x2="17.5" y2="7.5"/><line x1="9.5" y1="14" x2="6.5" y2="16.5"/><line x1="14.5" y1="14" x2="17.5" y2="16.5"/></svg>
-        AI配音
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--info);"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="9.5" y1="10" x2="6.5" y2="7.5"/><line x1="14.5" y1="10" x2="17.5" y2="7.5"/><line x1="9.5" y1="14" x2="6.5" y2="16.5"/><line x1="14.5" y1="14" x2="17.5" y2="16.5"/></svg>
+        学习笔记
         <div class="tab-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
       </div>
     </div>
     <div class="win-ctrls">
-      <div class="wc" title="分屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
-      <div class="wc" title="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <div class="wc" title="分屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+      <div class="wc" title="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
     </div>
   </div>
 
-  <!-- ── 顶部操作栏 / 面包屑 ── -->
+  <!-- ── 面包屑栏 ── -->
   <div class="breadcrumb-bar">
     <div class="bb-left">
-      <div class="bb-btn" title="后退"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></div>
-      <div class="bb-btn" title="前进"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-      
-      <!-- 收藏高亮为实心星星 -->
-      <div class="bb-btn starred" title="收藏" style="color: #e0a92e;"><svg viewBox="0 0 24 24" fill="#e0a92e" stroke="#e0a92e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></polygon></svg></div>
-      
-      <!-- 注：书签按钮已按需移除 -->
-      
-      <!-- 面包屑路径前添加 Home 图标 -->
-      <span class="bb-path" style="display: flex; align-items: center; gap: 4px;">
-        <svg class="bb-path-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--ts);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        AI配音
+      <div class="bb-btn" title="后退"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></div>
+      <div class="bb-btn" title="前进"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      <div class="bb-btn" title="收藏" style="color:#e0a92e;"><svg viewBox="0 0 24 24" fill="#e0a92e" stroke="#e0a92e" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <span class="bb-path">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--ts);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        学习笔记
       </span>
     </div>
     <div class="bb-right">
-      <div class="bb-btn" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div>
-      <div class="bb-btn" title="重做"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
-      
-      <!-- 切换到大纲模式按钮 -->
-      <div class="bb-btn outline-mode-btn" title="切换到大纲模式" data-desc="支持将思维导图一键切换到类似幕布的大纲笔记编辑视图">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      </div>
-
-      <!-- 更多操作按钮 -->
-      <div class="bb-btn" id="moreBtn" onclick="toggleMoreDropdown(event)" title="更多操作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
-      <!-- 切换侧边栏按钮 -->
-      <div class="bb-btn" onclick="toggleSidebar()" title="切换侧边栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>
+      <div class="bb-btn" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div>
+      <div class="bb-btn" title="重做"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
+      <div class="bb-btn" title="大纲模式"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+      <div class="bb-btn" id="moreBtn" onclick="toggleMoreDropdown(event)" title="更多操作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+      <div class="bb-btn" onclick="toggleSidebar()" title="切换侧边栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>
     </div>
   </div>
 
   <div class="app-body">
-    <!-- ── 脑图主画布 (Workspace Canvas - Left) ── -->
+    <!-- ── 主画布 ── -->
     <div class="workspace" id="workspace">
-      <!-- SVG 贝塞尔连接线画布 -->
       <svg class="connectors-svg" id="connectorsSvg"></svg>
-      
+
+      <!-- 手写墨迹层 -->
+      <svg class="ink-canvas" id="inkCanvas">
+        <!-- 模拟手写墨迹 -->
+        <path d="M 280,220 Q 290,200 310,210 T 340,205 T 360,215" class="ink-stroke pen"/>
+        <path d="M 285,235 L 350,235" class="ink-stroke pen" style="stroke-width:1;opacity:0.5;"/>
+        <path d="M 285,245 L 330,245" class="ink-stroke pen" style="stroke-width:1;opacity:0.5;"/>
+        <!-- 荧光笔标记 -->
+        <path d="M 480,310 L 580,310" class="ink-stroke highlight"/>
+        <path d="M 480,350 L 550,350" class="ink-stroke highlight-green"/>
+      </svg>
+
+      <!-- 套索选择效果 -->
+      <svg class="lasso-svg" id="lassoSvg">
+        <path class="lasso-path" d="M 700,250 C 720,240 740,245 750,260 C 760,280 755,300 740,310 C 720,320 700,315 690,300 C 680,280 685,260 700,250 Z"/>
+        <!-- 套选内的墨迹 -->
+        <path d="M 710,270 Q 720,260 730,275 T 745,268" class="ink-stroke pen" style="stroke:rgba(77,150,255,0.8);stroke-width:2;"/>
+        <path d="M 705,290 Q 715,280 725,290 T 740,285" class="ink-stroke pen" style="stroke:rgba(77,150,255,0.8);stroke-width:1.5;"/>
+      </svg>
+
+      <!-- 手势识别提示 -->
+      <svg class="gesture-hint" style="left:880px;top:230px;" width="120" height="60">
+        <circle cx="30" cy="30" r="22" class="gesture-circle"/>
+        <text x="65" y="35" class="gesture-label">→ 创建节点</text>
+      </svg>
+
       <!-- 内容画布 -->
       <div class="canvas-content draggable-active" id="canvasContent">
         <div class="tree-container" id="treeContainer">
-          
-          <!-- 根节点 wrapper -->
+
+          <!-- 根节点 -->
           <div class="node-wrapper">
             <div class="tree-node root-node" id="node-root" onclick="selectNode(this)">
-              AI配音
+              核心概念
+              <span class="tag-chip">重要</span>
             </div>
           </div>
-          
-          <!-- 根节点的子节点集合 -->
+
           <div class="tree-children">
-            
-            <!-- 分支1：常用平台 -->
+            <!-- 分支1：定义与特征 -->
             <div class="tree-branch">
               <div class="node-wrapper">
                 <div class="tree-node red-node" id="node-branch1" onclick="selectNode(this)">
-                  常用平台
-                  <div class="toggle-btn" onclick="toggleBranch(event, 'branch1')"></div>
+                  定义与特征
+                  <div class="toggle-btn" onclick="toggleBranch(event,'branch1')"></div>
                 </div>
               </div>
-              
               <div class="tree-children" id="children-branch1">
-                
-                <!-- 国内平台 -->
                 <div class="tree-branch">
                   <div class="node-wrapper">
                     <div class="tree-node dark-node" id="node-branch1-1" onclick="selectNode(this)">
-                      国内平台
-                      <div class="toggle-btn" onclick="toggleBranch(event, 'branch1-1')"></div>
+                      主要属性
+                      <!-- 缩略图 -->
+                      <div class="thumbnail">
+                        <svg width="48" height="48" viewBox="0 0 48 48">
+                          <path d="M 8,20 Q 15,10 24,18 T 40,16" class="ink-stroke pen" style="stroke-width:1;"/>
+                          <path d="M 10,30 L 38,30" class="ink-stroke pen" style="stroke-width:0.5;opacity:0.4;"/>
+                          <path d="M 10,36 L 30,36" class="ink-stroke pen" style="stroke-width:0.5;opacity:0.4;"/>
+                        </svg>
+                      </div>
+                      <div class="toggle-btn" onclick="toggleBranch(event,'branch1-1')"></div>
                     </div>
                   </div>
-                  
                   <div class="tree-children" id="children-branch1-1">
-                    <div class="tree-branch">
-                      <div class="tree-node dark-node" id="node-leaf-minimax" onclick="selectNode(this)">minimax</div>
-                    </div>
-                    <div class="tree-branch">
-                      <div class="tree-node dark-node" id="node-leaf-qianwen" onclick="selectNode(this)">千问</div>
-                    </div>
-                    <div class="tree-branch">
-                      <div class="tree-node dark-node" id="node-leaf-doubao" onclick="selectNode(this)">豆包</div>
-                    </div>
+                    <div class="tree-branch"><div class="tree-node dark-node" onclick="selectNode(this)">物理属性</div></div>
+                    <div class="tree-branch"><div class="tree-node dark-node" onclick="selectNode(this)">化学属性</div></div>
+                    <div class="tree-branch"><div class="tree-node dark-node" onclick="selectNode(this)">功能属性</div></div>
                   </div>
                 </div>
-                
-                <!-- 国外平台 -->
                 <div class="tree-branch">
-                  <div class="tree-node dark-node" id="node-branch1-2" onclick="selectNode(this)">
-                    国外平台
+                  <div class="node-wrapper">
+                    <div class="tree-node dark-node" id="node-branch1-2" onclick="selectNode(this)">分类体系</div>
                   </div>
                 </div>
-                
               </div>
             </div>
-            
-            <!-- 分支2：分支主题3 -->
+
+            <!-- 分支2：应用场景 -->
             <div class="tree-branch">
               <div class="node-wrapper">
                 <div class="tree-node purple-node" id="node-branch2" onclick="selectNode(this)">
                   <svg class="flag-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
-                  分支主题3
-                  <div class="toggle-btn" onclick="toggleBranch(event, 'branch2')"></div>
+                  应用场景
+                  <span class="tag-chip blue">实践</span>
+                  <div class="toggle-btn" onclick="toggleBranch(event,'branch2')"></div>
                 </div>
               </div>
-              
               <div class="tree-children" id="children-branch2">
-                <div class="tree-branch">
-                  <div class="tree-node dark-node" id="node-leaf-xiaoshuo" onclick="selectNode(this)">
-                    小说
-                  </div>
+                <div class="tree-branch"><div class="tree-node dark-node" onclick="selectNode(this)">教育领域</div></div>
+                <div class="tree-branch"><div class="tree-node dark-node" onclick="selectNode(this)">工业应用</div></div>
+              </div>
+            </div>
+
+            <!-- 分支3：相关理论 -->
+            <div class="tree-branch">
+              <div class="node-wrapper">
+                <div class="tree-node dark-node" id="node-branch3" onclick="selectNode(this)">
+                  相关理论
+                  <span class="tag-chip green">研究</span>
                 </div>
               </div>
             </div>
-            
-          </div> <!-- .tree-children -->
-        </div> <!-- .tree-container -->
-      </div> <!-- #canvasContent -->
+          </div>
 
-      <!-- 左侧浮动缩放条 -->
+          <!-- 关联线标签（绝对定位模拟） -->
+          <div class="relation-label" style="left:680px;top:340px;">关联</div>
+          <!-- 概要标注 -->
+          <div style="position:absolute;left:180px;top:220px;width:1px;height:120px;border-left:1.5px solid rgba(255,200,0,0.3);pointer-events:none;"></div>
+          <div style="position:absolute;left:160px;top:270px;padding:2px 8px;border-radius:4px;background:rgba(20,16,12,0.85);border:1px solid rgba(255,200,0,0.25);font-size:10px;color:var(--ts);pointer-events:none;">概要</div>
+        </div>
+      </div>
+
+      <!-- 左侧缩放栏 -->
       <div class="floating-zoom">
         <div class="fz-btn" onclick="zoomIn()" title="放大">+</div>
-        <div class="fz-val" id="zoomVal" onclick="zoomReset()" title="双击重置为100%">100%</div>
+        <div class="fz-val" id="zoomVal" onclick="zoomReset()" title="双击重置">100%</div>
         <div class="fz-btn" onclick="zoomOut()" title="缩小">-</div>
         <div class="fz-sep"></div>
-        
-        <!-- 1. 关于按钮 -->
-        <div class="fz-btn" id="infoBtn" onclick="toggleInfoPopup()" title="关于导图">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        </div>
-        
-        <!-- 2. 快捷键按钮 -->
-        <div class="fz-btn" id="shortcutsBtn" onclick="toggleShortcutsModal()" title="快捷键与自定义">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1C14.85 12 13 13 13 13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        
-        <!-- 3. 小地图按钮 -->
-        <div class="fz-btn" id="minimapBtn" onclick="toggleMinimapPopup()" title="展开/收起小地图">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        </div>
+        <div class="fz-btn" id="infoBtn" onclick="toggleInfoPopup()" title="关于导图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+        <div class="fz-btn" id="shortcutsBtn" onclick="toggleShortcutsModal()" title="快捷键"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1C14.85 12 13 13 13 13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="fz-btn" id="minimapBtn" onclick="toggleMinimapPopup()" title="小地图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>
       </div>
 
       <!-- 关于弹窗 -->
       <div class="info-popup" id="infoPopup">
         <div class="popup-title">关于此思维导图</div>
-        <div class="info-row"><span>导图名称</span><span>AI配音</span></div>
-        <div class="info-row"><span>节点总数</span><span>9 个</span></div>
-        <div class="info-row"><span>总字数</span><span>32 字</span></div>
-        <div class="info-row"><span>创建时间</span><span>2026-05-31 10:24</span></div>
-        <div class="info-row"><span>修改时间</span><span>2026-05-31 19:45</span></div>
+        <div class="info-row"><span>导图名称</span><span>学习笔记</span></div>
+        <div class="info-row"><span>节点总数</span><span>12 个</span></div>
+        <div class="info-row"><span>关联线</span><span>1 条</span></div>
+        <div class="info-row"><span>概要</span><span>1 个</span></div>
+        <div class="info-row"><span>创建时间</span><span>2026-06-09 10:00</span></div>
+        <div class="info-row"><span>修改时间</span><span>2026-06-09 15:30</span></div>
       </div>
 
-      <!-- 小地图弹窗 (右下角) -->
+      <!-- 小地图 -->
       <div class="minimap-popup" id="minimapPopup">
-        <div class="minimap-title">导航雷达 (小地图)</div>
+        <div class="minimap-title">导航雷达</div>
         <div class="minimap-viewport-container">
           <div class="mini-node-rep root"></div>
           <div class="mini-node-rep red-branch"></div>
           <div class="mini-node-rep purple-branch"></div>
-          <div class="mini-node-rep domestic-rep"></div>
-          <div class="mini-node-rep foreign-rep"></div>
           <div class="minimap-viewbox" id="minimapViewbox"></div>
         </div>
       </div>
 
-      <!-- 底部浮动操作条 -->
+      <!-- 底部操作栏 -->
       <div class="floating-toolbar">
-        <!-- 1. 拖动/手掌工具 -->
-        <div class="ft-btn active" id="tool-drag" onclick="setMode('drag')" title="拖动工具 (按住鼠标左键可平移画布)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v1M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V8"/></svg>
+        <div class="ft-btn active" id="tool-drag" onclick="setMode('drag')" title="拖动工具">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v1M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V8"/></svg>
         </div>
-        
-        <!-- 2. 套索工具 -->
-        <div class="ft-btn" id="tool-lasso" onclick="setMode('lasso')" title="套索批量选择 (启用后，拖拽背景为框选节点，关闭画布平移)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-dasharray="4 4"/></svg>
+        <div class="ft-btn" id="tool-lasso" onclick="setMode('lasso')" title="套索选择">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 4"/></svg>
         </div>
-        
-        <!-- 3. 添加子节点 -->
+        <div class="ft-sep"></div>
         <div class="ft-btn" onclick="triggerAction('addChild')" title="添加子节点 (Tab)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="12" r="2"/><line x1="15" y1="12" x2="17" y2="12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="12" r="2"/><line x1="15" y1="12" x2="17" y2="12"/></svg>
         </div>
-        
-        <!-- 4. 添加同级节点 -->
         <div class="ft-btn" onclick="triggerAction('addSibling')" title="添加同级节点 (Enter)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><line x1="12" y1="15" x2="12" y2="18"/><line x1="12" y1="9" x2="12" y2="6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><line x1="12" y1="15" x2="12" y2="18"/><line x1="12" y1="9" x2="12" y2="6"/></svg>
         </div>
-        
-        <!-- 5. 创建概要 -->
+        <div class="ft-sep"></div>
         <div class="ft-btn" onclick="triggerAction('summary')" title="创建概要">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
         </div>
-        
-        <!-- 6. 创建边框 -->
-        <div class="ft-btn" onclick="triggerAction('boundary')" title="创建选区外围边框">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" ry="3"/></svg>
+        <div class="ft-btn" onclick="triggerAction('boundary')" title="创建边框">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
         </div>
-        
-        <!-- 7. 关联线 -->
-        <div class="ft-btn" onclick="triggerAction('connectLine')" title="创建跨节点关联线">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <div class="ft-btn" onclick="triggerAction('connectLine')" title="关联线">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         </div>
-        
-        <!-- 8. 创建标签 -->
-        <div class="ft-btn" onclick="triggerAction('addTag')" title="给选中节点创建标签">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <div class="ft-btn" onclick="toggleTagPicker()" title="创建标签">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
         </div>
-        
-        <!-- 9. 导图布局 -->
-        <div class="ft-btn" id="layoutBtn" onclick="toggleLayoutMenu(event)" title="导图布局切换">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><line x1="7" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="17" y2="12"/></svg>
+        <div class="ft-sep"></div>
+        <div class="ft-btn" id="layoutBtn" onclick="toggleLayoutMenu(event)" title="导图布局">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><line x1="7" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="17" y2="12"/></svg>
         </div>
-        
-        <!-- 10. 添加节点笔记 -->
-        <div class="ft-btn" onclick="switchSidebarTab('note')" title="添加节点笔记 (Markdown格式)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <div class="ft-btn" onclick="openDetailPanel()" title="添加节点笔记">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        
-        <!-- 11. 锁定编辑 -->
-        <div class="ft-btn lock-btn" id="tool-lock" onclick="toggleLock()" title="锁定脑图 (锁定后导图无法编辑或选择)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <div class="ft-sep"></div>
+        <div class="ft-btn lock-btn" id="tool-lock" onclick="toggleLock()" title="锁定编辑">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
       </div>
-    </div> <!-- #workspace -->
 
-    <!-- ── 右侧侧边栏 (Right Sidebar) ── -->
+      <!-- 标签选择器 -->
+      <div class="tag-picker" id="tagPicker">
+        <input type="text" class="tag-picker-input" placeholder="输入标签名..." onkeydown="if(event.key==='Enter'){addTag(this.value);this.value='';}">
+        <div class="tag-picker-tags">
+          <div class="tag-picker-tag" onclick="addTag('AI')">AI <span class="tag-x">×</span></div>
+          <div class="tag-picker-tag" onclick="addTag('学习')">学习 <span class="tag-x">×</span></div>
+          <div class="tag-picker-tag" onclick="addTag('重点')">重点 <span class="tag-x">×</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 右侧手写工具栏 ── -->
+    <div class="ink-sidebar" id="inkSidebar">
+      <div class="ink-btn active" title="钢笔">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+      </div>
+      <div class="ink-btn" title="铅笔">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+      </div>
+      <div class="ink-btn" title="荧光笔">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+      </div>
+      <div class="ink-btn" title="橡皮擦">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 8 8-4 4z"/><path d="M6 11l4-4"/></svg>
+      </div>
+      <div class="ink-sep"></div>
+      <div class="color-dot active" style="background:#FF6B6B;" title="红"></div>
+      <div class="color-dot" style="background:#FF9F43;" title="橙"></div>
+      <div class="color-dot" style="background:#FFD93D;" title="黄"></div>
+      <div class="color-dot" style="background:#6BCB77;" title="绿"></div>
+      <div class="color-dot" style="background:#4D96FF;" title="蓝"></div>
+      <div class="color-dot" style="background:#9B59B6;" title="紫"></div>
+      <div class="color-dot" style="background:#333;border:1.5px solid rgba(255,255,255,0.2);" title="黑"></div>
+      <div class="color-dot" style="background:#888;" title="灰"></div>
+      <div class="ink-sep"></div>
+      <div class="ink-thickness">
+        <div class="ink-thickness-dot" style="width:4px;height:4px;"></div>
+        <div class="ink-thickness-dot active" style="width:6px;height:6px;"></div>
+        <div class="ink-thickness-dot" style="width:8px;height:8px;"></div>
+        <div class="ink-thickness-dot" style="width:10px;height:10px;opacity:0.6;"></div>
+      </div>
+      <div class="ink-sep"></div>
+      <div class="ink-btn" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></div>
+      <div class="ink-btn" title="重做"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></div>
+    </div>
+
+    <!-- ── 右侧侧边栏 ── -->
     <div class="right-sidebar" id="rightSidebar">
-      <!-- 联动连线视觉小卡扣 -->
-      <div class="rs-connector-link" onclick="toggleSidebar()" title="收起/展开侧边栏">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <div class="rs-connector-link" onclick="toggleSidebar()" title="收起/展开">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
-
-      <!-- 面板内容 (Left) -->
-      <div class="rs-panel" id="rsPanel">
-        
-        <!-- Tab 1: 节点笔记 Panel -->
+      <div class="rs-panel">
         <div class="rs-content" id="rs-content-note">
           <div class="rs-header">
             <div class="rsh-left">
-              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               <span>节点笔记</span>
             </div>
             <div class="rsh-right">
-              <div class="rsh-btn" title="代码视图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-              <div class="rsh-btn" title="上一个" onclick="navigateSibling('prev')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
-              <div class="rsh-btn" title="下一个" onclick="navigateSibling('next')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-              <div class="rsh-btn" title="更多"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+              <div class="rsh-btn" title="上一个"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+              <div class="rsh-btn" title="下一个"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
             </div>
           </div>
-          
-          <!-- Markdown Editor Toolbar -->
           <div class="md-toolbar">
             <div class="mdt-row">
-              <button class="mdt-btn" title="标题" onclick="insertMarkdown('### ')">H</button>
-              <button class="mdt-btn" title="加粗" onclick="insertMarkdown('**')">B</button>
-              <button class="mdt-btn" title="斜体" onclick="insertMarkdown('*')">I</button>
-              <button class="mdt-btn" title="删除线" style="text-decoration: line-through;" onclick="insertMarkdown('~~')">S</button>
-              <button class="mdt-btn" title="链接" onclick="insertMarkdown('[]()')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              </button>
+              <button class="mdt-btn" title="标题">H</button>
+              <button class="mdt-btn" title="加粗">B</button>
+              <button class="mdt-btn" title="斜体">I</button>
+              <button class="mdt-btn" title="删除线" style="text-decoration:line-through;">S</button>
               <span class="mdt-sep"></span>
-              <button class="mdt-btn" title="无序列表" onclick="insertMarkdown('\n- ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
-              <button class="mdt-btn" title="有序列表" onclick="insertMarkdown('\n1. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h11M10 12h11M10 18h11M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
-              <button class="mdt-btn" title="任务列表" onclick="insertMarkdown('\n- [ ] ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 11 13 15 9"/></svg></button>
+              <button class="mdt-btn" title="无序列表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+              <button class="mdt-btn" title="有序列表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h11M10 12h11M10 18h11M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
               <span class="mdt-sep"></span>
-              <button class="mdt-btn" title="引用" onclick="insertMarkdown('\n> ')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              </button>
-              <button class="mdt-btn" title="分割线" onclick="insertMarkdown('\n---\n')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-            </div>
-            <div class="mdt-row">
-              <button class="mdt-btn" title="代码块" onclick="insertMarkdown('\n```\n\n```')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg></button>
-              <button class="mdt-btn" title="行内代码" onclick="insertMarkdown('`')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 6 2 12 8 18"/><polyline points="16 18 22 12 16 6"/></svg>
-              </button>
-              <span class="mdt-sep"></span>
-              <button class="mdt-btn" title="上传附件" onclick="alert('触发文件上传附件操作...')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.5-2-2.4-3.5-4.4-3.5h-1.2C15.8 4.9 13.5 3 11 3 7.7 3 5 5.7 5 9c0 .4 0 .8.1 1.2C3.1 11 2 12.8 2 15c0 2.8 2.2 5 5 5h13c2.2 0 4-1.8 4-4 0-.4-.1-.8-.2-1.2z"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-              </button>
-              <button class="mdt-btn" title="表格" onclick="insertMarkdown('\n| Header | Header |\n| ------ | ------ |\n| Cell   | Cell   |\n')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></button>
-              <span class="mdt-sep"></span>
-              <button class="mdt-btn" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-              <button class="mdt-btn" title="重做"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+              <button class="mdt-btn" title="代码块"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
             </div>
           </div>
-          
-          <!-- Text Area -->
-          <textarea class="note-textarea" id="noteTextarea" placeholder="在此输入笔记..."></textarea>
-        </div>
-        
-        <!-- Tab 2: 搜索 Panel -->
-        <div class="rs-content" id="rs-content-search" style="display:none;">
-          <div class="rs-header">
-            <div class="rsh-left">
-              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <span>节点搜索</span>
-            </div>
-          </div>
-          <div class="rs-body-pad">
-            <input type="text" class="rs-search-input" id="nodeSearchInput" oninput="searchNodes()" placeholder="输入关键词以检索导图内容...">
-            <div class="rs-search-results" id="searchResults"></div>
-          </div>
-        </div>
-        
-        <!-- Tab 3: 主题 Panel -->
-        <div class="rs-content" id="rs-content-theme" style="display:none;">
-          <div class="rs-header">
-            <div class="rsh-left">
-              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M7.5 10.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5 1.5.672 1.5 1.5 1.5z"/><path d="M11.5 7.5c.828 0 1.5-.672 1.5-1.5S12.328 4.5 11.5 4.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5z"/><path d="M16.5 10.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5 1.5.672 1.5 1.5 1.5z"/><path d="M6 14c0-2 2-3 6-3s6 1 6 3-2.686 3-6 3-6-1-6-3z"/></svg>
-              <span>导图主题选择</span>
-            </div>
-          </div>
-          <div class="rs-body-pad">
-            <div class="theme-card active" onclick="applyTheme('default')">
-              <div class="theme-color-dots">
-                <span style="background:#242930;"></span>
-                <span style="background:#e05858;"></span>
-                <span style="background:#7b61ff;"></span>
-              </div>
-              <div class="theme-name">经典深色 (默认)</div>
-            </div>
-            <div class="theme-card" onclick="applyTheme('cyber')">
-              <div class="theme-color-dots">
-                <span style="background:#00f0ff;"></span>
-                <span style="background:#ff007f;"></span>
-                <span style="background:#7b00ff;"></span>
-              </div>
-              <div class="theme-name">赛博朋克</div>
-            </div>
-            <div class="theme-card" onclick="applyTheme('forest')">
-              <div class="theme-color-dots">
-                <span style="background:#2e7d32;"></span>
-                <span style="background:#81c784;"></span>
-                <span style="background:#4caf50;"></span>
-              </div>
-              <div class="theme-name">森林绿意</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Tab 4: 样式 Panel -->
-        <div class="rs-content" id="rs-content-style" style="display:none;">
-          <div class="rs-header">
-            <div class="rsh-left">
-              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
-              <span>样式与配置</span>
-            </div>
-          </div>
-          <div class="rs-body-pad" style="gap: 16px; display: flex; flex-direction: column;">
-            <!-- 新增画布背景色 -->
-            <div class="setting-item flex-col">
-              <span class="setting-label">画布背景色</span>
-              <div class="color-preset-row">
-                <div class="color-preset-circle active" style="background: #0c0a07;" onclick="changeCanvasBg('#0c0a07', this)" title="经典漆黑"></div>
-                <div class="color-preset-circle" style="background: #141b24;" onclick="changeCanvasBg('#141b24', this)" title="深空灰蓝"></div>
-                <div class="color-preset-circle" style="background: #0a140d;" onclick="changeCanvasBg('#0a140d', this)" title="密林暗绿"></div>
-                <div class="color-preset-circle" style="background: #0a0515;" onclick="changeCanvasBg('#0a0515', this)" title="紫幻魅影"></div>
-                <div class="color-picker-wrapper">
-                  <input type="color" id="canvasBgPicker" onchange="changeCanvasBg(this.value, null)" value="#0c0a07">
-                  <label for="canvasBgPicker" class="color-picker-label" title="自定义背景色">🎨</label>
-                </div>
-              </div>
-            </div>
+          <textarea class="note-textarea" placeholder="在此输入笔记...">### 主要属性
 
-            <!-- 新增网格线颜色 -->
-            <div class="setting-item flex-col">
-              <span class="setting-label">网格线颜色</span>
-              <div class="color-preset-row">
-                <div class="color-preset-circle active" style="background: rgba(255,255,255,0.02); border: 1.5px solid rgba(255,255,255,0.25);" onclick="changeGridColor('rgba(255, 255, 255, 0.02)', this)" title="微白"></div>
-                <div class="color-preset-circle" style="background: rgba(250,210,120,0.05);" onclick="changeGridColor('rgba(250, 210, 120, 0.05)', this)" title="浅柔金"></div>
-                <div class="color-preset-circle" style="background: rgba(0,240,255,0.03);" onclick="changeGridColor('rgba(0, 240, 255, 0.03)', this)" title="冰爽蓝"></div>
-                <div class="color-preset-circle" style="background: rgba(255,0,127,0.03);" onclick="changeGridColor('rgba(255, 0, 127, 0.03)', this)" title="霓虹红"></div>
-                <div class="color-picker-wrapper">
-                  <input type="color" id="gridColorPicker" onchange="changeGridColor(hexToRgba(this.value, 0.03), null)" value="#ffffff">
-                  <label for="gridColorPicker" class="color-picker-label" title="自定义网格色">🎨</label>
-                </div>
-              </div>
-            </div>
+属性是描述事物特征的基本要素。
 
-            <div class="setting-item">
-              <span class="setting-label">显示网格</span>
-              <div class="setting-switch active" id="toggleGrid" onclick="toggleGridStyle()"></div>
-            </div>
-            <div class="setting-item">
-              <span class="setting-label">彩虹分支颜色</span>
-              <div class="setting-switch" id="toggleRainbow" onclick="toggleRainbowStyle()"></div>
-            </div>
-            <div class="setting-item">
-              <span class="setting-label">导图线样式</span>
-              <select class="style-select" id="lineStyleSelect" onchange="changeLineStyle()">
-                <option value="bezier">贝塞尔曲线</option>
-                <option value="straight">直线连接</option>
-                <option value="ortho">直角连线</option>
-              </select>
-            </div>
-            <div class="setting-item">
-              <span class="setting-label">网格大小</span>
-              <input type="range" class="style-range" min="15" max="30" value="20" oninput="changeGridSize(this.value)">
-            </div>
-          </div>
+- **物理属性**：大小、形状、颜色
+- **化学属性**：组成和反应特性
+- **功能属性**：用途和功能
+
+理解属性的分类有助于更系统地认识事物。</textarea>
         </div>
-        
-        <!-- Tab 5: 节点图标 Panel -->
-        <div class="rs-content" id="rs-content-icon" style="display:none;">
-          <div class="rs-header">
-            <div class="rsh-left">
-              <svg class="rsh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              <span>选中节点图标</span>
-            </div>
-          </div>
-          <div class="rs-body-pad">
-            <div class="emoji-grid">
-              <span class="emoji-item" onclick="addIconToSelected('⭐')">⭐</span>
-              <span class="emoji-item" onclick="addIconToSelected('🚩')">🚩</span>
-              <span class="emoji-item" onclick="addIconToSelected('❤️')">❤️</span>
-              <span class="emoji-item" onclick="addIconToSelected('🔥')">🔥</span>
-              <span class="emoji-item" onclick="addIconToSelected('✅')">✅</span>
-              <span class="emoji-item" onclick="addIconToSelected('⚠️')">⚠️</span>
-              <span class="emoji-item" onclick="addIconToSelected('💡')">💡</span>
-              <span class="emoji-item" onclick="addIconToSelected('📌')">📌</span>
-            </div>
-            <div class="emoji-note">请先在主画布选中一个节点后，点击上面的图标进行添加</div>
-          </div>
-        </div>
-        
       </div>
-      
-      <!-- Vertical Tab Bar (Right Edge) -->
       <div class="rs-tabs">
-        <!-- 1. 节点笔记 -->
-        <div class="rst-tab active" onclick="switchSidebarTab('note')" title="节点笔记">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-        </div>
-        <!-- 2. 搜索 -->
-        <div class="rst-tab" onclick="switchSidebarTab('search')" title="节点搜索">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-        <!-- 3. 主题 -->
-        <div class="rst-tab" onclick="switchSidebarTab('theme')" title="导图主题">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5l-4 4L12 14l-5 5H4v-3l5-5L8 7.5l4-4z"/><path d="M9 15l-5 5"/></svg>
-        </div>
-        <!-- 4. 样式 -->
-        <div class="rst-tab" onclick="switchSidebarTab('style')" title="画布与导图样式">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
-        </div>
-        <!-- 5. 节点图标 -->
-        <div class="rst-tab" onclick="switchSidebarTab('icon')" title="节点图标">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-        </div>
+        <div class="rst-tab active" title="节点笔记"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="rst-tab" title="节点搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="rst-tab" title="导图主题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/></svg></div>
+        <div class="rst-tab" title="样式配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 更多操作浮动下拉菜单 -->
-<div class="more-dropdown" id="moreDropdown">
-  <div class="md-item" onclick="triggerAction('导出文件')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    导出文件
+<!-- ── 节点详情面板 ── -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-drag"><div class="detail-drag-bar"></div></div>
+  <div class="detail-header">
+    <div class="detail-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      主要属性
+    </div>
+    <button class="detail-close" onclick="closeDetailPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
   </div>
-  <div class="md-item" onclick="triggerAction('生成闪卡')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h6v10"/></svg>
-    生成闪卡
+  <div class="detail-body">
+    <div class="detail-markdown">
+      <h3>主要属性</h3>
+      <p>属性是描述事物特征的基本要素。在知识体系中，属性可以分为以下几类：</p>
+      <p><strong>物理属性</strong>：描述对象的物理特征，如大小、形状、颜色等。</p>
+      <p><strong>化学属性</strong>：描述对象的化学组成和反应特性。</p>
+      <p><strong>功能属性</strong>：描述对象的用途和功能。</p>
+      <ul>
+        <li>物理属性是最直观的特征</li>
+        <li>化学属性决定了物质的本质</li>
+        <li>功能属性体现了实用价值</li>
+      </ul>
+      <p>理解属性的分类有助于我们更系统地认识事物。</p>
+    </div>
+    <!-- 手写墨迹叠加 -->
+    <svg class="detail-ink-overlay" viewBox="0 0 400 300">
+      <path d="M 50,40 Q 60,30 70,40 T 90,35 T 110,42" class="ink-stroke pen" style="stroke-width:1.5;"/>
+      <path d="M 50,55 L 120,55" class="ink-stroke pen" style="stroke-width:0.8;opacity:0.5;"/>
+      <path d="M 200,100 L 350,100" class="ink-stroke highlight"/>
+      <path d="M 200,140 L 320,140" class="ink-stroke highlight-green"/>
+      <!-- 手写注释箭头 -->
+      <path d="M 150,80 Q 160,70 170,75" class="ink-stroke pen" style="stroke-width:1.8;"/>
+      <polygon points="170,75 165,70 168,78" fill="var(--tp)" opacity="0.8"/>
+    </svg>
   </div>
-  <div class="md-item" onclick="triggerAction('演示模式')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    演示模式
-  </div>
-  <div class="md-sep"></div>
-  <div class="md-item" onclick="toggleVisibility('top-left')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-    <span id="label-top-left">隐藏左上按钮组</span>
-  </div>
-  <div class="md-item" onclick="toggleVisibility('left-zoom')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-    <span id="label-left-zoom">隐藏左下按钮组</span>
-  </div>
-  <div class="md-item" onclick="toggleVisibility('bottom-toolbar')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-    <span id="label-bottom-toolbar">隐藏底部按钮组</span>
+  <div class="detail-toolbar">
+    <div class="detail-tool active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div>
+    <div class="detail-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></div>
+    <div class="detail-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 8 8-4 4z"/></svg></div>
+    <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
+    <div class="detail-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></div>
+    <div class="detail-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
   </div>
 </div>
 
-<!-- 布局切换浮动弹窗 -->
+<!-- ── 更多操作菜单 ── -->
+<div class="more-dropdown" id="moreDropdown">
+  <div class="md-item" onclick="triggerAction('导出文件')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    导出文件
+  </div>
+  <div class="md-item" onclick="triggerAction('生成闪卡')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h6v10"/></svg>
+    生成闪卡
+  </div>
+  <div class="md-item" onclick="triggerAction('演示模式')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    演示模式
+  </div>
+  <div class="md-sep"></div>
+  <div class="md-item" onclick="triggerAction('统计信息')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    统计信息
+  </div>
+</div>
+
+<!-- ── 布局切换 ── -->
 <div class="layout-dropdown" id="layoutDropdown">
   <div class="layout-opt active" onclick="changeLayout('double')">两侧布局</div>
   <div class="layout-opt" onclick="changeLayout('left')">左侧布局</div>
   <div class="layout-opt" onclick="changeLayout('right')">右侧布局</div>
+  <div style="height:1px;background:var(--border);margin:4px 6px;"></div>
+  <div class="layout-opt" onclick="changeLayout('framework')">框架式布局</div>
 </div>
 
-<!-- 居中全屏快捷键大弹窗 -->
+<!-- ── 快捷键弹窗 ── -->
 <div class="modal-overlay" id="shortcutsOverlay">
   <div class="shortcuts-modal" onclick="event.stopPropagation()">
     <div class="sm-header">
-      <div class="sm-btn cancel" onclick="toggleShortcutsModal()">取消</div>
+      <div class="sm-btn cancel" onclick="toggleShortcutsModal()">关闭</div>
       <div class="sm-title">快捷键</div>
-      <div class="sm-right-group">
-        <span class="sm-btn reset" onclick="alert('快捷键配置已重置为默认值')">重置</span>
-        <span class="sm-btn save" onclick="toggleShortcutsModal()">保存</span>
-      </div>
+      <div></div>
     </div>
-    
     <div class="sm-content">
-      <div class="sm-section-title">全局 (任意文档下可用)</div>
-      
-      <div class="sm-item">
-        <span class="sm-label">分屏模式</span>
-        <span class="sm-keys">Ctrl + Alt + S</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">折叠/恢复左侧标签页</span>
-        <span class="sm-keys">Ctrl + Alt + [</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">折叠/恢复右侧标签页</span>
-        <span class="sm-keys">Ctrl + Alt + ]</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">交换左右标签页</span>
-        <span class="sm-keys">Ctrl + Alt + \</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">切换焦点到对侧标签页</span>
-        <span class="sm-keys">Alt + Q</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">关闭标签页</span>
-        <span class="sm-keys">Ctrl + W</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">窗口截图</span>
-        <span class="sm-keys">Ctrl + Shift + E</span>
-      </div>
-      
-      <div class="sm-edit-btn" onclick="alert('开始全局快捷键自定义编辑...')">编辑全局快捷键</div>
-      
-      <div class="sm-section-title" style="margin-top: 24px;">结构与节点</div>
-      <div class="sm-item">
-        <span class="sm-label">添加子节点</span>
-        <span class="sm-keys">Tab</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">添加同级节点</span>
-        <span class="sm-keys">Enter</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">折叠/展开分支</span>
-        <span class="sm-keys">Space</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">编辑选中节点</span>
-        <span class="sm-keys">F2</span>
-      </div>
-      <div class="sm-item">
-        <span class="sm-label">删除选中节点</span>
-        <span class="sm-keys">Delete</span>
-      </div>
+      <div class="sm-section-title">结构与节点</div>
+      <div class="sm-item"><span class="sm-label">添加子节点</span><span class="sm-keys">Tab</span></div>
+      <div class="sm-item"><span class="sm-label">添加同级节点</span><span class="sm-keys">Enter</span></div>
+      <div class="sm-item"><span class="sm-label">折叠/展开分支</span><span class="sm-keys">Space</span></div>
+      <div class="sm-item"><span class="sm-label">编辑选中节点</span><span class="sm-keys">F2</span></div>
+      <div class="sm-item"><span class="sm-label">删除选中节点</span><span class="sm-keys">Delete</span></div>
+      <div class="sm-section-title" style="margin-top:16px;">手写工具</div>
+      <div class="sm-item"><span class="sm-label">切换手写模式</span><span class="sm-keys">Ctrl + P</span></div>
+      <div class="sm-item"><span class="sm-label">钢笔工具</span><span class="sm-keys">P</span></div>
+      <div class="sm-item"><span class="sm-label">荧光笔</span><span class="sm-keys">H</span></div>
+      <div class="sm-item"><span class="sm-label">橡皮擦</span><span class="sm-keys">E</span></div>
+      <div class="sm-item"><span class="sm-label">套索工具</span><span class="sm-keys">L</span></div>
+      <div class="sm-section-title" style="margin-top:16px;">全局</div>
+      <div class="sm-item"><span class="sm-label">锁定/解锁</span><span class="sm-keys">Alt + Q</span></div>
+      <div class="sm-item"><span class="sm-label">布局切换</span><span class="sm-keys">Ctrl + Alt + \</span></div>
+      <div class="sm-item"><span class="sm-label">切换侧边栏</span><span class="sm-keys">Ctrl + Alt + ]</span></div>
     </div>
   </div>
 </div>
 
-<!-- 鼠标框选的套索视觉盒子 -->
+<!-- 套索选择框 -->
 <div class="selection-box" id="selectionBox"></div>
 
 <script>
-// 选中节点高亮并在侧边栏加载对应笔记
+// ── 状态 ──
+let currentMode = 'drag';
+let isLocked = false;
+let currentScale = 1.0;
+let panX = 0, panY = 0;
+let isDragging = false, isSelecting = false;
+let startX, startY, selectStart = null;
+let lineStyle = 'bezier';
+let isRainbow = false;
+let sidebarOpen = true;
+
+const workspace = document.getElementById('workspace');
+const canvasContent = document.getElementById('canvasContent');
+const svg = document.getElementById('connectorsSvg');
+const zoomVal = document.getElementById('zoomVal');
+const selectionBox = document.getElementById('selectionBox');
+
+// ── 节点选择 ──
 function selectNode(el) {
   if (isLocked) return;
   document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  
-  // 在节点笔记编辑器中载入节点名称以示高保真联动
-  const rawText = el.textContent.replace('⭐','').replace('🚩','').replace('❤️','').replace('🔥','').replace('✅','').replace('⚠️','').replace('💡','').replace('📌','').trim();
-  document.getElementById('noteTextarea').value = `### ${rawText}\n\n在此输入关于 [${rawText}] 的节点笔记内容...`;
 }
 
-function navigateSibling(direction) {
-  const activeNode = document.querySelector('.tree-node.active');
-  if (!activeNode) return;
-  
-  const currentBranch = activeNode.closest('.tree-branch');
-  if (!currentBranch) return; // Root node doesn't have siblings, do nothing.
-  
-  const parentContainer = currentBranch.parentElement;
-  if (!parentContainer) return;
-  
-  const siblings = Array.from(parentContainer.children).filter(el => el.classList.contains('tree-branch'));
-  if (siblings.length <= 1) return;
-  
-  const siblingNodes = siblings.map(sb => sb.querySelector('.tree-node')).filter(n => n !== null);
-  const currentIndex = siblingNodes.indexOf(activeNode);
-  if (currentIndex === -1) return;
-  
-  let targetIndex;
-  if (direction === 'prev') {
-    targetIndex = (currentIndex - 1 + siblingNodes.length) % siblingNodes.length;
-  } else {
-    targetIndex = (currentIndex + 1) % siblingNodes.length;
-  }
-  
-  selectNode(siblingNodes[targetIndex]);
-}
-
-// 折叠 / 展开分支
+// ── 折叠 ──
 function toggleBranch(event, branchId) {
   if (isLocked) return;
   event.stopPropagation();
-  const btn = event.currentTarget;
-  const node = btn.closest('.tree-node');
-  const targetChildren = document.getElementById('children-' + branchId);
-  
-  if (targetChildren) {
-    targetChildren.classList.toggle('collapsed');
+  const node = event.currentTarget.closest('.tree-node');
+  const target = document.getElementById('children-' + branchId);
+  if (target) {
+    target.classList.toggle('collapsed');
     node.classList.toggle('collapsed-state');
-    
-    // 渐变更新连接线
     setTimeout(drawConnections, 30);
   }
 }
 
-// 绘制 SVG 连接线
-const svg = document.getElementById('connectorsSvg');
-let lineStyle = 'bezier'; // 'bezier', 'straight', 'ortho'
-
+// ── 连接线 ──
 function drawCurve(parentId, childId, color) {
   const parent = document.getElementById(parentId);
   const child = document.getElementById(childId);
   if (!parent || !child) return;
   if (parent.offsetWidth === 0 || child.offsetWidth === 0) return;
-  
+
   const pRect = parent.getBoundingClientRect();
   const cRect = child.getBoundingClientRect();
   const svgRect = svg.getBoundingClientRect();
-  
+
   let sx, sy, tx, ty;
-  const isRightSide = cRect.left > pRect.right;
-  
-  if (isRightSide) {
+  const isRight = cRect.left > pRect.right;
+
+  if (isRight) {
     sx = pRect.right - svgRect.left;
     sy = pRect.top + pRect.height / 2 - svgRect.top;
     tx = cRect.left - svgRect.left;
@@ -1846,546 +804,80 @@ function drawCurve(parentId, childId, color) {
     tx = cRect.right - svgRect.left;
     ty = cRect.top + cRect.height / 2 - svgRect.top;
   }
-  
-  let dPath = '';
-  
+
+  let d;
   if (lineStyle === 'straight') {
-    dPath = `M ${sx} ${sy} L ${tx} ${ty}`;
+    d = `M ${sx} ${sy} L ${tx} ${ty}`;
   } else if (lineStyle === 'ortho') {
     const mx = (sx + tx) / 2;
-    dPath = `M ${sx} ${sy} H ${mx} V ${ty} H ${tx}`;
+    d = `M ${sx} ${sy} H ${mx} V ${ty} H ${tx}`;
   } else {
-    // bezier (默认曲线)
     const dx = (tx - sx) * 0.45;
-    dPath = `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`;
+    d = `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`;
   }
-  
+
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', dPath);
+  path.setAttribute('d', d);
   path.setAttribute('fill', 'none');
   path.setAttribute('stroke', color);
   path.setAttribute('stroke-width', '2.5');
   path.setAttribute('stroke-linecap', 'round');
-  
-  path.style.transition = 'stroke-width 0.2s';
   path.style.cursor = 'pointer';
-  path.addEventListener('mouseover', () => {
-    path.setAttribute('stroke-width', '3.5');
-  });
-  path.addEventListener('mouseout', () => {
-    path.setAttribute('stroke-width', '2.5');
-  });
-  
+  path.addEventListener('mouseover', () => path.setAttribute('stroke-width', '3.5'));
+  path.addEventListener('mouseout', () => path.setAttribute('stroke-width', '2.5'));
   svg.appendChild(path);
 }
 
 function drawConnections() {
   svg.innerHTML = '';
-  
-  let color1 = 'rgba(224, 88, 88, 0.85)';
-  let color2 = 'rgba(138, 92, 242, 0.85)';
-  let color3 = color1;
-  let color4 = color2;
-  
-  if (isRainbow) {
-    color1 = '#ff5722';
-    color2 = '#9c27b0';
-    color3 = '#4caf50';
-    color4 = '#00bcd4';
-  }
-  
-  // 1. 根节点到一级分支
-  drawCurve('node-root', 'node-branch1', color1);
-  drawCurve('node-root', 'node-branch2', color2);
-  
-  // 2. 常用平台到二级平台
-  drawCurve('node-branch1', 'node-branch1-1', color1);
-  drawCurve('node-branch1', 'node-branch1-2', color1);
-  
-  // 3. 国内平台到三级叶子节点
-  drawCurve('node-branch1-1', 'node-leaf-minimax', color3);
-  drawCurve('node-branch1-1', 'node-leaf-qianwen', color3);
-  drawCurve('node-branch1-1', 'node-leaf-doubao', color3);
-  
-  // 4. 分支主题3到小说
-  drawCurve('node-branch2', 'node-leaf-xiaoshuo', color4);
+  let c1 = 'rgba(224,88,88,0.85)', c2 = 'rgba(138,92,242,0.85)';
+  if (isRainbow) { c1 = '#ff5722'; c2 = '#9c27b0'; }
+
+  drawCurve('node-root', 'node-branch1', c1);
+  drawCurve('node-root', 'node-branch2', c2);
+  drawCurve('node-root', 'node-branch3', 'rgba(100,100,100,0.6)');
+  drawCurve('node-branch1', 'node-branch1-1', c1);
+  drawCurve('node-branch1', 'node-branch1-2', c1);
+  drawCurve('node-branch1-1', 'node-leaf-physics', c1);
+  drawCurve('node-branch1-1', 'node-leaf-chemical', c1);
+  drawCurve('node-branch1-1', 'node-leaf-functional', c1);
 }
 
-// ── 关于弹窗 (往右侧移动，不与左侧工具栏重合) ──
-function toggleInfoPopup() {
-  closeAllPopups('infoPopup');
-  const pop = document.getElementById('infoPopup');
-  pop.classList.toggle('show');
-  document.getElementById('infoBtn').classList.toggle('active', pop.classList.contains('show'));
-}
-
-// ── 快捷键弹窗 (屏幕中央弹出) ──
-const shortcutsOverlay = document.getElementById('shortcutsOverlay');
-function toggleShortcutsModal() {
-  closeAllPopups('shortcutsOverlay');
-  shortcutsOverlay.classList.toggle('show');
-  document.getElementById('shortcutsBtn').classList.toggle('active', shortcutsOverlay.classList.contains('show'));
-}
-
-// 点击遮罩外部关闭大弹窗
-shortcutsOverlay.addEventListener('click', (e) => {
-  if (e.target === shortcutsOverlay) {
-    toggleShortcutsModal();
-  }
-});
-
-// ── 小地图弹窗 (右下角) ──
-function toggleMinimapPopup() {
-  const pop = document.getElementById('minimapPopup');
-  pop.classList.toggle('show');
-  document.getElementById('minimapBtn').classList.toggle('active', pop.classList.contains('show'));
-  if (pop.classList.contains('show')) {
-    updateMinimapViewbox();
-  }
-}
-
-function closeAllPopups(exceptId) {
-  const ids = ['infoPopup', 'shortcutsOverlay'];
-  ids.forEach(id => {
-    if (id !== exceptId) {
-      const el = document.getElementById(id);
-      el.classList.remove('show');
-      const btnId = id === 'infoPopup' ? 'infoBtn' : 'shortcutsBtn';
-      document.getElementById(btnId).classList.remove('active');
-    }
-  });
-}
-
-// ── 更多操作下拉菜单 ──
-const moreDropdown = document.getElementById('moreDropdown');
-const moreBtn = document.getElementById('moreBtn');
-
-function toggleMoreDropdown(e) {
-  e.stopPropagation();
-  moreDropdown.classList.toggle('show');
-  if (moreDropdown.classList.contains('show')) {
-    const rect = moreBtn.getBoundingClientRect();
-    moreDropdown.style.top = (rect.bottom + 8) + 'px';
-    moreDropdown.style.left = (rect.right - 170) + 'px';
-    moreDropdown.style.display = 'block';
-  } else {
-    moreDropdown.style.display = 'none';
-  }
-}
-
-// ── 隐藏/显示按钮组控制 ──
-let visibleStates = {
-  'top-left': true,
-  'left-zoom': true,
-  'bottom-toolbar': true
-};
-
-function toggleVisibility(component) {
-  visibleStates[component] = !visibleStates[component];
-  
-  if (component === 'top-left') {
-    const el = document.querySelector('.bb-left');
-    el.style.opacity = visibleStates[component] ? '1' : '0.15';
-    el.style.pointerEvents = visibleStates[component] ? 'auto' : 'none';
-    document.getElementById('label-top-left').innerText = visibleStates[component] ? '隐藏左上按钮组' : '显示左上按钮组';
-  } else if (component === 'left-zoom') {
-    const el = document.querySelector('.floating-zoom');
-    el.style.display = visibleStates[component] ? 'flex' : 'none';
-    document.getElementById('label-left-zoom').innerText = visibleStates[component] ? '隐藏左下按钮组' : '显示左下按钮组';
-  } else if (component === 'bottom-toolbar') {
-    const el = document.querySelector('.floating-toolbar');
-    el.style.display = visibleStates[component] ? 'flex' : 'none';
-    document.getElementById('label-bottom-toolbar').innerText = visibleStates[component] ? '隐藏底部按钮组' : '显示底部按钮组';
-  }
-  moreDropdown.classList.remove('show');
-  moreDropdown.style.display = 'none';
-}
-
-// ── Bottom Toolbar mode toggle ──
-let currentMode = 'drag'; // 'drag' or 'lasso'
-let isLocked = false;
-
+// ── 模式切换 ──
 function setMode(mode) {
   if (isLocked) return;
   currentMode = mode;
-  
   document.getElementById('tool-drag').classList.toggle('active', mode === 'drag');
   document.getElementById('tool-lasso').classList.toggle('active', mode === 'lasso');
-  
-  const canvasContent = document.getElementById('canvasContent');
-  if (mode === 'drag') {
-    canvasContent.className = 'canvas-content draggable-active';
-  } else {
-    canvasContent.className = 'canvas-content lasso-active';
-  }
+  canvasContent.className = mode === 'drag' ? 'canvas-content draggable-active' :
+    mode === 'lasso' ? 'canvas-content lasso-active' : 'canvas-content ink-active';
 }
 
 function toggleLock() {
   isLocked = !isLocked;
-  const lockBtn = document.getElementById('tool-lock');
-  const workspace = document.getElementById('workspace');
-  
-  lockBtn.classList.toggle('active', isLocked);
+  document.getElementById('tool-lock').classList.toggle('active', isLocked);
   workspace.classList.toggle('locked-state', isLocked);
-  
-  if (isLocked) {
-    closeAllPopups();
-    document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
-    setMode('drag');
-  }
+  if (isLocked) { setMode('drag'); }
 }
 
-// Layout Switcher (在操作栏正上方居中，缩短距离为8px，消除过度重叠)
-const layoutDropdown = document.getElementById('layoutDropdown');
-
-function toggleLayoutMenu(e) {
-  if (isLocked) return;
-  e.stopPropagation();
-  layoutDropdown.classList.toggle('show');
-  if (layoutDropdown.classList.contains('show')) {
-    const rect = document.getElementById('layoutBtn').getBoundingClientRect();
-    layoutDropdown.style.display = 'block'; 
-    layoutDropdown.style.left = (rect.left + rect.width / 2 - 50) + 'px';
-    layoutDropdown.style.top = (rect.top - (layoutDropdown.offsetHeight || 98) - 2) + 'px'; 
-  } else {
-    layoutDropdown.style.display = 'none';
-  }
-}
-
-function changeLayout(side) {
-  const container = document.getElementById('treeContainer');
-  document.querySelectorAll('.layout-opt').forEach(opt => opt.classList.remove('active'));
-  
-  if (side === 'left') {
-    container.className = 'tree-container layout-left';
-    event.currentTarget.classList.add('active');
-  } else if (side === 'right') {
-    container.className = 'tree-container';
-    event.currentTarget.classList.add('active');
-  } else {
-    container.className = 'tree-container';
-    event.currentTarget.classList.add('active');
-  }
-  
-  layoutDropdown.classList.remove('show');
-  layoutDropdown.style.display = 'none';
-  setTimeout(drawConnections, 50);
-}
-
-// 模拟动作弹窗
-function triggerAction(action) {
-  if (isLocked) return;
-  alert('高保真原型交互模拟：' + action);
-}
-
-// ── 右侧侧边栏交互 logic ──
-let sidebarOpen = true; // 默认展开
-const rightSidebar = document.getElementById('rightSidebar');
-
-function toggleSidebar() {
-  sidebarOpen = !sidebarOpen;
-  rightSidebar.classList.toggle('collapsed-sidebar', !sidebarOpen);
-  
-  // 侧边栏开启/收起时，重绘连接线以适配画布的伸缩
-  setTimeout(drawConnections, 310);
-}
-
-function switchSidebarTab(tabName) {
-  // 激活对应标签
-  document.querySelectorAll('.rs-tabs .rst-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.rs-panel .rs-content').forEach(c => c.style.display = 'none');
-  
-  const chosenTab = document.querySelector(`.rst-tab[title="${getTabTitle(tabName)}"]`);
-  if (chosenTab) chosenTab.classList.add('active');
-  
-  const chosenContent = document.getElementById(`rs-content-${tabName}`);
-  if (chosenContent) chosenContent.style.display = 'flex';
-  
-  // 如果侧边栏处于收起状态，自动打开
-  if (!sidebarOpen) {
-    toggleSidebar();
-  }
-}
-
-function getTabTitle(name) {
-  const titles = {
-    note: '节点笔记',
-    search: '节点搜索',
-    theme: '导图主题',
-    style: '画布与导图样式',
-    icon: '节点图标'
-  };
-  return titles[name];
-}
-
-// 节点笔记 Markdown 快捷输入
-function insertMarkdown(syntax) {
-  const textarea = document.getElementById('noteTextarea');
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const text = textarea.value;
-  const selectedText = text.substring(start, end);
-  
-  let replacement = syntax + selectedText + (syntax.includes('\n') ? '' : syntax);
-  if (syntax === '[]()') {
-    replacement = `[${selectedText}](url)`;
-  }
-  
-  textarea.value = text.substring(0, start) + replacement + text.substring(end);
-  textarea.focus();
-  textarea.selectionStart = start + replacement.length;
-  textarea.selectionEnd = start + replacement.length;
-}
-
-// 搜索节点并实现定位
-function searchNodes() {
-  const query = document.getElementById('nodeSearchInput').value.toLowerCase();
-  const resultsDiv = document.getElementById('searchResults');
-  resultsDiv.innerHTML = '';
-  
-  if (!query) {
-    document.querySelectorAll('.tree-node').forEach(n => {
-      n.style.boxShadow = '';
-      n.style.borderColor = '';
-    });
-    return;
-  }
-  
-  let matches = [];
-  document.querySelectorAll('.tree-node').forEach(node => {
-    const text = node.textContent.trim().toLowerCase();
-    if (text.includes(query)) {
-      matches.push(node);
-      node.style.boxShadow = '0 0 15px rgba(92, 184, 252, 0.8)';
-      node.style.borderColor = 'var(--info)';
-    } else {
-      node.style.boxShadow = '';
-      node.style.borderColor = '';
-    }
-  });
-  
-  if (matches.length === 0) {
-    resultsDiv.innerHTML = '<div style="font-size:11.5px; color:var(--tm); text-align:center; padding:10px;">未找到匹配节点</div>';
-  } else {
-    matches.forEach(node => {
-      const item = document.createElement('div');
-      item.className = 'search-result-item';
-      item.textContent = node.textContent.replace('⭐','').replace('🚩','').replace('❤️','').replace('🔥','').replace('✅','').replace('⚠️','').replace('💡','').replace('📌','').trim();
-      item.onclick = () => {
-        selectNode(node);
-        // 定位并移动画布到该节点中央
-        const rect = node.getBoundingClientRect();
-        const workspaceRect = workspace.getBoundingClientRect();
-        
-        // 算出使节点居中的偏移量
-        panX = workspaceRect.width / 2 - (rect.left - panX + rect.width / 2);
-        panY = workspaceRect.height / 2 - (rect.top - panY + rect.height / 2);
-        updateZoom();
-      };
-      resultsDiv.appendChild(item);
-    });
-  }
-}
-
-// 侧边栏主题应用
-function applyTheme(themeName) {
-  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-  const card = document.querySelector(`.theme-card[onclick="applyTheme('${themeName}')"]`);
-  if (card) card.classList.add('active');
-  
-  if (themeName === 'cyber') {
-    document.documentElement.style.setProperty('--bg0', '#0a0515');
-    document.documentElement.style.setProperty('--info', '#00f0ff');
-    document.documentElement.style.setProperty('--accent', '#ff007f');
-    document.documentElement.style.setProperty('--accent-glow', 'rgba(255,0,127,0.4)');
-    document.getElementById('node-root').style.backgroundColor = '#16082b';
-    document.getElementById('node-branch1').style.backgroundColor = '#ff007f';
-    document.getElementById('node-branch2').style.backgroundColor = '#7b00ff';
-  } else if (themeName === 'forest') {
-    document.documentElement.style.setProperty('--bg0', '#0a140d');
-    document.documentElement.style.setProperty('--info', '#81c784');
-    document.documentElement.style.setProperty('--accent', '#2e7d32');
-    document.documentElement.style.setProperty('--accent-glow', 'rgba(46,125,50,0.4)');
-    document.getElementById('node-root').style.backgroundColor = '#122e18';
-    document.getElementById('node-branch1').style.backgroundColor = '#2e7d32';
-    document.getElementById('node-branch2').style.backgroundColor = '#4caf50';
-  } else {
-    // default
-    document.documentElement.style.setProperty('--bg0', '#0c0a07');
-    document.documentElement.style.setProperty('--info', '#5cb8fc');
-    document.documentElement.style.setProperty('--accent', '#c8841a');
-    document.documentElement.style.setProperty('--accent-glow', 'rgba(200,132,26,0.35)');
-    document.getElementById('node-root').style.backgroundColor = '#242930';
-    document.getElementById('node-branch1').style.backgroundColor = '#e05858';
-    document.getElementById('node-branch2').style.backgroundColor = '#7b61ff';
-  }
-  setTimeout(drawConnections, 50);
-}
-
-// 画布背景切换
-function changeCanvasBg(color, element) {
-  document.documentElement.style.setProperty('--bg0', color);
-  if (element) {
-    const parent = element.parentElement;
-    parent.querySelectorAll('.color-preset-circle').forEach(c => c.classList.remove('active'));
-    element.classList.add('active');
-  }
-}
-
-// 辅助十六进制转 RGBA
-function hexToRgba(hex, opacity) {
-  let c;
-  if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
-    c= hex.substring(1).split('');
-    if(c.length == 3){
-      c= [c[0], c[0], c[1], c[1], c[2], c[2]];
-    }
-    c= '0x' + c.join('');
-    return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+opacity+')';
-  }
-  return 'rgba(255,255,255,0.02)';
-}
-
-// 网格线颜色切换
-let currentGridColor = 'rgba(255, 255, 255, 0.02)';
-function changeGridColor(color, element) {
-  currentGridColor = color;
-  updateGridBackground();
-  if (element) {
-    const parent = element.parentElement;
-    parent.querySelectorAll('.color-preset-circle').forEach(c => c.classList.remove('active'));
-    element.classList.add('active');
-  }
-}
-
-function updateGridBackground() {
-  const sw = document.getElementById('toggleGrid');
-  if (sw.classList.contains('active')) {
-    workspace.style.backgroundImage = `
-      linear-gradient(${currentGridColor} 1px, transparent 1px),
-      linear-gradient(90deg, ${currentGridColor} 1px, transparent 1px)
-    `;
-  } else {
-    workspace.style.backgroundImage = 'none';
-  }
-}
-
-// 侧边栏配置：切换网格背景
-function toggleGridStyle() {
-  const sw = document.getElementById('toggleGrid');
-  sw.classList.toggle('active');
-  updateGridBackground();
-}
-
-// 侧边栏配置：彩虹分支开启/关闭
-let isRainbow = false;
-function toggleRainbowStyle() {
-  const sw = document.getElementById('toggleRainbow');
-  sw.classList.toggle('active');
-  isRainbow = sw.classList.contains('active');
-  drawConnections();
-}
-
-// 侧边栏配置：改变连接线风格
-function changeLineStyle() {
-  lineStyle = document.getElementById('lineStyleSelect').value;
-  drawConnections();
-}
-
-// 侧边栏配置：调整网格尺寸大小
-function changeGridSize(size) {
-  workspace.style.backgroundSize = `${size}px ${size}px`;
-}
-
-// 侧边栏节点图标：添加到选中节点
-function addIconToSelected(emoji) {
-  const activeNode = document.querySelector('.tree-node.active');
-  if (!activeNode) {
-    alert('请先在主画布选中一个思维导图节点卡片！');
-    return;
-  }
-  
-  let emojiSpan = activeNode.querySelector('.node-emoji');
-  if (!emojiSpan) {
-    emojiSpan = document.createElement('span');
-    emojiSpan.className = 'node-emoji';
-    activeNode.insertBefore(emojiSpan, activeNode.firstChild);
-  }
-  emojiSpan.textContent = emoji;
-  
-  // 重新计算并绘线（因为节点宽度发生了变化）
-  setTimeout(drawConnections, 30);
-}
-
-// ── Canvas平移缩放、套索与小地图逻辑 ──
-let currentScale = 1.0;
-let panX = 0;
-let panY = 0;
-let isDragging = false;
-let isSelecting = false;
-let startX, startY;
-let selectStart = null;
-
-const canvasContent = document.getElementById('canvasContent');
-const zoomVal = document.getElementById('zoomVal');
-const viewbox = document.getElementById('minimapViewbox');
-
+// ── 缩放 ──
 function updateZoom() {
-  canvasContent.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+  canvasContent.style.transform = `translate(${panX}px,${panY}px) scale(${currentScale})`;
   zoomVal.textContent = Math.round(currentScale * 100) + '%';
   drawConnections();
-  updateMinimapViewbox();
 }
+function zoomIn() { if (currentScale < 2) { currentScale = Math.round((currentScale + 0.1) * 10) / 10; updateZoom(); } }
+function zoomOut() { if (currentScale > 0.5) { currentScale = Math.round((currentScale - 0.1) * 10) / 10; updateZoom(); } }
+function zoomReset() { currentScale = 1; panX = -100; panY = 0; updateZoom(); }
 
-// 小地图滑块位置计算
-function updateMinimapViewbox() {
-  const minimap = document.getElementById('minimapPopup');
-  if (!minimap.classList.contains('show')) return;
-  
-  const scaleRatio = currentScale;
-  const boxWidth = Math.max(30, 100 / scaleRatio);
-  const boxHeight = Math.max(20, 70 / scaleRatio);
-  
-  const bx = 45 - (panX * 0.05) - (boxWidth / 2);
-  const by = 40 - (panY * 0.05) - (boxHeight / 2);
-  
-  const clampedX = Math.max(0, Math.min(150 - boxWidth, bx));
-  const clampedY = Math.max(0, Math.min(100 - boxHeight, by));
-  
-  viewbox.style.width = boxWidth + 'px';
-  viewbox.style.height = boxHeight + 'px';
-  viewbox.style.left = clampedX + 'px';
-  viewbox.style.top = clampedY + 'px';
-}
-
-// 拖拽与套索控制
-const selectionBox = document.getElementById('selectionBox');
-
+// ── 画布拖拽与套索 ──
 workspace.addEventListener('mousedown', (e) => {
   if (isLocked) return;
-  
-  // 阻断 UI 控制面板上的画布鼠标交互
-  if (
-    e.target.closest('.floating-zoom') || 
-    e.target.closest('.floating-toolbar') ||
-    e.target.closest('.tab-bar') ||
-    e.target.closest('.breadcrumb-bar') ||
-    e.target.closest('.info-popup') ||
-    e.target.closest('.shortcuts-modal') ||
-    e.target.closest('.minimap-popup') ||
-    e.target.closest('.layout-dropdown') ||
-    e.target.closest('.more-dropdown') ||
-    e.target.closest('.right-sidebar')
-  ) {
-    return;
-  }
-  
-  // 关闭浮动的下拉菜单
-  moreDropdown.classList.remove('show');
-  moreDropdown.style.display = 'none';
-  layoutDropdown.classList.remove('show');
-  layoutDropdown.style.display = 'none';
-  
+  if (e.target.closest('.floating-zoom,.floating-toolbar,.tab-bar,.breadcrumb-bar,.info-popup,.shortcuts-modal,.minimap-popup,.layout-dropdown,.more-dropdown,.right-sidebar,.ink-sidebar,.tag-picker,.detail-panel')) return;
+
+  document.getElementById('moreDropdown').classList.remove('show');
+  document.getElementById('layoutDropdown').classList.remove('show');
+
   if (currentMode === 'lasso') {
     isSelecting = true;
     selectStart = { x: e.clientX, y: e.clientY };
@@ -2395,7 +887,7 @@ workspace.addEventListener('mousedown', (e) => {
     selectionBox.style.height = '0px';
     selectionBox.style.display = 'block';
   } else {
-    if (e.target.closest('.tree-node')) return; 
+    if (e.target.closest('.tree-node')) return;
     isDragging = true;
     startX = e.clientX - panX;
     startY = e.clientY - panY;
@@ -2409,104 +901,119 @@ window.addEventListener('mousemove', (e) => {
     panY = e.clientY - startY;
     updateZoom();
   } else if (isSelecting && selectStart) {
-    const currentX = e.clientX;
-    const currentY = e.clientY;
-    
-    const left = Math.min(selectStart.x, currentX);
-    const top = Math.min(selectStart.y, currentY);
-    const width = Math.abs(selectStart.x - currentX);
-    const height = Math.abs(selectStart.y - currentY);
-    
-    selectionBox.style.left = left + 'px';
-    selectionBox.style.top = top + 'px';
-    selectionBox.style.width = width + 'px';
-    selectionBox.style.height = height + 'px';
-    
-    // 套索框选物理检测
-    document.querySelectorAll('.tree-node').forEach(node => {
-      const rect = node.getBoundingClientRect();
-      if (
-        rect.left >= left &&
-        rect.right <= left + width &&
-        rect.top >= top &&
-        rect.bottom <= top + height
-      ) {
-        node.classList.add('active');
-      } else {
-        node.classList.remove('active');
-      }
-    });
+    const l = Math.min(selectStart.x, e.clientX);
+    const t = Math.min(selectStart.y, e.clientY);
+    const w = Math.abs(selectStart.x - e.clientX);
+    const h = Math.abs(selectStart.y - e.clientY);
+    selectionBox.style.left = l + 'px';
+    selectionBox.style.top = t + 'px';
+    selectionBox.style.width = w + 'px';
+    selectionBox.style.height = h + 'px';
   }
 });
 
 window.addEventListener('mouseup', () => {
-  if (isDragging) {
-    isDragging = false;
-    workspace.style.cursor = 'default';
-  }
-  if (isSelecting) {
-    isSelecting = false;
-    selectionBox.style.display = 'none';
-    selectStart = null;
-  }
+  if (isDragging) { isDragging = false; workspace.style.cursor = 'default'; }
+  if (isSelecting) { isSelecting = false; selectionBox.style.display = 'none'; selectStart = null; }
 });
 
-// 缩放操作
-function zoomIn() {
-  if (currentScale < 2.0) {
-    currentScale = Math.round((currentScale + 0.1) * 10) / 10;
-    updateZoom();
+// ── 滚轮缩放 ──
+workspace.addEventListener('wheel', (e) => { if (isLocked) return; e.preventDefault(); e.deltaY < 0 ? zoomIn() : zoomOut(); }, { passive: false });
+
+// ── 弹窗控制 ──
+function toggleInfoPopup() {
+  closeAllPopups('infoPopup');
+  const p = document.getElementById('infoPopup');
+  p.classList.toggle('show');
+  document.getElementById('infoBtn').classList.toggle('active', p.classList.contains('show'));
+}
+function toggleShortcutsModal() {
+  closeAllPopups('shortcutsOverlay');
+  document.getElementById('shortcutsOverlay').classList.toggle('show');
+}
+function toggleMinimapPopup() {
+  const p = document.getElementById('minimapPopup');
+  p.classList.toggle('show');
+  document.getElementById('minimapBtn').classList.toggle('active', p.classList.contains('show'));
+}
+function closeAllPopups(except) {
+  ['infoPopup'].forEach(id => { if (id !== except) document.getElementById(id).classList.remove('show'); });
+  document.getElementById('infoBtn').classList.remove('active');
+}
+document.getElementById('shortcutsOverlay').addEventListener('click', (e) => { if (e.target.id === 'shortcutsOverlay') toggleShortcutsModal(); });
+
+// ── 更多菜单 ──
+function toggleMoreDropdown(e) {
+  e.stopPropagation();
+  const d = document.getElementById('moreDropdown');
+  d.classList.toggle('show');
+  if (d.classList.contains('show')) {
+    const r = document.getElementById('moreBtn').getBoundingClientRect();
+    d.style.top = (r.bottom + 8) + 'px';
+    d.style.left = (r.right - 170) + 'px';
   }
 }
 
-function zoomOut() {
-  if (currentScale > 0.5) {
-    currentScale = Math.round((currentScale - 0.1) * 10) / 10;
-    updateZoom();
-  }
-}
-
-function zoomReset() {
-  currentScale = 1.0;
-  panX = -100; // 由于默认开启侧边栏，微调默认X中心偏移以便视觉居中
-  panY = 0;
-  updateZoom();
-}
-
-// 双击缩放百分比重置
-zoomVal.addEventListener('dblclick', zoomReset);
-
-// 滚轮缩放支持 (非锁定下生效)
-workspace.addEventListener('wheel', (e) => {
+// ── 布局菜单 ──
+function toggleLayoutMenu(e) {
   if (isLocked) return;
-  e.preventDefault();
-  if (e.deltaY < 0) {
-    zoomIn();
-  } else {
-    zoomOut();
+  e.stopPropagation();
+  const d = document.getElementById('layoutDropdown');
+  d.classList.toggle('show');
+  if (d.classList.contains('show')) {
+    const r = document.getElementById('layoutBtn').getBoundingClientRect();
+    d.style.left = (r.left + r.width / 2 - 55) + 'px';
+    d.style.top = (r.top - 100) + 'px';
   }
-}, { passive: false });
+}
+function changeLayout(side) {
+  const c = document.getElementById('treeContainer');
+  document.querySelectorAll('.layout-opt').forEach(o => o.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  c.className = side === 'left' ? 'tree-container layout-left' : 'tree-container';
+  document.getElementById('layoutDropdown').classList.remove('show');
+  setTimeout(drawConnections, 50);
+}
 
-// 窗口事件：点击外部收起下拉菜单与弹窗
+// ── 标签选择器 ──
+function toggleTagPicker() {
+  document.getElementById('tagPicker').classList.toggle('show');
+}
+function addTag(name) {
+  if (!name.trim()) return;
+  const active = document.querySelector('.tree-node.active');
+  if (!active) { alert('请先选中一个节点'); return; }
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip';
+  chip.textContent = name.trim();
+  active.appendChild(chip);
+  setTimeout(drawConnections, 30);
+}
+
+// ── 详情面板 ──
+function openDetailPanel() { document.getElementById('detailPanel').classList.add('show'); }
+function closeDetailPanel() { document.getElementById('detailPanel').classList.remove('show'); }
+
+// ── 侧边栏 ──
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('rightSidebar').classList.toggle('collapsed-sidebar', !sidebarOpen);
+  setTimeout(drawConnections, 310);
+}
+
+// ── 动作 ──
+function triggerAction(action) { if (isLocked) return; alert('原型交互：' + action); }
+
+// ── 点击外部关闭 ──
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('#moreBtn') && !e.target.closest('#moreDropdown')) {
-    moreDropdown.classList.remove('show');
-    moreDropdown.style.display = 'none';
-  }
-  if (!e.target.closest('#layoutBtn') && !e.target.closest('#layoutDropdown')) {
-    layoutDropdown.classList.remove('show');
-    layoutDropdown.style.display = 'none';
-  }
+  if (!e.target.closest('#moreBtn,#moreDropdown')) document.getElementById('moreDropdown').classList.remove('show');
+  if (!e.target.closest('#layoutBtn,#layoutDropdown')) document.getElementById('layoutDropdown').classList.remove('show');
+  if (!e.target.closest('#tagPicker,.ft-btn')) document.getElementById('tagPicker').classList.remove('show');
 });
 
-// 初始化
+// ── 初始化 ──
 window.addEventListener('resize', drawConnections);
-setTimeout(() => {
-  zoomReset();
-  // 默认开启第一个关于节点笔记的加载
-  const minimaxNode = document.getElementById('node-leaf-minimax');
-  if (minimaxNode) selectNode(minimaxNode);
-}, 100);
+setTimeout(() => { zoomReset(); drawConnections(); }, 100);
 </script>
 </body>
 </html>
