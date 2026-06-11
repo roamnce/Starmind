@@ -768,6 +768,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                                     widget.controller.toggleNodeCollapse(note.id),
                                 customSize: size,
                                 controller: widget.controller,
+                                inkLayerRepository: _inkLayerRepository,
                               ),
                             ),
                           ),

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/mindmap_colors.dart';
 import '../domain/note.dart';
+import '../ink/ink_layer_repository.dart';
 import 'mindmap_controller.dart';
+import 'widgets/ink_thumbnail.dart';
 
 /// 节点组件。
 ///
@@ -23,6 +25,7 @@ class NodeWidget extends StatelessWidget {
   final VoidCallback? onToggleCollapse;
   final Size? customSize;
   final MindMapController? controller;
+  final InkLayerRepository? inkLayerRepository;
 
   const NodeWidget({
     super.key,
@@ -39,6 +42,7 @@ class NodeWidget extends StatelessWidget {
     this.onToggleCollapse,
     this.customSize,
     this.controller,
+    this.inkLayerRepository,
   });
 
   @override
@@ -182,6 +186,16 @@ class NodeWidget extends StatelessWidget {
         child: Row(
           mainAxisSize: customSize == null ? MainAxisSize.min : MainAxisSize.max,
           children: [
+            // 墨迹缩略图
+            if (note.inkLayerId != null && inkLayerRepository != null)
+              InkThumbnail(
+                inkLayerId: note.inkLayerId!,
+                nodeId: note.id,
+                repository: inkLayerRepository!,
+                size: 32,
+                opacity: 0.7,
+              ),
+            if (note.inkLayerId != null) const SizedBox(width: 6),
             // 卡片组折叠图标
             if (isNestedCard) ...[
               Icon(

@@ -1,0 +1,61 @@
+<h2>节点悬浮菜单位置</h2>
+<p class="subtitle">当长按/右键节点时，横向菜单应该出现在哪个位置？</p>
+
+<div class="options">
+  <div class="option" data-choice="above" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>节点上方</h3>
+      <p>菜单悬浮在节点顶部，按钮横向排列</p>
+    </div>
+  </div>
+  <div class="option" data-choice="right" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>节点右侧</h3>
+      <p>菜单紧贴节点右边缘，适合右侧布局的思维导图</p>
+    </div>
+  </div>
+  <div class="option" data-choice="auto" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>智能定位</h3>
+      <p>根据节点在画布上的位置自动选择方向（右侧节点→右侧菜单，左侧节点→左侧菜单）</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem;">
+  <h3>菜单外观预览</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding: 20px;">
+      <div style="display: flex; justify-content: center; align-items: center; gap: 40px;">
+        <!-- Option A: Above the node -->
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div style="background: #2A3547; border-radius: 8px; padding: 8px 12px; display: flex; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #E8A83C;">+</div>
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #E8A83C;">↕</div>
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #FF6B6B;">×</div>
+          </div>
+          <div style="background: #1C1710; border: 1px solid #C8841A; border-radius: 6px; padding: 10px 16px; color: white;">节点标题</div>
+          <div style="font-size: 12px; color: #666; margin-top: 8px;">上方 (A)</div>
+        </div>
+
+        <!-- Option B: Right side -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="background: #1C1710; border: 1px solid #C8841A; border-radius: 6px; padding: 10px 16px; color: white;">节点标题</div>
+          <div style="background: #2A3547; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #E8A83C;">+</div>
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #E8A83C;">↕</div>
+            <div style="width: 32px; height: 32px; background: #3D4A5C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #FF6B6B;">×</div>
+          </div>
+        </div>
+        <div style="font-size: 12px; color: #666; margin-top: 8px;">右侧 (B)</div>
+      </div>
+
+      <div style="margin-top: 24px; border-top: 1px solid #333; padding-top: 16px;">
+        <p style="color: #888; font-size: 13px;">按钮说明：+ = 添加子节点，↕ = 添加兄弟节点，× = 删除节点</p>
+      </div>
+    </div>
+  </div>
+</div>
