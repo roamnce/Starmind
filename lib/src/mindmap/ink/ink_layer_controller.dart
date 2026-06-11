@@ -2,6 +2,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'ink_layer.dart';
+import 'stroke_stabilizer.dart';
 
 class InkLayerController extends ChangeNotifier {
   InkLayerController({String? Function()? idFactory}) : _idFactory = idFactory ?? const Uuid().v4;
@@ -12,16 +13,23 @@ class InkLayerController extends ChangeNotifier {
   int _color = Colors.amber.value;
   double _width = 3;
   InkStroke? _currentStroke;
+  StrokeStabilizer _stabilizer = StrokeStabilizer(level: 3);
 
   InkTool get tool => _tool;
   int get color => _color;
   double get width => _width;
   InkStroke? get currentStroke => _currentStroke;
+  int get stabilizerLevel => _stabilizer.level;
 
   List<InkLayer> get layers => List.unmodifiable(_layers.values);
 
   void setTool(InkTool tool) {
     _tool = tool;
+    notifyListeners();
+  }
+
+  void setStabilizerLevel(int level) {
+    _stabilizer.level = level;
     notifyListeners();
   }
 
@@ -54,12 +62,15 @@ class InkLayerController extends ChangeNotifier {
 
   void beginStroke(InkLayerOwnerType ownerType, String ownerId, Offset point, {double pressure = 1}) {
     ensureLayer(ownerType, ownerId);
+    _stabilizer.reset();
+    final stabilized = _stabilizer.stabilize(point);
+    final stabilizedPressure = _stabilizer.stabilizePressure(pressure);
     _currentStroke = InkStroke(
       id: _idFactory() ?? 'stroke-${DateTime.now().microsecondsSinceEpoch}',
       tool: _tool,
       color: _tool == InkTool.highlighter ? Colors.yellow.withValues(alpha: 0.35).value : _color,
       width: _tool == InkTool.highlighter ? _width * 3 : _width,
-      points: [InkPoint(point.dx, point.dy, pressure: pressure)],
+      points: [InkPoint(stabilized.dx, stabilized.dy, pressure: stabilizedPressure)],
       createdAt: DateTime.now(),
     );
     notifyListeners();
@@ -68,7 +79,9 @@ class InkLayerController extends ChangeNotifier {
   void appendPoint(Offset point, {double pressure = 1}) {
     final stroke = _currentStroke;
     if (stroke == null) return;
-    _currentStroke = stroke.copyWith(points: [...stroke.points, InkPoint(point.dx, point.dy, pressure: pressure)]);
+    final stabilized = _stabilizer.stabilize(point);
+    final stabilizedPressure = _stabilizer.stabilizePressure(pressure);
+    _currentStroke = stroke.copyWith(points: [...stroke.points, InkPoint(stabilized.dx, stabilized.dy, pressure: stabilizedPressure)]);
     notifyListeners();
   }
 
@@ -79,11 +92,17 @@ class InkLayerController extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+    // 添加 catch-up points
+    final catchUpPoints = _stabilizer.finalize(stroke.points.last.offset);
+    final finalStroke = catchUpPoints.isNotEmpty
+        ? stroke.copyWith(points: [...stroke.points, ...catchUpPoints.map((p) => InkPoint(p.dx, p.dy))])
+        : stroke;
+
     final key = _key(ownerType, ownerId);
     final layer = ensureLayer(ownerType, ownerId);
-    _layers[key] = layer.addStroke(stroke);
+    _layers[key] = layer.addStroke(finalStroke);
     notifyListeners();
-    return stroke;
+    return finalStroke;
   }
 
   void erase(InkLayerOwnerType ownerType, String ownerId, Rect rect) {
