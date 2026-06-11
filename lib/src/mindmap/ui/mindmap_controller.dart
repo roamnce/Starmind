@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../domain/topic.dart';
 import '../domain/note.dart';
 import '../domain/note_content.dart';
+import '../domain/mindmap_relation.dart';
+import '../domain/mindmap_summary.dart';
 import '../service/mindmap_service.dart';
 import '../utils/color_utils.dart';
 import '../layout/layout_engine.dart';
@@ -12,12 +14,14 @@ import '../layout/layout_config.dart';
 import '../layout/layout_result.dart';
 import '../rendering/connection_renderer.dart';
 import '../study/study_mode_controller.dart';
+import '../../rust/storage/tags.dart' show TagNode;
 import 'tree_layout.dart';
 import 'mixins/tree_traversal.dart';
 
 enum SidebarTab { note, search, theme, config, icon }
 enum CanvasInteractMode { drag, lasso }
 enum LineStyle { bezier, straight, ortho }
+enum RelationCreationMode { idle, choosingTarget }
 
 /// MindMap UI 状态管理 Controller。
 ///
@@ -31,6 +35,14 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   MindMapController(this._service, [this._initialTopicId]);
 
   late final StudyModeController studyModeController = StudyModeController(service: _service);
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   // ==================== 状态 ====================
 
@@ -200,8 +212,9 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
     switch (direction) {
       case LayoutDirection.bothSides:
         return LayoutStrategy.bothSides;
-      case LayoutDirection.horizontal:
       case LayoutDirection.left:
+        return LayoutStrategy.leftOnly;
+      case LayoutDirection.horizontal:
         return LayoutStrategy.rightOnly;
       case LayoutDirection.vertical:
         return LayoutStrategy.rightOnly;
@@ -254,9 +267,73 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   LayoutDirection _layoutDirection = LayoutDirection.bothSides;
   LayoutDirection get layoutDirection => _layoutDirection;
 
-  void changeLayoutDirection(LayoutDirection dir) {
+  /// 布局样式 (tree / framework)
+  String _layoutStyle = 'tree';
+  String get layoutStyle => _layoutStyle;
+
+  /// 切换布局方向
+  Future<void> changeLayoutDirection(LayoutDirection dir) async {
     _layoutDirection = dir;
-    notifyListeners();
+    await _persistTopicLayout(
+      layoutDirection: _topicValueFromLayoutDirection(dir),
+    );
+    recalculateLayout(); // 内部已调用 notifyListeners()
+  }
+
+  /// 切换布局样式
+  Future<void> changeLayoutStyle(String style) async {
+    _layoutStyle = style == 'framework' ? 'framework' : 'tree';
+    await _persistTopicLayout(layoutStyle: _layoutStyle);
+    recalculateLayout(); // 内部已调用 notifyListeners()
+  }
+
+  /// 同时切换布局方向和样式，单次持久化 + 单次重算。
+  Future<void> changeLayout(LayoutDirection dir, String style) async {
+    _layoutDirection = dir;
+    _layoutStyle = style == 'framework' ? 'framework' : 'tree';
+    await _persistTopicLayout(
+      layoutDirection: _topicValueFromLayoutDirection(dir),
+      layoutStyle: _layoutStyle,
+    );
+    recalculateLayout(); // 内部已调用 notifyListeners()
+  }
+
+  /// 从 topic 值转换为 LayoutDirection
+  LayoutDirection _layoutDirectionFromTopicValue(String value) {
+    switch (value) {
+      case 'left':
+        return LayoutDirection.left;
+      case 'right':
+        return LayoutDirection.horizontal;
+      case 'both':
+      default:
+        return LayoutDirection.bothSides;
+    }
+  }
+
+  /// 从 LayoutDirection 转换为 topic 值
+  String _topicValueFromLayoutDirection(LayoutDirection direction) {
+    switch (direction) {
+      case LayoutDirection.left:
+        return 'left';
+      case LayoutDirection.horizontal:
+        return 'right';
+      case LayoutDirection.bothSides:
+      case LayoutDirection.vertical:
+        return 'both';
+    }
+  }
+
+  /// 持久化 topic 布局设置。
+  ///
+  /// 直接使用内存中的 [_selectedTopic]，避免冗余 FFI 查询。
+  Future<void> _persistTopicLayout({String? layoutDirection, String? layoutStyle}) async {
+    if (_selectedTopic == null) return;
+    await _service.updateTopic(_selectedTopic!.copyWith(
+      layoutDirection: layoutDirection ?? _selectedTopic!.layoutDirection,
+      layoutStyle: layoutStyle ?? _selectedTopic!.layoutStyle,
+      updatedAt: DateTime.now(),
+    ));
   }
 
   /// 缩放限制
@@ -317,6 +394,9 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
         } else {
           _resetThemeToDefaults();
         }
+        // 从 topic 读取布局设置
+        _layoutDirection = _layoutDirectionFromTopicValue(topic.layoutDirection);
+        _layoutStyle = topic.layoutStyle;
         await _loadNoteTree(topic.id);
       }
     } finally {
@@ -365,6 +445,9 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
       } else {
         _resetThemeToDefaults();
       }
+      // 从 topic 读取布局设置
+      _layoutDirection = _layoutDirectionFromTopicValue(topic.layoutDirection);
+      _layoutStyle = topic.layoutStyle;
       _loadNoteTree(topic.id);
     } else {
       _noteTree = [];
@@ -391,22 +474,57 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   Future<void> _loadNoteTree(String topicId) async {
     final session = ++_loadTreeSession;
     _isLoading = true;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     try {
       final tree = await _service.getTopicTree(topicId);
       if (session == _loadTreeSession) {
         _noteTree = tree;
       }
+      // 加载关联线、概要和标签
+      if (session == _loadTreeSession) {
+        await _reloadRelationsForTopic();
+        await _reloadSummariesForTopic();
+        await _reloadTagsForTopic();
+      }
       // 重新计算布局
       if (session == _loadTreeSession && useNewLayoutEngine) {
         recalculateLayout();
       }
     } finally {
-      if (session == _loadTreeSession) {
+      if (session == _loadTreeSession && !_disposed) {
         _isLoading = false;
         notifyListeners();
       }
+    }
+  }
+
+  /// 静默加载节点树（不触发 isLoading 状态，避免 UI 闪烁）
+  Future<void> _loadNoteTreeSilent(String topicId) async {
+    final session = ++_loadTreeSession;
+
+    try {
+      final tree = await _service.getTopicTree(topicId);
+      if (session == _loadTreeSession) {
+        _noteTree = tree;
+      }
+      // 加载关联线、概要和标签
+      if (session == _loadTreeSession) {
+        await _reloadRelationsForTopic();
+        await _reloadSummariesForTopic();
+        await _reloadTagsForTopic();
+      }
+      // 重新计算布局
+      if (session == _loadTreeSession && useNewLayoutEngine) {
+        recalculateLayout();
+      }
+      // 只在最后通知一次，不触发加载状态
+      if (session == _loadTreeSession && !_disposed) {
+        notifyListeners();
+      }
+    } catch (e) {
+      // 静默加载失败也不影响用户体验
+      rethrow;
     }
   }
 
@@ -441,32 +559,37 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
   }
 
   /// 创建子节点 (Tab)
-  Future<Note?> createChildNode({required String title}) async {
-    if (_selectedNote == null || _selectedTopic == null) return null;
+  Future<Note?> createChildNode({String? title, bool enterEditing = false}) async {
+    if (_selectedNote == null || _selectedTopic == null || _isLocked) return null;
     final parentId = _selectedNote!.id;
+    final childTitle = (title != null && title.trim().isNotEmpty) ? title.trim() : defaultChildNodeTitle;
 
     final childNote = await _service.createNote(
       topicId: _selectedTopic!.id,
-      title: title,
+      title: childTitle,
       parentId: parentId,
     );
 
     await _service.addChild(parentId: parentId, childId: childNote.id);
-    await _loadNoteTree(_selectedTopic!.id);
-    
+    // 静默刷新，不触发加载状态
+    await _loadNoteTreeSilent(_selectedTopic!.id);
+
     // 选中新节点
-    selectNote(childNote);
-    return childNote;
+    final created = findNodeById(childNote.id)?.note ?? childNote;
+    selectNote(created);
+    if (enterEditing) beginEditing(created.id);
+    return created;
   }
 
   /// 创建同级节点 (Enter)
-  Future<Note?> createSiblingNode({required String title}) async {
-    if (_selectedNote == null || _selectedTopic == null) return null;
-    final parentId = _selectedNote!.parentId; // 同级拥有相同的父 ID
+  Future<Note?> createSiblingNode({String? title, bool enterEditing = false}) async {
+    if (_selectedNote == null || _selectedTopic == null || _isLocked) return null;
+    final parentId = _selectedNote!.parentId;
+    final siblingTitle = (title != null && title.trim().isNotEmpty) ? title.trim() : defaultSiblingNodeTitle;
 
     final siblingNote = await _service.createNote(
       topicId: _selectedTopic!.id,
-      title: title,
+      title: siblingTitle,
       parentId: parentId,
     );
 
@@ -479,16 +602,21 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
       await _service.addChild(parentId: parentId, childId: siblingNote.id);
     }
 
-    await _loadNoteTree(_selectedTopic!.id);
-    
+    // 静默刷新，不触发加载状态
+    await _loadNoteTreeSilent(_selectedTopic!.id);
+
     // 选中新节点
-    selectNote(siblingNote);
-    return siblingNote;
+    final created = findNodeById(siblingNote.id)?.note ?? siblingNote;
+    selectNote(created);
+    if (enterEditing) beginEditing(created.id);
+    return created;
   }
 
   /// 选择节点
   void selectNote(Note? note) {
     _selectedNote = note;
+    // 选中节点时清除概要选中
+    _selectedSummaryId = null;
     if (note == null) {
       _selectedNoteIds.clear();
     } else if (_interactMode == CanvasInteractMode.drag) {
@@ -503,6 +631,317 @@ class MindMapController extends ChangeNotifier with TreeTraversal {
         ..add(note.id);
     }
     notifyListeners();
+  }
+
+  // ==================== 原地编辑状态 ====================
+
+  /// 在当前节点树中查找指定 ID 的节点
+  NoteTreeNode? findNodeById(String noteId) {
+    return findNoteTreeNode(_noteTree, noteId);
+  }
+
+  static const fallbackNodeTitle = '新节点';
+  static const defaultChildNodeTitle = '新子节点';
+  static const defaultSiblingNodeTitle = '新同级节点';
+
+  String? _editingNoteId;
+  final Map<String, String> _editingFallbackTitles = {};
+
+  /// 当前正在编辑的节点 ID
+  String? get editingNoteId => _editingNoteId;
+
+  /// 开始编辑节点
+  void beginEditing(String noteId) {
+    final node = findNodeById(noteId);
+    if (node == null || _isLocked) return;
+    _editingFallbackTitles[noteId] = node.note.title.trim().isEmpty
+        ? fallbackNodeTitle
+        : node.note.title;
+    _editingNoteId = noteId;
+    selectNote(node.note);
+  }
+
+  /// 提交编辑
+  Future<void> commitEditing(String noteId, String title) async {
+    final node = findNodeById(noteId);
+    if (node == null) return;
+    final fallback = _editingFallbackTitles[noteId] ??
+        (node.note.title.trim().isEmpty ? fallbackNodeTitle : node.note.title);
+    final normalizedTitle = title.trim().isEmpty ? fallback : title.trim();
+    await updateNoteTitle(noteId, normalizedTitle);
+    _editingFallbackTitles.remove(noteId);
+    _editingNoteId = null;
+    final updated = findNodeById(noteId)?.note;
+    if (updated != null) selectNote(updated); // 内部已调用 notifyListeners()
+  }
+
+  /// 取消编辑
+  void cancelEditing(String noteId) {
+    if (_editingNoteId != noteId) return;
+    final node = findNodeById(noteId);
+    _editingFallbackTitles.remove(noteId);
+    _editingNoteId = null;
+    if (node != null) selectNote(node.note); // 内部已调用 notifyListeners()
+  }
+
+  // ==================== 关联线状态 ====================
+
+  RelationCreationMode _relationCreationMode = RelationCreationMode.idle;
+  RelationCreationMode get relationCreationMode => _relationCreationMode;
+
+  String? _relationSourceNoteId;
+  String? get relationSourceNoteId => _relationSourceNoteId;
+
+  String? _selectedRelationId;
+  String? get selectedRelationId => _selectedRelationId;
+
+  String? _transientMessage;
+  String? get transientMessage => _transientMessage;
+
+  List<MindMapRelation> _relations = [];
+  List<MindMapRelation> get relations => List.unmodifiable(_relations);
+
+  /// 开始创建关联线
+  Future<void> startRelationCreation() async {
+    if (_selectedNote == null) {
+      _transientMessage = '创建连线前需要先选择一个起始节点';
+      _relationCreationMode = RelationCreationMode.idle;
+      notifyListeners();
+      return;
+    }
+    _relationSourceNoteId = _selectedNote!.id;
+    _relationCreationMode = RelationCreationMode.choosingTarget;
+    _transientMessage = null;
+    notifyListeners();
+  }
+
+  /// 处理关联线目标节点点击
+  Future<void> handleNodeTapForRelationTarget(String targetNoteId) async {
+    if (_relationCreationMode != RelationCreationMode.choosingTarget) return;
+    if (_relationSourceNoteId == null) return;
+
+    if (_relationSourceNoteId == targetNoteId) {
+      _transientMessage = '不能连接到同一个节点';
+      notifyListeners();
+      return;
+    }
+
+    final relation = await _service.createRelation(
+      topicId: _selectedTopic!.id,
+      sourceNoteId: _relationSourceNoteId!,
+      targetNoteId: targetNoteId,
+    );
+
+    await _reloadRelationsForTopic();
+    _selectedRelationId = relation.id;
+    _relationCreationMode = RelationCreationMode.idle;
+    _relationSourceNoteId = null;
+    _transientMessage = null;
+    notifyListeners();
+  }
+
+  /// 取消关联线创建
+  void cancelRelationCreation() {
+    _relationCreationMode = RelationCreationMode.idle;
+    _relationSourceNoteId = null;
+    _transientMessage = null;
+    notifyListeners();
+  }
+
+  /// 更新关联线文本
+  Future<void> updateRelationText(String relationId, String text) async {
+    await _service.updateRelationText(relationId, text);
+    await _reloadRelationsForTopic();
+    notifyListeners();
+  }
+
+  /// 删除关联线
+  Future<void> deleteRelation(String relationId) async {
+    await _service.deleteRelation(relationId);
+    if (_selectedRelationId == relationId) {
+      _selectedRelationId = null;
+    }
+    await _reloadRelationsForTopic();
+    notifyListeners();
+  }
+
+  /// 重新加载关联线
+  Future<void> _reloadRelationsForTopic() async {
+    if (_selectedTopic == null) return;
+    _relations = await _service.listRelations(_selectedTopic!.id);
+  }
+
+  // ==================== 概要状态 ====================
+
+  List<MindMapSummary> _summaries = [];
+  List<MindMapSummary> get summaries => List.unmodifiable(_summaries);
+
+  String? _selectedSummaryId;
+  String? get selectedSummaryId => _selectedSummaryId;
+
+  /// 选中概要
+  void selectSummary(String? summaryId) {
+    _selectedSummaryId = summaryId;
+    // 选中概要时清除节点选中
+    if (summaryId != null) {
+      _selectedNote = null;
+      _selectedNoteIds.clear();
+    }
+    notifyListeners();
+  }
+
+  /// 从选中节点创建概要
+  Future<void> createSummariesFromSelection() async {
+    if (_selectedTopic == null || _selectedNoteIds.isEmpty) return;
+    await _service.createSummariesFromSelectedNoteIds(
+      topicId: _selectedTopic!.id,
+      selectedNoteIds: _selectedNoteIds,
+    );
+    await _reloadSummariesForTopic();
+    notifyListeners();
+  }
+
+  /// 更新概要文本
+  Future<void> updateSummaryText(String summaryId, String text) async {
+    await _service.updateSummaryText(summaryId, text);
+    await _reloadSummariesForTopic();
+    notifyListeners();
+  }
+
+  /// 删除概要
+  Future<void> deleteSummary(String summaryId) async {
+    await _service.deleteSummary(summaryId);
+    if (_selectedSummaryId == summaryId) {
+      _selectedSummaryId = null;
+    }
+    await _reloadSummariesForTopic();
+    notifyListeners();
+  }
+
+  /// 重新加载概要
+  Future<void> _reloadSummariesForTopic() async {
+    if (_selectedTopic == null) return;
+    _summaries = await _service.listSummaries(_selectedTopic!.id);
+  }
+
+  // ==================== 节点标签状态 ====================
+
+  final Map<String, List<String>> _tagIdsByNoteId = {};
+  Map<String, List<String>> get tagIdsByNoteId => Map.unmodifiable(_tagIdsByNoteId);
+
+  /// 节点绑定的完整标签信息（noteId -> List<TagNode>）
+  final Map<String, List<TagNode>> _tagsByNoteId = {};
+  Map<String, List<TagNode>> get tagsByNoteId => Map.unmodifiable(_tagsByNoteId);
+
+  /// 全局 Tag 树（用于查找标签信息）
+  TagNode? _tagTree;
+  TagNode? get tagTree => _tagTree;
+
+  /// 初始化 Tag 树
+  Future<void> _initTagTree() async {
+    try {
+      _tagTree = await _service.getTagTree();
+    } catch (_) {
+      _tagTree = null;
+    }
+  }
+
+  /// 在 Tag 树中查找指定 ID 的标签
+  TagNode? _findTagById(String tagId, TagNode? root) {
+    if (root == null) return null;
+    if (root.id == tagId) return root;
+    for (final child in root.children) {
+      final found = _findTagById(tagId, child);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// 在 Tag 树中查找指定名称的标签
+  TagNode? _findTagByName(String name, TagNode? root) {
+    if (root == null) return null;
+    if (root.name == name) return root;
+    for (final child in root.children) {
+      final found = _findTagByName(name, child);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// 绑定标签到选中节点
+  ///
+  /// 如果 tagName 不存在于全局 Tag 树，先创建新标签再绑定。
+  Future<void> bindTagToSelectedNode(String tagName) async {
+    final note = _selectedNote;
+    if (note == null) {
+      _transientMessage = '创建标签前需要先选择节点';
+      notifyListeners();
+      return;
+    }
+
+    // 确保已加载 Tag 树
+    if (_tagTree == null) {
+      await _initTagTree();
+    }
+
+    // 查找或创建标签
+    var tag = _findTagByName(tagName, _tagTree);
+    if (tag == null) {
+      // 创建新标签（无父节点，颜色根据名称哈希生成）
+      final colorHex = _generateColorFromName(tagName);
+      final tagId = await _service.createTag(tagName, null, colorHex);
+      // 重新加载 Tag 树
+      await _initTagTree();
+      tag = _findTagById(tagId, _tagTree);
+    }
+
+    if (tag == null) return;
+
+    await _service.bindTagToNote(noteId: note.id, tagId: tag.id);
+    await _reloadTagsForTopic();
+    notifyListeners();
+  }
+
+  /// 根据名称生成颜色（简单哈希）
+  String _generateColorFromName(String name) {
+    final hash = name.hashCode;
+    final colors = ['#FF6B6B', '#FF9F43', '#FFD93D', '#6BCB77', '#4D96FF', '#9B59B6'];
+    final index = (hash.abs()) % colors.length;
+    return colors[index];
+  }
+
+  /// 解绑节点标签
+  Future<void> unbindTagFromNode(String noteId, String tagId) async {
+    await _service.unbindTagFromNote(noteId: noteId, tagId: tagId);
+    await _reloadTagsForTopic();
+    notifyListeners();
+  }
+
+  /// 重新加载标签。
+  ///
+  /// 使用单次批量查询替代逐节点 N+1 查询。
+  Future<void> _reloadTagsForTopic() async {
+    if (_selectedTopic == null) return;
+
+    if (_tagTree == null) {
+      await _initTagTree();
+    }
+
+    // 单次 FFI 调用获取所有节点的标签绑定
+    final allTagIds = await _service.listTagIdsForTopic(_selectedTopic!.id);
+    _tagIdsByNoteId.clear();
+    _tagsByNoteId.clear();
+
+    for (final entry in allTagIds.entries) {
+      _tagIdsByNoteId[entry.key] = entry.value;
+      final tags = entry.value
+          .map((tagId) => _findTagById(tagId, _tagTree))
+          .whereType<TagNode>()
+          .toList();
+      if (tags.isNotEmpty) {
+        _tagsByNoteId[entry.key] = tags;
+      }
+    }
   }
 
   /// 更新节点标题
