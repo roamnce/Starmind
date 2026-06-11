@@ -1,48 +1,93 @@
-# Miscellaneous
+﻿# ==================== Miscellaneous ====================
 *.class
 *.log
 *.pyc
 *.swp
+*.bak
 .DS_Store
 .atom/
 .build/
 .buildlog/
-.history
+.history/
 .svn/
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ==================== IDE ====================
+# IntelliJ
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code (uncomment if you want to exclude)
 #.vscode/
 
-# Flutter/Dart/Pub related
+# ==================== Flutter/Dart ====================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
-# Symbolication related
+# Symbolication
 app.*.symbols
 
-# Obfuscation related
+# Obfuscation
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# ==================== Android ====================
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-# Worktrees
+# ==================== Platform builds ====================
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+
+# ==================== Worktrees ====================
 .worktrees/
+
+# ==================== Rust ====================
+rust/target/
+rust_builder/target/
+
+# ==================== Project-specific ====================
+# Graphify output (generated analysis)
+graphify-out/
+.graphify_python
+
+# Scratch temp files
+.scratch/tmp/
+
+# Dev tools config
+devtools_options.yaml
+
+# Skills lock (auto-generated)
+skills-lock.json
+
+# Architecture review HTML (generated)
+architecture-review-*.html
+
+# Demo/prototype files
+pdf_toolbar_demo.html
+prototype/
+
+# Test scratch files
+test_forui_compile.dart
+
+# Memory journal (optional - uncomment if needed)
+# memory/
+
+# ==================== Agent configs ====================
+# These are local agent configs, usually not tracked
+.agents/
+.claude/
+.antigravitycli/
