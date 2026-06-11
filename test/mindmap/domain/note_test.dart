@@ -78,5 +78,110 @@ void main() {
       expect(note.content!.segments[0].text, 'Hello');
       expect(note.content!.segments[0].style?.bold, true);
     });
+
+    test('fromMap parses ink_layer_id field', () {
+      final map = {
+        'id': '1-xxx',
+        'topic_id': '0-xxx',
+        'title': 'Test',
+        'ink_layer_id': 'ink-layer-123',
+        'created_at': '2026-05-30T10:00:00Z',
+        'updated_at': '2026-05-30T12:00:00Z',
+      };
+
+      final note = Note.fromMap(map);
+
+      expect(note.inkLayerId, 'ink-layer-123');
+    });
+
+    test('fromMap handles null ink_layer_id', () {
+      final map = {
+        'id': '1-xxx',
+        'topic_id': '0-xxx',
+        'title': 'Test',
+        'created_at': '2026-05-30T10:00:00Z',
+        'updated_at': '2026-05-30T12:00:00Z',
+      };
+
+      final note = Note.fromMap(map);
+
+      expect(note.inkLayerId, isNull);
+    });
+
+    test('toMap includes ink_layer_id', () {
+      final note = Note(
+        id: '1-xxx',
+        topicId: '0-xxx',
+        title: 'Test',
+        inkLayerId: 'ink-layer-456',
+        createdAt: DateTime.parse('2026-05-30T10:00:00Z'),
+        updatedAt: DateTime.parse('2026-05-30T12:00:00Z'),
+      );
+
+      final map = note.toMap();
+
+      expect(map['ink_layer_id'], 'ink-layer-456');
+    });
+
+    test('toMap handles null ink_layer_id', () {
+      final note = Note(
+        id: '1-xxx',
+        topicId: '0-xxx',
+        title: 'Test',
+        createdAt: DateTime.parse('2026-05-30T10:00:00Z'),
+        updatedAt: DateTime.parse('2026-05-30T12:00:00Z'),
+      );
+
+      final map = note.toMap();
+
+      expect(map['ink_layer_id'], isNull);
+    });
+
+    test('copyWith can update inkLayerId', () {
+      final original = Note(
+        id: '1-xxx',
+        topicId: '0-xxx',
+        title: 'Test',
+        inkLayerId: 'old-layer',
+        createdAt: DateTime.parse('2026-05-30T10:00:00Z'),
+        updatedAt: DateTime.parse('2026-05-30T12:00:00Z'),
+      );
+
+      final updated = original.copyWith(inkLayerId: 'new-layer');
+
+      expect(updated.inkLayerId, 'new-layer');
+      expect(updated.id, original.id);
+    });
+
+    test('copyWith can explicitly set inkLayerId to null', () {
+      final original = Note(
+        id: '1-xxx',
+        topicId: '0-xxx',
+        title: 'Test',
+        inkLayerId: 'old-layer',
+        createdAt: DateTime.parse('2026-05-30T10:00:00Z'),
+        updatedAt: DateTime.parse('2026-05-30T12:00:00Z'),
+      );
+
+      final updated = original.copyWith(inkLayerId: null);
+
+      expect(updated.inkLayerId, isNull);
+      expect(updated.id, original.id);
+    });
+
+    test('copyWith preserves inkLayerId when not specified', () {
+      final original = Note(
+        id: '1-xxx',
+        topicId: '0-xxx',
+        title: 'Test',
+        inkLayerId: 'preserved-layer',
+        createdAt: DateTime.parse('2026-05-30T10:00:00Z'),
+        updatedAt: DateTime.parse('2026-05-30T12:00:00Z'),
+      );
+
+      final updated = original.copyWith(title: 'Updated Title');
+
+      expect(updated.inkLayerId, 'preserved-layer');
+    });
   });
 }

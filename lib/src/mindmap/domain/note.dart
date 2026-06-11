@@ -77,6 +77,9 @@ class Note {
   /// 布局样式（'normal' 或 'framework'）
   final String layoutStyle;
 
+  /// 关联的墨迹层 ID（指向 ink_layers 表中 ownerType = node 的记录）
+  final String? inkLayerId;
+
   const Note({
     required this.id,
     required this.topicId,
@@ -100,6 +103,7 @@ class Note {
     required this.updatedAt,
     this.syncVersion = 0,
     this.layoutStyle = 'normal',
+    this.inkLayerId,
   });
 
   /// 从数据库 Map 创建
@@ -137,6 +141,7 @@ class Note {
       updatedAt: DateTime.parse(map['updated_at'] as String),
       syncVersion: (map['sync_version'] as int?) ?? 0,
       layoutStyle: map['layout_style'] as String? ?? 'normal',
+      inkLayerId: map['ink_layer_id'] as String?,
     );
   }
 
@@ -164,6 +169,7 @@ class Note {
         'updated_at': updatedAt.toIso8601String(),
         'sync_version': syncVersion,
         'layout_style': layoutStyle,
+        'ink_layer_id': inkLayerId,
       };
 
   /// 解析管道分隔字符串
@@ -184,6 +190,7 @@ class Note {
     String? highlightStyle,
     String? layoutStyle,
     DateTime? updatedAt,
+    Object? inkLayerId = _unset,
   }) {
     return Note(
       id: id,
@@ -208,6 +215,9 @@ class Note {
       updatedAt: updatedAt ?? this.updatedAt,
       syncVersion: syncVersion,
       layoutStyle: layoutStyle ?? this.layoutStyle,
+      inkLayerId: inkLayerId == _unset
+          ? this.inkLayerId
+          : (inkLayerId as String?),
     );
   }
 }
