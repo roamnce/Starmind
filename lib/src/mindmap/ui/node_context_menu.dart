@@ -6,7 +6,7 @@ import 'package:forui/forui.dart';
 /// 节点悬浮上下文菜单。
 ///
 /// 使用 Forui 的 FPopover 实现横向悬浮菜单。
-/// 包含三个图标按钮：添加子节点、添加兄弟节点、删除节点。
+/// 包含四个图标按钮：添加子节点、添加兄弟节点、手写批注、删除节点。
 class NodeContextMenu extends StatelessWidget {
   /// 子组件（节点）
   final Widget child;
@@ -17,6 +17,9 @@ class NodeContextMenu extends StatelessWidget {
   /// 添加兄弟节点回调
   final VoidCallback? onAddSibling;
 
+  /// 手写批注回调（进入节点级手写模式）
+  final VoidCallback? onEditInk;
+
   /// 删除节点回调
   final VoidCallback? onDelete;
 
@@ -25,6 +28,7 @@ class NodeContextMenu extends StatelessWidget {
     required this.child,
     this.onAddChild,
     this.onAddSibling,
+    this.onEditInk,
     this.onDelete,
   });
 
@@ -66,6 +70,16 @@ class NodeContextMenu extends StatelessWidget {
                 onPressed: () {
                   controller.hide();
                   onAddSibling?.call();
+                },
+              ),
+              const SizedBox(width: 4),
+              // 手写批注
+              _MenuButton(
+                icon: FLucideIcons.pencil,
+                color: const Color(0xFF7DD3FC),
+                onPressed: () {
+                  controller.hide();
+                  onEditInk?.call();
                 },
               ),
               const SizedBox(width: 4),

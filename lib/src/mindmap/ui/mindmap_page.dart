@@ -25,6 +25,7 @@ import '../ink/ink_layer_controller.dart';
 import '../ink/ink_layer.dart';
 import '../ink/canvas_ink_layer.dart';
 import '../ink/ink_layer_repository.dart';
+import '../ink/ink_persistence.dart';
 import '../ink/stylus_input_handler.dart';
 import 'info_statistics_modal.dart';
 import 'navigation_radar.dart';
@@ -59,6 +60,7 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
   late final FocusNode _noteFocusNode;
   late final InkLayerController _inkLayerController;
   late final InkLayerRepository _inkLayerRepository;
+  late final InkLayerPersistence _inkLayerPersistence;
   late final StudyModeShortcutHandler _studyShortcutHandler;
   String? _lastNoteId;
   String? _loadedInkTopicId;
@@ -82,6 +84,10 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
     _noteFocusNode = FocusNode();
     _inkLayerController = InkLayerController();
     _inkLayerRepository = const FfiInkLayerRepository();
+    _inkLayerPersistence = InkLayerPersistence(
+      repository: _inkLayerRepository,
+      controller: _inkLayerController,
+    );
     _studyShortcutHandler = StudyModeShortcutHandler(
       widget.controller.studyModeController,
     );
@@ -731,6 +737,10 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                             child: NodeContextMenu(
                               onAddChild: () => widget.controller.createChildNode(enterEditing: true),
                               onAddSibling: () => widget.controller.createSiblingNode(enterEditing: true),
+                              onEditInk: () {
+                                widget.controller.selectNote(note);
+                                widget.controller.setInteractMode(CanvasInteractMode.ink);
+                              },
                               onDelete: () => _handleDeleteSelected(context),
                               child: NodeWidget(
                                 note: note,
