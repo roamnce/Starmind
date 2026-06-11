@@ -2,6 +2,7 @@
 
 import 'ink_layer.dart';
 import 'ink_layer_controller.dart';
+import 'stroke_renderer.dart';
 
 class CanvasInkLayer extends StatelessWidget {
   const CanvasInkLayer({
@@ -51,6 +52,11 @@ class CanvasInkLayer extends StatelessWidget {
   }
 }
 
+/// 把 [InkStroke] 列表渲染成 Catmull-Rom 平滑 + 变宽笔画的 [CustomPainter]。
+///
+/// 渲染策略下沉到 [StrokeRenderer.drawStroke]；本类只负责遍历与变更检测。
+/// 包含橡皮 ([InkTool.eraser]) 笔画时调用 [Canvas.saveLayer]，让
+/// [BlendMode.clear] 仅作用于墨迹图层内，不会击穿到底层 widget。
 class CanvasInkPainter extends CustomPainter {
   const CanvasInkPainter({required this.strokes});
 
@@ -58,20 +64,16 @@ class CanvasInkPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final hasEraser = strokes.any((s) => s.tool == InkTool.eraser);
+    final paintBounds = Offset.zero & size;
+    if (hasEraser) {
+      canvas.saveLayer(paintBounds, Paint());
+    }
     for (final stroke in strokes) {
-      if (stroke.points.length < 2) continue;
-      final paint = Paint()
-        ..color = Color(stroke.color)
-        ..strokeWidth = stroke.width
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke
-        ..blendMode = stroke.tool == InkTool.highlighter ? BlendMode.srcOver : BlendMode.srcOver;
-      final path = Path()..moveTo(stroke.points.first.x, stroke.points.first.y);
-      for (final point in stroke.points.skip(1)) {
-        path.lineTo(point.x, point.y);
-      }
-      canvas.drawPath(path, paint);
+      StrokeRenderer.drawStroke(canvas, stroke);
+    }
+    if (hasEraser) {
+      canvas.restore();
     }
   }
 
