@@ -25,6 +25,7 @@ import '../ink/ink_layer_controller.dart';
 import '../ink/ink_layer.dart';
 import '../ink/canvas_ink_layer.dart';
 import '../ink/ink_layer_repository.dart';
+import '../ink/stylus_input_handler.dart';
 import 'info_statistics_modal.dart';
 import 'navigation_radar.dart';
 import '../../home/workspace_controller_provider.dart';
@@ -841,14 +842,53 @@ class _MindMapPageState extends State<MindMapPage> with TreeTraversal {
                         ),
                       if (widget.controller.selectedTopic != null)
                         Positioned.fill(
-                          child: IgnorePointer(
-                            ignoring: true, // InkLayer 不应该拦截节点点击
-                            child: CanvasInkLayer(
-                              controller: _inkLayerController,
-                              ownerType: InkLayerOwnerType.canvas,
-                              ownerId: widget.controller.selectedTopic!.id,
-                              enabled: _isInkMode && !widget.controller.isLocked,
-                              onLayerChanged: _saveInkLayer,
+                          child: Listener(
+                            onPointerDown: _isInkMode && !widget.controller.isLocked
+                                ? (event) {
+                                    if (StylusInputHandler.isPalmTouch(event)) return;
+                                    final pressure = StylusInputHandler.getPressure(event);
+                                    _inkLayerController.beginStroke(
+                                      InkLayerOwnerType.canvas,
+                                      widget.controller.selectedTopic!.id,
+                                      event.localPosition,
+                                      pressure: pressure,
+                                    );
+                                  }
+                                : null,
+                            onPointerMove: _isInkMode && !widget.controller.isLocked
+                                ? (event) {
+                                    if (_inkLayerController.currentStroke == null) return;
+                                    if (StylusInputHandler.isPalmTouch(event)) return;
+                                    final pressure = StylusInputHandler.getPressure(event);
+                                    _inkLayerController.appendPoint(
+                                      event.localPosition,
+                                      pressure: pressure,
+                                    );
+                                  }
+                                : null,
+                            onPointerUp: _isInkMode && !widget.controller.isLocked
+                                ? (event) {
+                                    final stroke = _inkLayerController.endStroke(
+                                      InkLayerOwnerType.canvas,
+                                      widget.controller.selectedTopic!.id,
+                                    );
+                                    if (stroke != null) {
+                                      final layer = _inkLayerController.getLayer(
+                                        InkLayerOwnerType.canvas,
+                                        widget.controller.selectedTopic!.id,
+                                      );
+                                      if (layer != null) _saveInkLayer(layer);
+                                    }
+                                  }
+                                : null,
+                            child: IgnorePointer(
+                              ignoring: !_isInkMode || widget.controller.isLocked,
+                              child: CanvasInkLayer(
+                                controller: _inkLayerController,
+                                ownerType: InkLayerOwnerType.canvas,
+                                ownerId: widget.controller.selectedTopic!.id,
+                                enabled: _isInkMode && !widget.controller.isLocked,
+                              ),
                             ),
                           ),
                         ),

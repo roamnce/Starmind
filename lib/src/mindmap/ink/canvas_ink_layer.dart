@@ -4,6 +4,19 @@ import 'ink_layer.dart';
 import 'ink_layer_controller.dart';
 import 'stroke_renderer.dart';
 
+/// 手写墨迹图层 widget。
+///
+/// **手势处理架构：**
+/// - `enabled=false`（非手写模式）：使用 [GestureDetector] 处理手势，
+///   但回调为 null，不影响外部手势传递。
+/// - `enabled=true`（手写模式）：不使用 [GestureDetector]，让外部
+///   [Listener] 直接从 [PointerEvent] 获取压感数据，调用
+///   [InkLayerController] 的方法。
+///
+/// 外部在使用手写模式时，应包裹 [Listener] 并处理：
+/// - `onPointerDown` → `controller.beginStroke(..., pressure: pressure)`
+/// - `onPointerMove` → `controller.appendPoint(..., pressure: pressure)`
+/// - `onPointerUp` → `controller.endStroke(...)`
 class CanvasInkLayer extends StatelessWidget {
   const CanvasInkLayer({
     super.key,
@@ -26,17 +39,21 @@ class CanvasInkLayer extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final layer = controller.getLayer(ownerType, ownerId);
+        // 手写模式下不使用 GestureDetector，让外部 Listener 驱动
+        if (enabled) {
+          return CustomPaint(
+            painter: CanvasInkPainter(
+              strokes: [
+                ...?layer?.strokes,
+                if (controller.currentStroke != null) controller.currentStroke!,
+              ],
+            ),
+            child: const SizedBox.expand(),
+          );
+        }
+        // 非手写模式下使用 GestureDetector（但回调为 null）
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onPanStart: enabled ? (details) => controller.beginStroke(ownerType, ownerId, details.localPosition) : null,
-          onPanUpdate: enabled ? (details) => controller.appendPoint(details.localPosition) : null,
-          onPanEnd: enabled
-              ? (_) {
-                  controller.endStroke(ownerType, ownerId);
-                  final layer = controller.getLayer(ownerType, ownerId);
-                  if (layer != null) onLayerChanged?.call(layer);
-                }
-              : null,
           child: CustomPaint(
             painter: CanvasInkPainter(
               strokes: [
