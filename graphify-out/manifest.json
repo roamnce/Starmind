@@ -1,4 +1,468 @@
 {
+  "D:\\starmind\\test_forui_compile.dart": {
+    "mtime": 1780245806.8397684,
+    "hash": "a91b7d65a64858690560ba7b561a8677"
+  },
+  "D:\\starmind\\android\\build.gradle.kts": {
+    "mtime": 1779435471.016798,
+    "hash": "803fe22651fbe96ed401eb0b66a492d1"
+  },
+  "D:\\starmind\\android\\gradlew": {
+    "mtime": 1780296847.5071216,
+    "hash": "7f1cd7eb3f75a1dc85cd37753972a6e2"
+  },
+  "D:\\starmind\\android\\settings.gradle.kts": {
+    "mtime": 1779435471.2959745,
+    "hash": "f276a44edd917afd836899357fdae60e"
+  },
+  "D:\\starmind\\android\\app\\build.gradle.kts": {
+    "mtime": 1779435470.9683454,
+    "hash": "f2d100b33bdf2f8fe299dd0c254f51db"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\java\\io\\flutter\\plugins\\GeneratedPluginRegistrant.java": {
+    "mtime": 1781096498.565344,
+    "hash": "ad8d6f4d52bf51f1ee505fdabf1436b5"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\kotlin\\com\\starmind\\starmind\\MainActivity.kt": {
+    "mtime": 1779435471.000059,
+    "hash": "076b0b9cb4f6694330906a12a3f07fac"
+  },
+  "D:\\starmind\\integration_test\\simple_test.dart": {
+    "mtime": 1779436290.4369638,
+    "hash": "3ecba284d01d8d1b6b71011bcc9b53c7"
+  },
+  "D:\\starmind\\ios\\Flutter\\ephemeral\\flutter_lldb_helper.py": {
+    "mtime": 1781091710.293983,
+    "hash": "98fc75412162af387e2e3461e4e58094"
+  },
+  "D:\\starmind\\ios\\Runner\\AppDelegate.swift": {
+    "mtime": 1773934067.2595112,
+    "hash": "9e1de9c329a3fe4931876063de95132b"
+  },
+  "D:\\starmind\\ios\\Runner\\GeneratedPluginRegistrant.h": {
+    "mtime": 1779435494.7578952,
+    "hash": "decb9041b5e91a07e66f4664e5dac408"
+  },
+  "D:\\starmind\\ios\\Runner\\GeneratedPluginRegistrant.m": {
+    "mtime": 1781096498.5951314,
+    "hash": "e229e274783d5f6d70bf47a0640c20ed"
+  },
+  "D:\\starmind\\ios\\Runner\\Runner-Bridging-Header.h": {
+    "mtime": 1765555860.9108672,
+    "hash": "7ad7b5cea096132de13ba526b2b9efbe"
+  },
+  "D:\\starmind\\ios\\Runner\\SceneDelegate.swift": {
+    "mtime": 1773934067.2595112,
+    "hash": "0c3e86af131f6a9e547c80b5ed058914"
+  },
+  "D:\\starmind\\ios\\RunnerTests\\RunnerTests.swift": {
+    "mtime": 1779435471.7978497,
+    "hash": "24e5d095048eb86c30423f4e04b6e57b"
+  },
+  "D:\\starmind\\lib\\main.dart": {
+    "mtime": 1781159679.209634,
+    "hash": "12c7d56329cd7ddbb70f9c74fd0a72f5"
+  },
+  "D:\\starmind\\lib\\src\\domain\\annotation.dart": {
+    "mtime": 1779723534.3039773,
+    "hash": "a7ae0dc8dfee02fd89ebd1b02b2d9a07"
+  },
+  "D:\\starmind\\lib\\src\\domain\\document.dart": {
+    "mtime": 1779523726.8008065,
+    "hash": "c4718a8ac94ed2e1d9aa1baf24b2ba4e"
+  },
+  "D:\\starmind\\lib\\src\\domain\\ffi_storage_repository.dart": {
+    "mtime": 1779595091.2432938,
+    "hash": "811f30fb1ceec439ba2e3659e6e5e443"
+  },
+  "D:\\starmind\\lib\\src\\domain\\folder.dart": {
+    "mtime": 1780057714.0444524,
+    "hash": "50605a9096835d8229b280b1204cf686"
+  },
+  "D:\\starmind\\lib\\src\\domain\\ink_stroke.dart": {
+    "mtime": 1780057714.0444524,
+    "hash": "268ec11b9bbd61bc8b15ab738b8896e7"
+  },
+  "D:\\starmind\\lib\\src\\domain\\in_memory_storage_repository.dart": {
+    "mtime": 1779587650.0504265,
+    "hash": "2de36dc4e17aa86643810b5255cedc53"
+  },
+  "D:\\starmind\\lib\\src\\domain\\storage_repository.dart": {
+    "mtime": 1779587585.448246,
+    "hash": "dec6be641e8eaf1a6d152eaa51935edb"
+  },
+  "D:\\starmind\\lib\\src\\domain\\tag.dart": {
+    "mtime": 1779543653.0152519,
+    "hash": "2b6fa4935d77bdebea324519d704b662"
+  },
+  "D:\\starmind\\lib\\src\\domain\\tree_node.dart": {
+    "mtime": 1780057714.0484447,
+    "hash": "d5f89361a00abcc95e9920e781b5f939"
+  },
+  "D:\\starmind\\lib\\src\\home\\document_query_controller.dart": {
+    "mtime": 1779547300.6057367,
+    "hash": "51e5a760fd14bfcca9409a45f5877e04"
+  },
+  "D:\\starmind\\lib\\src\\home\\home_dashboard.dart": {
+    "mtime": 1781159010.1305146,
+    "hash": "3172c1291b37a2783420cf9f05ea9adf"
+  },
+  "D:\\starmind\\lib\\src\\home\\metadata_controller.dart": {
+    "mtime": 1779547256.992814,
+    "hash": "1ed6a5ca824c336c9d7aa615b3d3553f"
+  },
+  "D:\\starmind\\lib\\src\\home\\preferences_controller.dart": {
+    "mtime": 1779591551.8261435,
+    "hash": "dc95bce2c42f7f07ec3493cbd525ab65"
+  },
+  "D:\\starmind\\lib\\src\\home\\sidebar_widget.dart": {
+    "mtime": 1781158778.1060872,
+    "hash": "a6825d6aaa6e210ea0ce88bef6a3df49"
+  },
+  "D:\\starmind\\lib\\src\\home\\tab_layout.dart": {
+    "mtime": 1780222977.3702862,
+    "hash": "17d81ff02de391e03417b918baf86d81"
+  },
+  "D:\\starmind\\lib\\src\\home\\tab_navigation_controller.dart": {
+    "mtime": 1780223055.3397408,
+    "hash": "03cd9471ebfcd66711f881f372e11ae4"
+  },
+  "D:\\starmind\\lib\\src\\home\\workspace_controller.dart": {
+    "mtime": 1780223066.7364168,
+    "hash": "462dc8199c82e75c86084550e8b22fd5"
+  },
+  "D:\\starmind\\lib\\src\\home\\workspace_controller_provider.dart": {
+    "mtime": 1780057714.0569646,
+    "hash": "7a534bdf79906331f64348896be73015"
+  },
+  "D:\\starmind\\lib\\src\\home\\workspace_page.dart": {
+    "mtime": 1781158696.5584626,
+    "hash": "04e51cc9f65c9e1ed8c52751d1c05878"
+  },
+  "D:\\starmind\\lib\\src\\home\\dialogs\\glass_dialogs.dart": {
+    "mtime": 1781158384.9551811,
+    "hash": "001847d5164d79e114ea2255cd54e314"
+  },
+  "D:\\starmind\\lib\\src\\home\\dialogs\\import_dialogs.dart": {
+    "mtime": 1781158748.8313305,
+    "hash": "f2aa8135201188220f891ad3b400be9b"
+  },
+  "D:\\starmind\\lib\\src\\home\\widgets\\context_menu_item.dart": {
+    "mtime": 1781158356.9433715,
+    "hash": "11985bdc0c8f9e0d4f42792975b50ad3"
+  },
+  "D:\\starmind\\lib\\src\\home\\widgets\\glass_toggle.dart": {
+    "mtime": 1781158356.884408,
+    "hash": "80bc4a569f3fb1d7b83249ede899a7f3"
+  },
+  "D:\\starmind\\lib\\src\\home\\widgets\\orb_background.dart": {
+    "mtime": 1781158356.8005624,
+    "hash": "951cea92bce1a5865076ecb6ca464a33"
+  },
+  "D:\\starmind\\lib\\src\\home\\widgets\\tab_bar_widget.dart": {
+    "mtime": 1781158356.8433018,
+    "hash": "2d878271bbc03150b979edf0e2f15fcb"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\mindmap_note_tag.dart": {
+    "mtime": 1780999802.8303638,
+    "hash": "2954044de7e253c7c3e95aac84050a6a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\mindmap_relation.dart": {
+    "mtime": 1780996971.7592375,
+    "hash": "f29f3b05d01c32ae693b6ebbba57de17"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\mindmap_summary.dart": {
+    "mtime": 1780999126.4595437,
+    "hash": "fff514f96b1bd01db6446438582f979b"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\note.dart": {
+    "mtime": 1780334535.9300916,
+    "hash": "30333e342c09c1ddf3e597621c5e72a0"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\note_content.dart": {
+    "mtime": 1780202318.7398417,
+    "hash": "0128ec1d96560e03e722fb44f45493a1"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\pdf_position.dart": {
+    "mtime": 1780202296.0753632,
+    "hash": "2b9fd8bd77af73ce480ef4332896745f"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\domain\\topic.dart": {
+    "mtime": 1780997795.0957065,
+    "hash": "5f23462e2f350e36cc2dd7eeced5654c"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\export\\export_exception.dart": {
+    "mtime": 1780767102.6894915,
+    "hash": "42e5513ed0c3cc204e84f9ff1d96f27f"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\export\\gurumind_exporter.dart": {
+    "mtime": 1781004068.0632188,
+    "hash": "1423904e33a7523a8f921ccc96a3c422"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\export\\hive_encoder.dart": {
+    "mtime": 1780769349.7653217,
+    "hash": "9ca393d9ce008fe79c2f3934dbd7945b"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\gurumind_data_converter.dart": {
+    "mtime": 1781004124.4941041,
+    "hash": "a69d89afb090d0d4a71dec7da2b3e772"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\gurumind_importer.dart": {
+    "mtime": 1781071992.2471602,
+    "hash": "46703457b37c3ac9b37fd60849e333fc"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\gurumind_manifest_parser.dart": {
+    "mtime": 1781071944.5253472,
+    "hash": "125aaa7a33ca48046750c002c90ef436"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\gurumind_zip_extractor.dart": {
+    "mtime": 1780767102.7028437,
+    "hash": "a2926ad70e65218822960a7c8c4530d0"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\hive_decoder.dart": {
+    "mtime": 1780770809.5406191,
+    "hash": "051128690b6b3a487c9b85294fae46ad"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\import\\import_exception.dart": {
+    "mtime": 1780767102.6879828,
+    "hash": "9f2a90ec4309c12eebeffa8b24159f49"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\canvas_ink_layer.dart": {
+    "mtime": 1780803660.6341035,
+    "hash": "c2a017a9a7aa21ff5aa1c1dd3747cb60"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer.dart": {
+    "mtime": 1780766991.7120967,
+    "hash": "f1fabbf35c43bb29d0e1563f39ad097a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer_controller.dart": {
+    "mtime": 1780767351.6063454,
+    "hash": "b04d7a21cebeaa0d5c1c81075b696d00"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\ink_layer_repository.dart": {
+    "mtime": 1780997795.101234,
+    "hash": "bb21c549321eb8815f8ee746bbcac110"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ink\\node_note_content.dart": {
+    "mtime": 1780803963.423429,
+    "hash": "d6837f18cb673fa0ec3857f4fcb746c4"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\layout\\anchor_calculator.dart": {
+    "mtime": 1780499395.4144845,
+    "hash": "aee7106543cffbc7c6de9c34456ab91f"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\layout\\layout_config.dart": {
+    "mtime": 1780499128.4868054,
+    "hash": "a39ea40074d74b414d1b4938bb9c7c44"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\layout\\layout_engine.dart": {
+    "mtime": 1780500030.015956,
+    "hash": "2329ccafa88bc0ff5a6a8e79d55e4142"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\layout\\layout_result.dart": {
+    "mtime": 1780499133.6423788,
+    "hash": "7e41ebdf91dca1f26964e1ae9fc1c830"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\layout\\tree_layout_engine.dart": {
+    "mtime": 1780499854.1526551,
+    "hash": "e38c6b2f141ab784d90e42801172eb61"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\rendering\\bezier_renderer.dart": {
+    "mtime": 1780500578.1440308,
+    "hash": "6239f6c71e181353773c69782eea5c1a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\rendering\\connection_data.dart": {
+    "mtime": 1780500344.3594153,
+    "hash": "65e4bafef12e1d9b2f6d8a7824129120"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\rendering\\connection_renderer.dart": {
+    "mtime": 1780500349.606514,
+    "hash": "8d4807d7f2e4206b7c8a6ba170dd23a9"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\rendering\\ortho_renderer.dart": {
+    "mtime": 1780500588.4330814,
+    "hash": "2b4ad0af144d6c90e9f5e9cc31588fc3"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\rendering\\straight_renderer.dart": {
+    "mtime": 1780500583.3756328,
+    "hash": "ed2854913f4322e0e29f90bb4a52e91b"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\service\\mindmap_service.dart": {
+    "mtime": 1781103725.0059054,
+    "hash": "4179e91dbc44f6863a419a24b853b7fe"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\storage\\ffi_mindmap_repository.dart": {
+    "mtime": 1781103220.1327085,
+    "hash": "1834b778ebf014c3e5cb6d09e866d1a6"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\storage\\in_memory_mindmap_repository.dart": {
+    "mtime": 1781103083.2906249,
+    "hash": "f0ab1f2adba54cb441af770e7c2b3563"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\storage\\mindmap_repository.dart": {
+    "mtime": 1781102967.7450407,
+    "hash": "902d92cf557fcbbcd9bf4490adcaf3ec"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\study\\study_mode_controller.dart": {
+    "mtime": 1780803765.6243875,
+    "hash": "dbd87a551942ef663526b97d97cab559"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\study\\study_mode_panel.dart": {
+    "mtime": 1780767247.9688892,
+    "hash": "1ec06b8802de6e6a889e7370dcb7003c"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\study\\study_mode_shortcut_handler.dart": {
+    "mtime": 1780767228.300242,
+    "hash": "c02136a95fe2c39cecf79566b9889ce9"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\study\\study_note_widget.dart": {
+    "mtime": 1780804003.027002,
+    "hash": "111db01f21a4f508ea26f56d8805bc04"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\bottom_action_bar.dart": {
+    "mtime": 1781103863.347829,
+    "hash": "091b9dc974cd1b99a0139698c93a913e"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\canvas_painter.dart": {
+    "mtime": 1781090185.498528,
+    "hash": "0f98078179529c940d0fa7a91c6d5423"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\floating_zoom_bar.dart": {
+    "mtime": 1780768394.8623607,
+    "hash": "2eb4ddcc64e26a184730ff6cc989e67c"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\framework_child_position.dart": {
+    "mtime": 1780334287.5213294,
+    "hash": "2f17aa76f4e45bc7f82a12fb13f70094"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\framework_layout.dart": {
+    "mtime": 1781086469.492692,
+    "hash": "258f88871091528d3454f2939bc862ec"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\info_statistics_modal.dart": {
+    "mtime": 1780239434.7491958,
+    "hash": "d1b06fb4533bf81699d0d98e17eb15f7"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\lasso_painter.dart": {
+    "mtime": 1780238687.820484,
+    "hash": "ee7b7073ac08afffa8d68c625b7c85e1"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\markdown_editor_toolbar.dart": {
+    "mtime": 1780245982.3523228,
+    "hash": "cdfd77f5efbac56466db0770ae203704"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_controller.dart": {
+    "mtime": 1781162558.6187677,
+    "hash": "c8f369acaf0f54452f3f07e60d8e8235"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_page.dart": {
+    "mtime": 1781162970.475705,
+    "hash": "b5e39021378d0c38dc694880c799ed2d"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_sidebar.dart": {
+    "mtime": 1780303117.9538498,
+    "hash": "55dfb9e96a70416d16bfeb749e8e422b"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_tab_viewport.dart": {
+    "mtime": 1781159017.360283,
+    "hash": "ab478c69b678280eab29529975567f7a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\navigation_radar.dart": {
+    "mtime": 1780324897.8990011,
+    "hash": "cbd1a77833869391bc759da108c0d68e"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\node_context_menu.dart": {
+    "mtime": 1781162893.778844,
+    "hash": "0d1c3252a6d22fcc3a65d32de15cbd67"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\node_tag_picker.dart": {
+    "mtime": 1781068180.2279913,
+    "hash": "70641a780ac3f6553ab85a2bf623fb09"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\node_widget.dart": {
+    "mtime": 1781090306.9061327,
+    "hash": "4dc6ba5ea19cb993ada1911a88208b40"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\relation_label_widget.dart": {
+    "mtime": 1780998572.9634967,
+    "hash": "6b8022519c9405e16fe510069ee5057a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\topic_card.dart": {
+    "mtime": 1780212784.0338588,
+    "hash": "86dd65443ab9dd518f849470a2454e6e"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\topic_list_page.dart": {
+    "mtime": 1780213122.3991125,
+    "hash": "be971cf8fa0f7b5bd71d0ec8409bd2fb"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\tree_layout.dart": {
+    "mtime": 1780768539.9663737,
+    "hash": "fed7af88a941cc697c9640a754272eb8"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\components\\lasso_overlay.dart": {
+    "mtime": 1780287402.3351414,
+    "hash": "5603581a46655456eab177015c609b00"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\components\\vertical_tab_bar.dart": {
+    "mtime": 1780301028.9883761,
+    "hash": "c2bdaa4a62d1620df70f68fd69075768"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\controllers\\mindmap_crud_controller.dart": {
+    "mtime": 1780895899.0778544,
+    "hash": "57f691fa1acc8bf1cf2be2f1b2cea217"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\controllers\\mindmap_layout_controller.dart": {
+    "mtime": 1780997795.1174812,
+    "hash": "34f8d9880b072b0e95137f8f338a6add"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\controllers\\mindmap_theme_controller.dart": {
+    "mtime": 1780895793.2956223,
+    "hash": "d0b16e6cf12b96596b03c305d8c1870f"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\controllers\\mindmap_viewport_controller.dart": {
+    "mtime": 1780895303.7897737,
+    "hash": "d38197616c77dc943290b15b258b3ace"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\dialogs\\add_node_dialog.dart": {
+    "mtime": 1780286883.2195778,
+    "hash": "976392ba8a59f019aed71fc7b0a9afb9"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\dialogs\\more_actions_menu.dart": {
+    "mtime": 1780302172.6916947,
+    "hash": "12b821f810326ec735ee0204da8ce802"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\dialogs\\rename_dialog.dart": {
+    "mtime": 1780286906.8238394,
+    "hash": "a2c1edc2a0d2c3a0ffb8a49ce0640630"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\dialogs\\shortcuts_modal.dart": {
+    "mtime": 1780302107.2846098,
+    "hash": "67ef31d7714e5c8656ee94819fc7bed6"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\dialogs\\split_screen_menu.dart": {
+    "mtime": 1780288489.159384,
+    "hash": "235c27db73348af68e23f335448834c4"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\mixins\\tree_traversal.dart": {
+    "mtime": 1780288193.1798234,
+    "hash": "4777c715a5fdd70e98d6b8afe5b77b6d"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\panels\\node_search_panel.dart": {
+    "mtime": 1780303357.4200654,
+    "hash": "71fa4972d7184a3a27441162e243098a"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\ui\\panels\\style_config_panel.dart": {
+    "mtime": 1780301234.2805698,
+    "hash": "4b82926b6d80119f6908d85661fc1c31"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\utils\\color_utils.dart": {
+    "mtime": 1780286636.2966013,
+    "hash": "6614a919dd849b5738ffa4b44f7c5f30"
+  },
+  "D:\\starmind\\lib\\src\\mindmap\\utils\\mindmap_colors.dart": {
+    "mtime": 1780892534.402957,
+    "hash": "de9d717299a03043b3e2b9f57b089cc9"
+  },
   "D:\\starmind\\lib\\src\\pdf\\annotation_controller.dart": {
     "mtime": 1780057714.0579646,
     "hash": "65738897e06b38e5df6d4b73a9f1de15"
@@ -123,6 +587,10 @@
     "mtime": 1780053702.7405112,
     "hash": "a2d439cd1ecbec67e12bf96ae5685019"
   },
+  "D:\\starmind\\lib\\src\\pdf\\widgets\\pdf_tab_viewport.dart": {
+    "mtime": 1781159889.5644078,
+    "hash": "37514c3ec37ac3d800dd79155f563724"
+  },
   "D:\\starmind\\lib\\src\\pdf\\widgets\\pdf_viewport_widget.dart": {
     "mtime": 1780137298.2575128,
     "hash": "4e6d51c30b289f3c98950d69e81d0358"
@@ -147,88 +615,1552 @@
     "mtime": 1780137340.9372153,
     "hash": "bc50ef1041fb23bf51b3affa4fe94569"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\domain\\note.dart": {
-    "mtime": 1780235370.8386023,
-    "hash": "ec01c867a55ccd3e3e2f170d22ce9e50"
+  "D:\\starmind\\lib\\src\\rust\\frb_generated.dart": {
+    "mtime": 1781103152.33593,
+    "hash": "bcb16d35bd4e1dec3054a860576d36c7"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\domain\\note_content.dart": {
-    "mtime": 1780202318.7398417,
-    "hash": "0128ec1d96560e03e722fb44f45493a1"
+  "D:\\starmind\\lib\\src\\rust\\frb_generated.io.dart": {
+    "mtime": 1781103152.3467522,
+    "hash": "dda7199e3cd5ff1f3387ad917b72cb32"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\domain\\pdf_position.dart": {
-    "mtime": 1780202296.0753632,
-    "hash": "2b9fd8bd77af73ce480ef4332896745f"
+  "D:\\starmind\\lib\\src\\rust\\frb_generated.web.dart": {
+    "mtime": 1781103152.3572843,
+    "hash": "c5dff7dc988f17dbc68ec9190faf0e74"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\domain\\topic.dart": {
-    "mtime": 1780238064.0354614,
-    "hash": "3a0104df37271887a6bdaeb6de8a4890"
+  "D:\\starmind\\lib\\src\\rust\\lib.dart": {
+    "mtime": 1779447582.8082254,
+    "hash": "4c5edf776b7592cf0fe51f2c122a666f"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\service\\mindmap_service.dart": {
-    "mtime": 1780211936.34101,
-    "hash": "3a9ac8e7d4048844883d5e4753d91950"
+  "D:\\starmind\\lib\\src\\rust\\type_utils.dart": {
+    "mtime": 1780990692.6997283,
+    "hash": "69e7148e66eb78c782f3ac8f01d76f68"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\storage\\ffi_mindmap_repository.dart": {
-    "mtime": 1780205171.429278,
-    "hash": "1d363e93ecdd22691d54e21a48e1f3af"
+  "D:\\starmind\\lib\\src\\rust\\api\\pdf.dart": {
+    "mtime": 1781103152.215504,
+    "hash": "6a16ddb3f7a146ba3bad57f7b58ad2f9"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\storage\\in_memory_mindmap_repository.dart": {
-    "mtime": 1780203936.5432284,
-    "hash": "6e1f2da91956c0eb88f9f26734a94c3a"
+  "D:\\starmind\\lib\\src\\rust\\api\\simple.dart": {
+    "mtime": 1781103152.2178783,
+    "hash": "274b526161866aaabc66762a5eefd704"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\storage\\mindmap_repository.dart": {
-    "mtime": 1780203673.0836644,
-    "hash": "bd2395e3fb23d6359274c33210ec265f"
+  "D:\\starmind\\lib\\src\\rust\\api\\storage.dart": {
+    "mtime": 1781103152.2563868,
+    "hash": "8a92a4de5b22c8fea63e6d234d8651b1"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\bottom_action_bar.dart": {
-    "mtime": 1780240081.9424932,
-    "hash": "d9e103f36ad91377b6bab518eab29248"
+  "D:\\starmind\\lib\\src\\rust\\storage\\annotations.dart": {
+    "mtime": 1781103152.3682275,
+    "hash": "739f80a5f71a2cc30596fbe24357b4be"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\canvas_painter.dart": {
-    "mtime": 1780238224.9621367,
-    "hash": "c2605e145cd01b1b6b619a3e48005a8a"
+  "D:\\starmind\\lib\\src\\rust\\storage\\documents.dart": {
+    "mtime": 1781103152.3702276,
+    "hash": "117d10a303d6c1913ef80e64f7e9edfa"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\info_statistics_modal.dart": {
-    "mtime": 1780239434.7491958,
-    "hash": "d1b06fb4533bf81699d0d98e17eb15f7"
+  "D:\\starmind\\lib\\src\\rust\\storage\\folders.dart": {
+    "mtime": 1781103152.3737028,
+    "hash": "76124206a40603ce3822168f811fe79d"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\lasso_painter.dart": {
-    "mtime": 1780238687.820484,
-    "hash": "ee7b7073ac08afffa8d68c625b7c85e1"
+  "D:\\starmind\\lib\\src\\rust\\storage\\ink_layers.dart": {
+    "mtime": 1781103152.3777065,
+    "hash": "0b5ae7a0467e61ff5715ae12c8cf25e0"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\markdown_editor_toolbar.dart": {
-    "mtime": 1780245982.3523228,
-    "hash": "cdfd77f5efbac56466db0770ae203704"
+  "D:\\starmind\\lib\\src\\rust\\storage\\mindmap.dart": {
+    "mtime": 1781103152.3924928,
+    "hash": "252f983239e2a28ee900d76cc1865803"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_controller.dart": {
-    "mtime": 1780246506.0334628,
-    "hash": "fa92c147f4967b62d0b980fb8b159462"
+  "D:\\starmind\\lib\\src\\rust\\storage\\tags.dart": {
+    "mtime": 1781103152.3950062,
+    "hash": "b1fbf37b8952bf0c6c35527f0f6622b2"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_page.dart": {
-    "mtime": 1780283399.4289954,
-    "hash": "1a00ade9f12c26bb6ec5bf27a607d2af"
+  "D:\\starmind\\lib\\src\\utils\\type_conversion.dart": {
+    "mtime": 1781019224.0505645,
+    "hash": "4187429b27dc0545ec65e53edac9b6da"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\mindmap_sidebar.dart": {
-    "mtime": 1780246109.8009708,
-    "hash": "b7f442dfb356e8c51dcaabdee88d03ba"
+  "D:\\starmind\\linux\\flutter\\generated_plugin_registrant.cc": {
+    "mtime": 1781091838.5463648,
+    "hash": "bd6e64368e100cca8e55173215ae1bdd"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\navigation_radar.dart": {
-    "mtime": 1780239644.339741,
-    "hash": "78b34726cbf6aea912161bccd39f0eab"
+  "D:\\starmind\\linux\\flutter\\generated_plugin_registrant.h": {
+    "mtime": 1779435494.7345545,
+    "hash": "d295462c9da9f7fef22dc86c34492318"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\node_widget.dart": {
-    "mtime": 1780238283.7652404,
-    "hash": "89c43ce7ec2cedeb8f703d50f8df8b82"
+  "D:\\starmind\\linux\\runner\\main.cc": {
+    "mtime": 1765555860.92697,
+    "hash": "539395bcd63dba20afed0838d136189f"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\topic_card.dart": {
-    "mtime": 1780212784.0338588,
-    "hash": "86dd65443ab9dd518f849470a2454e6e"
+  "D:\\starmind\\linux\\runner\\my_application.cc": {
+    "mtime": 1779435471.94934,
+    "hash": "1482b3aa961a8ab8055f985a7ed8b098"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\topic_list_page.dart": {
-    "mtime": 1780213122.3991125,
-    "hash": "be971cf8fa0f7b5bd71d0ec8409bd2fb"
+  "D:\\starmind\\linux\\runner\\my_application.h": {
+    "mtime": 1765555860.92697,
+    "hash": "ffa1a7c0a2ad45a2c14a921596516ff8"
   },
-  "D:\\starmind\\lib\\src\\mindmap\\ui\\tree_layout.dart": {
-    "mtime": 1780283339.5888026,
-    "hash": "c60db2f35a233d25ca6f491836b1b5b0"
+  "D:\\starmind\\macos\\Flutter\\GeneratedPluginRegistrant.swift": {
+    "mtime": 1781091838.5748992,
+    "hash": "82070a4004cfa27ce817c04818d322ae"
+  },
+  "D:\\starmind\\macos\\Runner\\AppDelegate.swift": {
+    "mtime": 1765555860.92697,
+    "hash": "4b52e0b89ebfef9baf45b04548c463d6"
+  },
+  "D:\\starmind\\macos\\Runner\\MainFlutterWindow.swift": {
+    "mtime": 1765555860.92697,
+    "hash": "93c22dae2d93f3dc1402e121901f582b"
+  },
+  "D:\\starmind\\macos\\RunnerTests\\RunnerTests.swift": {
+    "mtime": 1779435472.3708365,
+    "hash": "8059f5d27a19c556eeafb49b3f9b7bdd"
+  },
+  "D:\\starmind\\rust\\src\\frb_generated.rs": {
+    "mtime": 1781103153.3136725,
+    "hash": "ac6293d1980face6b3efab128bcc0cd1"
+  },
+  "D:\\starmind\\rust\\src\\lib.rs": {
+    "mtime": 1779465124.9158623,
+    "hash": "dc4a13ac3e46f7993a41e7118e6c84f2"
+  },
+  "D:\\starmind\\rust\\src\\api\\mod.rs": {
+    "mtime": 1779532936.7256682,
+    "hash": "41eb9a3e17d3e88b62a49d033c0d9551"
+  },
+  "D:\\starmind\\rust\\src\\api\\pdf.rs": {
+    "mtime": 1779868619.254982,
+    "hash": "9cebf8181b2f9dd8211dbd5bc051a799"
+  },
+  "D:\\starmind\\rust\\src\\api\\simple.rs": {
+    "mtime": 1779436253.1957657,
+    "hash": "49868aba732a2b79e07b6e396e63a483"
+  },
+  "D:\\starmind\\rust\\src\\api\\storage.rs": {
+    "mtime": 1781103022.3403916,
+    "hash": "74ffdf061edf7416cd0ed547eb7cc394"
+  },
+  "D:\\starmind\\rust\\src\\storage\\annotations.rs": {
+    "mtime": 1779593802.5023017,
+    "hash": "39d47846d00a24ac6a121417dd10865c"
+  },
+  "D:\\starmind\\rust\\src\\storage\\db.rs": {
+    "mtime": 1781018572.9815304,
+    "hash": "9b26f6ec2b765489679c73946fdf0324"
+  },
+  "D:\\starmind\\rust\\src\\storage\\documents.rs": {
+    "mtime": 1779465578.9063118,
+    "hash": "592a4cc010544ebf7cf035fe3fca1894"
+  },
+  "D:\\starmind\\rust\\src\\storage\\folders.rs": {
+    "mtime": 1779465570.6576355,
+    "hash": "45a29a7ffc74600d4781895808104371"
+  },
+  "D:\\starmind\\rust\\src\\storage\\ink_layers.rs": {
+    "mtime": 1780768913.0669363,
+    "hash": "87ffccb353dc346005659a49d228acff"
+  },
+  "D:\\starmind\\rust\\src\\storage\\mindmap.rs": {
+    "mtime": 1781103047.6754336,
+    "hash": "2a894b38e19133e4661f6cad8bb26cfd"
+  },
+  "D:\\starmind\\rust\\src\\storage\\mod.rs": {
+    "mtime": 1780768913.215441,
+    "hash": "23a3627d0ee1ad5f9313364fc9ff2805"
+  },
+  "D:\\starmind\\rust\\src\\storage\\tags.rs": {
+    "mtime": 1779465575.2043757,
+    "hash": "d237f39c981c87c65f2fe06281207295"
+  },
+  "D:\\starmind\\rust_builder\\android\\build.gradle": {
+    "mtime": 1779436290.4498558,
+    "hash": "6863d59c13da899b02b4cdc09c2d33f1"
+  },
+  "D:\\starmind\\rust_builder\\android\\settings.gradle": {
+    "mtime": 1779436290.4512014,
+    "hash": "ca6cda7f4db71a2748a115d1ba6a9d55"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\bin\\build_tool.dart": {
+    "mtime": 1779436290.4849515,
+    "hash": "3a4b124e7d338dce40bbd1e2514ce690"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\build_tool.dart": {
+    "mtime": 1779436290.4969463,
+    "hash": "0935a1a42f0f8744df9a0958fa40713d"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\android_environment.dart": {
+    "mtime": 1779436290.4986095,
+    "hash": "7c696ea54a98f1f579f596fa68abb207"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\artifacts_provider.dart": {
+    "mtime": 1779436290.4986095,
+    "hash": "5f8e20d71dd606d3a7aadc7fb6cc2cd2"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\builder.dart": {
+    "mtime": 1779436290.505291,
+    "hash": "ae81e655cfec91f791c9177b6287e629"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\build_cmake.dart": {
+    "mtime": 1779436290.499957,
+    "hash": "a7c7d8030eb1cff0c0e0ce17e746c920"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\build_gradle.dart": {
+    "mtime": 1779436290.5019825,
+    "hash": "455bc0be86ada20d9ac65071a755c401"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\build_pod.dart": {
+    "mtime": 1779436290.504005,
+    "hash": "8aece6e9ba211d82901aee99a2b9938d"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\build_tool.dart": {
+    "mtime": 1779436290.505291,
+    "hash": "9104e99019e5b2f4f082494db7956724"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\cargo.dart": {
+    "mtime": 1779436290.5074308,
+    "hash": "e6827f637ef24cbee63c5483fa550c6f"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\crate_hash.dart": {
+    "mtime": 1779436290.5080645,
+    "hash": "a965d32840d4c903727cc81af8853a93"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\environment.dart": {
+    "mtime": 1779436290.5086784,
+    "hash": "361cfeb6867f2b5e5c5d982143eaf5cb"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\logging.dart": {
+    "mtime": 1779436290.509452,
+    "hash": "c323e5d54f2d89963b459ac02444966c"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\options.dart": {
+    "mtime": 1779436290.5104742,
+    "hash": "5a558aa834a12ab90f10862e68c21a90"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\precompile_binaries.dart": {
+    "mtime": 1779436290.511133,
+    "hash": "3ddf57529dfa39a1b8a538c6ad944592"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\rustup.dart": {
+    "mtime": 1779436290.5119753,
+    "hash": "d7cca34c2abf5bad5c41cdd95e937671"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\target.dart": {
+    "mtime": 1779436290.5126784,
+    "hash": "dbb48b15aad8dbbe85df3938333f95ab"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\util.dart": {
+    "mtime": 1779436290.5126784,
+    "hash": "ec10c54ab314e5f96f300d4abac2aa68"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\lib\\src\\verify_binaries.dart": {
+    "mtime": 1779436290.5126784,
+    "hash": "cbb89b1455404c0aa1962663a5db7bc9"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\cmake\\resolve_symlinks.ps1": {
+    "mtime": 1779436290.516703,
+    "hash": "1a4fad9dc0bf8c0b871305c3c9303a4b"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\gradle\\plugin.gradle": {
+    "mtime": 1779436290.5187147,
+    "hash": "a2bcd6d564897ef879f3fb79e6cbcf42"
+  },
+  "D:\\starmind\\rust_builder\\ios\\Classes\\dummy_file.c": {
+    "mtime": 1779436290.5230043,
+    "hash": "6c20ffbbec62aaf3292003a76e54f607"
+  },
+  "D:\\starmind\\rust_builder\\macos\\Classes\\dummy_file.c": {
+    "mtime": 1779436290.5262163,
+    "hash": "6c20ffbbec62aaf3292003a76e54f607"
+  },
+  "D:\\starmind\\test\\widget_test.dart": {
+    "mtime": 1781159761.143104,
+    "hash": "345a51a6b7c552e486167f9ce7e2e4f8"
+  },
+  "D:\\starmind\\test\\domain\\annotation_test.dart": {
+    "mtime": 1779723575.7877195,
+    "hash": "0f561c38fa70789b3b1041338fed9a8f"
+  },
+  "D:\\starmind\\test\\domain\\document_query_controller_test.dart": {
+    "mtime": 1779541316.975847,
+    "hash": "5b194a370fd7bb8b4527191a4a8e2187"
+  },
+  "D:\\starmind\\test\\domain\\metadata_controller_test.dart": {
+    "mtime": 1779547440.9790602,
+    "hash": "79a8861fefcc4ad1308a66dd8ff52f41"
+  },
+  "D:\\starmind\\test\\domain\\preferences_controller_test.dart": {
+    "mtime": 1779541272.378296,
+    "hash": "b6451a6ea3d7b8e1ae6aecc630f75898"
+  },
+  "D:\\starmind\\test\\domain\\tab_navigation_controller_test.dart": {
+    "mtime": 1779541339.1684358,
+    "hash": "ec575c21dbd62eff11d6cae5ee8bb735"
+  },
+  "D:\\starmind\\test\\domain\\tree_node_test.dart": {
+    "mtime": 1779543726.0131123,
+    "hash": "03513b1012a63c7a5995396294bcc64f"
+  },
+  "D:\\starmind\\test\\domain\\workspace_controller_test.dart": {
+    "mtime": 1779541373.4322443,
+    "hash": "8446b5a5830efb23b8357afc932694a0"
+  },
+  "D:\\starmind\\test\\mindmap\\layout_integration_test.dart": {
+    "mtime": 1780503269.920357,
+    "hash": "87d85bc1c401964c5afd3eb039cdb533"
+  },
+  "D:\\starmind\\test\\mindmap\\domain\\mindmap_relation_test.dart": {
+    "mtime": 1780997094.2628806,
+    "hash": "b8a8f407cd212a9c304a314981e2a5e6"
+  },
+  "D:\\starmind\\test\\mindmap\\domain\\mindmap_summary_test.dart": {
+    "mtime": 1780999265.5447612,
+    "hash": "eb06abdca7f6453de6ddede07ae0d34a"
+  },
+  "D:\\starmind\\test\\mindmap\\domain\\note_layout_style_test.dart": {
+    "mtime": 1780334449.9305332,
+    "hash": "59b2666e88715b1fcd162918bd23713b"
+  },
+  "D:\\starmind\\test\\mindmap\\domain\\note_test.dart": {
+    "mtime": 1780202764.5834785,
+    "hash": "e6cd832315d388c844f8d0a34af40487"
+  },
+  "D:\\starmind\\test\\mindmap\\domain\\topic_test.dart": {
+    "mtime": 1780936260.666817,
+    "hash": "277ba0d0ca938efa7b49f152a6520ef2"
+  },
+  "D:\\starmind\\test\\mindmap\\export\\gurumind_exporter_test.dart": {
+    "mtime": 1780769516.105467,
+    "hash": "a69b736a10eb41361bb1d08b99e1ae69"
+  },
+  "D:\\starmind\\test\\mindmap\\export\\gurumind_v15_roundtrip_test.dart": {
+    "mtime": 1781072672.215664,
+    "hash": "56515e613f24cbd2eeb03bab70d59c8f"
+  },
+  "D:\\starmind\\test\\mindmap\\import\\gurumind_data_converter_test.dart": {
+    "mtime": 1781072714.1058657,
+    "hash": "6f6e8986bed7cff92f5331994b031551"
+  },
+  "D:\\starmind\\test\\mindmap\\import\\gurumind_real_sample_test.dart": {
+    "mtime": 1780770716.0372052,
+    "hash": "855cc815a091c86d53ec3885a0fb0659"
+  },
+  "D:\\starmind\\test\\mindmap\\import\\hive_decoder_test.dart": {
+    "mtime": 1780767284.8147328,
+    "hash": "8d21e204eddf95fd40d2906b7e8e3d27"
+  },
+  "D:\\starmind\\test\\mindmap\\ink\\ink_layer_controller_test.dart": {
+    "mtime": 1780767284.8096628,
+    "hash": "68ad23019d961b6bf459b0d69cd453ca"
+  },
+  "D:\\starmind\\test\\mindmap\\ink\\ink_layer_repository_test.dart": {
+    "mtime": 1780769034.1304536,
+    "hash": "ba6568bc30adb71e0fe99340b55277ff"
+  },
+  "D:\\starmind\\test\\mindmap\\layout\\anchor_calculator_test.dart": {
+    "mtime": 1780499417.6465268,
+    "hash": "4d3b125d75c68b8be41da03e0ce19e1c"
+  },
+  "D:\\starmind\\test\\mindmap\\layout\\layout_config_test.dart": {
+    "mtime": 1780499138.7388992,
+    "hash": "5e0240f3abea11cd7f404b00e00cf87b"
+  },
+  "D:\\starmind\\test\\mindmap\\layout\\tree_layout_engine_test.dart": {
+    "mtime": 1780499904.261293,
+    "hash": "4ea691acc46271a9e215133eb66accd3"
+  },
+  "D:\\starmind\\test\\mindmap\\regression\\v15_full_flow_test.dart": {
+    "mtime": 1781005027.1714573,
+    "hash": "84a2718466186d2a3e4623aaa5b2a091"
+  },
+  "D:\\starmind\\test\\mindmap\\regression\\v15_persistence_test.dart": {
+    "mtime": 1781004712.7909005,
+    "hash": "11badc383b477cf85683cee7925876d9"
+  },
+  "D:\\starmind\\test\\mindmap\\rendering\\bezier_renderer_test.dart": {
+    "mtime": 1780500636.8510122,
+    "hash": "84a662f26cd7935eb6128575efe24f9a"
+  },
+  "D:\\starmind\\test\\mindmap\\rendering\\ortho_renderer_test.dart": {
+    "mtime": 1780500646.9250803,
+    "hash": "0916b7803ce65418868867eede8d5073"
+  },
+  "D:\\starmind\\test\\mindmap\\rendering\\straight_renderer_test.dart": {
+    "mtime": 1780500641.9338691,
+    "hash": "c04ca3e1817e55b5004ae7fd7a90dc05"
+  },
+  "D:\\starmind\\test\\mindmap\\service\\mindmap_service_test.dart": {
+    "mtime": 1780211991.4836545,
+    "hash": "3d90e592741b936773249697f96de364"
+  },
+  "D:\\starmind\\test\\mindmap\\storage\\ffi_mindmap_repository_test.dart": {
+    "mtime": 1781023201.9359293,
+    "hash": "7f7eb882e288de33c5364fa1263c9538"
+  },
+  "D:\\starmind\\test\\mindmap\\storage\\mindmap_repository_test.dart": {
+    "mtime": 1781068586.7697532,
+    "hash": "794bc897bd5fc51debc91f6ed55a1908"
+  },
+  "D:\\starmind\\test\\mindmap\\study\\study_mode_controller_test.dart": {
+    "mtime": 1780803889.4181726,
+    "hash": "c701235a7583f670219765341cebdb67"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\bottom_action_bar_test.dart": {
+    "mtime": 1780997795.1636908,
+    "hash": "8698ddb28d5dc9249daae919cda855ec"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\canvas_painter_test.dart": {
+    "mtime": 1780212398.391336,
+    "hash": "44f12b715932fafef1b6e3b786c12258"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\connection_anchor_test.dart": {
+    "mtime": 1780997795.1662018,
+    "hash": "a70c2980eb53ffdd08c60f19f89e1772"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\framework_child_position_test.dart": {
+    "mtime": 1780334281.605172,
+    "hash": "cc4ad2753f08675b01be8f0904220e7f"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\framework_layout_test.dart": {
+    "mtime": 1780335091.8361955,
+    "hash": "b4cea7b1d09b1902ac67fd11e491839f"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\info_statistics_modal_test.dart": {
+    "mtime": 1780768575.9425757,
+    "hash": "749f9992aca73b817ec4e2b744db3baa"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\lasso_selection_test.dart": {
+    "mtime": 1780238774.5478635,
+    "hash": "d0ef1b7afad0222bf565f6b8477a32fb"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\markdown_editor_toolbar_test.dart": {
+    "mtime": 1780246004.2711618,
+    "hash": "a259b0429d47f3fa6f0d6d8ced16c695"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\mindmap_controller_test.dart": {
+    "mtime": 1780940506.2259839,
+    "hash": "85c95fa8a22b9456667f20dec8b74bc5"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\mindmap_page_test.dart": {
+    "mtime": 1780997795.1692097,
+    "hash": "7e13efd7027a813da5e31ddb550cbac8"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\node_widget_framework_test.dart": {
+    "mtime": 1781006931.4124725,
+    "hash": "62dab8c5c4970ed284bf5d43107c561c"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\node_widget_test.dart": {
+    "mtime": 1780766712.4159966,
+    "hash": "a390db66d413188a308d0337220193aa"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\radar_painter_test.dart": {
+    "mtime": 1780239734.4158237,
+    "hash": "1d2f6222df65a66d6ea51281a2ec192f"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\shortcuts_mapping_test.dart": {
+    "mtime": 1780240044.8004546,
+    "hash": "00925bc651f2e99478bdc90318c6b102"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\topic_card_test.dart": {
+    "mtime": 1780212759.333295,
+    "hash": "76222ecbb46a1e89b58d6340cdc911c0"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\topic_list_page_test.dart": {
+    "mtime": 1780213078.156017,
+    "hash": "6e046b0c139497a67d14417e3e72052c"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\tree_layout_test.dart": {
+    "mtime": 1780763528.3394542,
+    "hash": "9ef214c3c388fcd015e96c5499ec8ed5"
+  },
+  "D:\\starmind\\test\\mindmap\\ui\\mixins\\tree_traversal_test.dart": {
+    "mtime": 1780290788.789745,
+    "hash": "7ac38ec3e548ce9a052de6b12e3673ed"
+  },
+  "D:\\starmind\\test\\mindmap\\utils\\color_utils_test.dart": {
+    "mtime": 1780288105.2830071,
+    "hash": "336122701968a2f742105a48aae207ff"
+  },
+  "D:\\starmind\\test\\pdf\\annotation_controller_test.dart": {
+    "mtime": 1779944134.3824809,
+    "hash": "ee8160b18634b12b772c89397e0d626b"
+  },
+  "D:\\starmind\\test\\pdf\\annotation_hit_detector_test.dart": {
+    "mtime": 1779593485.128894,
+    "hash": "1c9ba551a11ad0fdf53f90a9b17bfc13"
+  },
+  "D:\\starmind\\test\\pdf\\elastic_boundary_test.dart": {
+    "mtime": 1779816691.336318,
+    "hash": "716c8c50e6731642fde276267a1f0c15"
+  },
+  "D:\\starmind\\test\\pdf\\gesture_dispatcher_test.dart": {
+    "mtime": 1780057714.0694869,
+    "hash": "40ee5ab3dabe483bbd6133d05518ea26"
+  },
+  "D:\\starmind\\test\\pdf\\pdf_coordinates_test.dart": {
+    "mtime": 1779542492.5705106,
+    "hash": "643d9b4408fd4bc385060380d9410a32"
+  },
+  "D:\\starmind\\test\\pdf\\pdf_viewport_controller_test.dart": {
+    "mtime": 1780058630.223714,
+    "hash": "6dc84e4eacbb5e279ef4c6ab6848c6dc"
+  },
+  "D:\\starmind\\test\\pdf\\pen_config_test.dart": {
+    "mtime": 1779723050.6590798,
+    "hash": "fdf625ea6d22b39fbc1d310b2192268a"
+  },
+  "D:\\starmind\\test\\pdf\\pressure_curve_test.dart": {
+    "mtime": 1780057714.0704873,
+    "hash": "4696bed39e606759fda9b5ae24602b0f"
+  },
+  "D:\\starmind\\test\\pdf\\selection_overlay_geometry_test.dart": {
+    "mtime": 1780145239.9194613,
+    "hash": "cbef0f8cef1cbd59373654acbb7d27f4"
+  },
+  "D:\\starmind\\test\\pdf\\static_picture_cache_test.dart": {
+    "mtime": 1779817525.0984142,
+    "hash": "a8ae933b4b01e0a63a960224b4a0609c"
+  },
+  "D:\\starmind\\test\\pdf\\stroke_cache_manager_test.dart": {
+    "mtime": 1780057714.071666,
+    "hash": "b5f5221b77d21b25e427fd82d093f8d1"
+  },
+  "D:\\starmind\\test\\pdf\\stroke_stabilizer_test.dart": {
+    "mtime": 1780057714.0726793,
+    "hash": "387dc314d75d783065140710557bf72b"
+  },
+  "D:\\starmind\\test\\pdf\\text_selection_model_test.dart": {
+    "mtime": 1780057714.0736773,
+    "hash": "983a1dce82aa48e5256c41277d653ec9"
+  },
+  "D:\\starmind\\test\\pdf\\tile_manager_test.dart": {
+    "mtime": 1779873371.7900567,
+    "hash": "1526695a9bd57f735e24a531c8f1bea1"
+  },
+  "D:\\starmind\\test\\pdf\\viewport_repaint_notifier_test.dart": {
+    "mtime": 1779817280.8551621,
+    "hash": "32beffe14a8cf9601492ff8f6e0d4bc4"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\gesture_routing_test.dart": {
+    "mtime": 1779944187.9071097,
+    "hash": "6e479a24550e3531d3396966323a43de"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\ink_canvas_layer_test.dart": {
+    "mtime": 1779944174.7005973,
+    "hash": "9d7b561484011f60e1e40881b14c1c23"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\interactive_canvas_viewer_test.dart": {
+    "mtime": 1780057714.0736773,
+    "hash": "a1f6a565d5b521f5f146859df298b9d6"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\pdf_viewport_widget_test.dart": {
+    "mtime": 1779818602.3097892,
+    "hash": "07bd99271299b4a10f500769400e32d1"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\pen_config_panel_test.dart": {
+    "mtime": 1779724699.6265695,
+    "hash": "5963881dac68eb7b0c08b230da63280c"
+  },
+  "D:\\starmind\\test\\pdf\\widgets\\text_selection_test.dart": {
+    "mtime": 1779963338.0923305,
+    "hash": "d7b517391ea4da57f4a41e2727075db6"
+  },
+  "D:\\starmind\\test_driver\\integration_test.dart": {
+    "mtime": 1779436290.4362693,
+    "hash": "606d1d466e070d1ad90c6dbb4525a8f6"
+  },
+  "D:\\starmind\\windows\\flutter\\generated_plugin_registrant.cc": {
+    "mtime": 1781091838.5586941,
+    "hash": "811328ee9b84867ab0b499bd33e5e470"
+  },
+  "D:\\starmind\\windows\\flutter\\generated_plugin_registrant.h": {
+    "mtime": 1779435494.7452471,
+    "hash": "0ea33875f9f8e118f9c2ded03e2e2835"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\flutter_export.h": {
+    "mtime": 1780054502.8438344,
+    "hash": "51d6ddd086e800d34c1d143004c474fd"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\flutter_messenger.h": {
+    "mtime": 1780054502.846835,
+    "hash": "9c15531692496dbfcb820431343d92fa"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\flutter_plugin_registrar.h": {
+    "mtime": 1780054502.8488362,
+    "hash": "205b172dd4be89df08a835c5afcd2c1a"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\flutter_texture_registrar.h": {
+    "mtime": 1780054502.8503556,
+    "hash": "4ffbfcf8b88a9690e82543b1761e81d5"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\flutter_windows.h": {
+    "mtime": 1780054502.8448348,
+    "hash": "96a7e6f061d615f678c5c00b30f04fb5"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\binary_messenger_impl.h": {
+    "mtime": 1780054504.7964242,
+    "hash": "286e55d651260380486c1ca7a2c44578"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\byte_buffer_streams.h": {
+    "mtime": 1780054504.7984252,
+    "hash": "0a33501e8af56a1390ab6f75e0f568d9"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\core_implementations.cc": {
+    "mtime": 1780054504.7596953,
+    "hash": "d02f7794de6b9d3c0ee1a12f044e5629"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\engine_method_result.cc": {
+    "mtime": 1780054504.7606802,
+    "hash": "6172a3effcf1f354d756ff757377a576"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\flutter_engine.cc": {
+    "mtime": 1780054504.7642002,
+    "hash": "af56bda945d861e13616a54f6f848211"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\flutter_view_controller.cc": {
+    "mtime": 1780054504.7652104,
+    "hash": "3c4959653a59ba03164e211059dc2652"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\plugin_registrar.cc": {
+    "mtime": 1780054504.7616818,
+    "hash": "3190b92da7033c643bf749e7f4266da8"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\standard_codec.cc": {
+    "mtime": 1780054504.7626896,
+    "hash": "035f8af9a9a084e129ceef3fa0396c47"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\texture_registrar_impl.h": {
+    "mtime": 1780054504.7998085,
+    "hash": "7ec35caedbfe35b37bd7aa66dab7219b"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\basic_message_channel.h": {
+    "mtime": 1780054504.767372,
+    "hash": "45dd070af12cc7ab125d6ead5267f36c"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\binary_messenger.h": {
+    "mtime": 1780054504.768375,
+    "hash": "b313ec90af27dce06153c156a0cbb390"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\byte_streams.h": {
+    "mtime": 1780054504.769378,
+    "hash": "00010cc0042e98ea973f4037a29a3ca0"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\dart_project.h": {
+    "mtime": 1780054504.8008194,
+    "hash": "4c4caa9f7afc2aef148615013fe881fd"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\encodable_value.h": {
+    "mtime": 1780054504.7703793,
+    "hash": "ca5bf7ecc86138a058d535de1dfa811a"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\engine_method_result.h": {
+    "mtime": 1780054504.771376,
+    "hash": "55b4be5728dfb16220b1bda5bdace3fe"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\event_channel.h": {
+    "mtime": 1780054504.7733927,
+    "hash": "143cf6f0acaa229d950d084c940cc77c"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\event_sink.h": {
+    "mtime": 1780054504.7743726,
+    "hash": "b1b98c1cf40abd6a3c308182c4822476"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\event_stream_handler.h": {
+    "mtime": 1780054504.776372,
+    "hash": "62be5ae665a6b931d6dc9ac4b27d6c93"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\event_stream_handler_functions.h": {
+    "mtime": 1780054504.7753716,
+    "hash": "248c4e48231edda0bc7ac80722f15b53"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\flutter_engine.h": {
+    "mtime": 1780054504.8018188,
+    "hash": "9041724c1e75774af4fcd6acd79d9515"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\flutter_view.h": {
+    "mtime": 1780054504.804818,
+    "hash": "1f2ea92d1365b11489ea86bb3485dcac"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\flutter_view_controller.h": {
+    "mtime": 1780054504.8028183,
+    "hash": "815f4a5fbad9381269e2c216507285cd"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\message_codec.h": {
+    "mtime": 1780054504.7773714,
+    "hash": "b5013c9553dc459d5f91b8ec2bda3d0a"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\method_call.h": {
+    "mtime": 1780054504.7783716,
+    "hash": "a47afe801378afeffda4439e8cdb01ca"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\method_channel.h": {
+    "mtime": 1780054504.7803724,
+    "hash": "beeb4b0780233e226f899bddd220b682"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\method_codec.h": {
+    "mtime": 1780054504.78141,
+    "hash": "1d712b93e2dd2e28cb67a55a8d484694"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\method_result.h": {
+    "mtime": 1780054504.7844224,
+    "hash": "e48c7b84b470630e810b6a0bc2d8e542"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\method_result_functions.h": {
+    "mtime": 1780054504.783424,
+    "hash": "6bfbb61c519f63386a0fb55608dbea90"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\plugin_registrar.h": {
+    "mtime": 1780054504.7864304,
+    "hash": "2b81addd18be801eda539f1de332ce4e"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\plugin_registrar_windows.h": {
+    "mtime": 1780054504.805818,
+    "hash": "0bbbe470228d787a92d567a95faa2b33"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\plugin_registry.h": {
+    "mtime": 1780054504.787429,
+    "hash": "85c5071ca77f8687102dcae4f282388b"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\standard_codec_serializer.h": {
+    "mtime": 1780054504.789423,
+    "hash": "09399c3c509a601a970f6efd340a2529"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\standard_message_codec.h": {
+    "mtime": 1780054504.7924228,
+    "hash": "81df344828c7c48155ae22824eb61e50"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\standard_method_codec.h": {
+    "mtime": 1780054504.7944248,
+    "hash": "4707587e759b2b655852fc0e989c9e70"
+  },
+  "D:\\starmind\\windows\\flutter\\ephemeral\\cpp_client_wrapper\\include\\flutter\\texture_registrar.h": {
+    "mtime": 1780054504.7954242,
+    "hash": "ee739ab16ee0e2964edc9275a0379095"
+  },
+  "D:\\starmind\\windows\\runner\\flutter_window.cpp": {
+    "mtime": 1765555860.9426165,
+    "hash": "2f463f9b7da67a2d692a012f9ea85e0c"
+  },
+  "D:\\starmind\\windows\\runner\\flutter_window.h": {
+    "mtime": 1765555860.9426165,
+    "hash": "7defcc89d4a26d56e801241d624d48fb"
+  },
+  "D:\\starmind\\windows\\runner\\main.cpp": {
+    "mtime": 1779435472.627986,
+    "hash": "131f2fb5f355e03430931c86b102f482"
+  },
+  "D:\\starmind\\windows\\runner\\resource.h": {
+    "mtime": 1765555860.9426165,
+    "hash": "1ade5dd15e613479a15e8832ed276f2b"
+  },
+  "D:\\starmind\\windows\\runner\\utils.cpp": {
+    "mtime": 1765555860.9426165,
+    "hash": "432461b09d862a2f8dadf380ff0e34e5"
+  },
+  "D:\\starmind\\windows\\runner\\utils.h": {
+    "mtime": 1765555860.9426165,
+    "hash": "fd81e143f5614eb6fd75efe539002853"
+  },
+  "D:\\starmind\\windows\\runner\\win32_window.cpp": {
+    "mtime": 1765555860.9426165,
+    "hash": "571eb8234dbc2661be03aa5f2a4d2fca"
+  },
+  "D:\\starmind\\windows\\runner\\win32_window.h": {
+    "mtime": 1765555860.9426165,
+    "hash": "7569387d58711ab975940f4df3b4bcda"
+  },
+  "D:\\starmind\\AGENTS.md": {
+    "mtime": 1780766311.9225593,
+    "hash": "84f999345fbb5db5e1ab5e7d27ef8751"
+  },
+  "D:\\starmind\\analysis_options.yaml": {
+    "mtime": 1780058319.9859676,
+    "hash": "e3a77242027a64f4d81e83d9dad84c8e"
+  },
+  "D:\\starmind\\architecture-review-2026-05-29.html": {
+    "mtime": 1780048912.1394749,
+    "hash": "55a8167538bbef7b74b8a4ab8681a368"
+  },
+  "D:\\starmind\\CLAUDE.md": {
+    "mtime": 1781099603.1177921,
+    "hash": "de14f1439ce3507eea6415824621b76b"
+  },
+  "D:\\starmind\\CONTEXT.md": {
+    "mtime": 1780997795.0806732,
+    "hash": "c07617d1e6ce936c0e04c5e445fb2146"
+  },
+  "D:\\starmind\\devtools_options.yaml": {
+    "mtime": 1780106013.441034,
+    "hash": "d1ff5187b1b67653e7357395895e8449"
+  },
+  "D:\\starmind\\flutter_rust_bridge.yaml": {
+    "mtime": 1779436290.4304295,
+    "hash": "e7f85f8fa05af23cf14f9c9de9454ac9"
+  },
+  "D:\\starmind\\pdf_toolbar_demo.html": {
+    "mtime": 1780117059.5275762,
+    "hash": "2d3a83ef7e8c4edb94c959ed3f07c076"
+  },
+  "D:\\starmind\\PROGRESS.md": {
+    "mtime": 1781097935.9880288,
+    "hash": "15e4e9ad0d5f048d9d1c69035d49897d"
+  },
+  "D:\\starmind\\pubspec.yaml": {
+    "mtime": 1780766948.8562834,
+    "hash": "72677d447774758b59373eed313d6b78"
+  },
+  "D:\\starmind\\README.md": {
+    "mtime": 1779435472.4140856,
+    "hash": "3385b5da6372f878992448b55bd5ef96"
+  },
+  "D:\\starmind\\RULES.md": {
+    "mtime": 1781099644.7822955,
+    "hash": "8d92e053df7dc2fbb8e5a87a8b504ae4"
+  },
+  "D:\\starmind\\docs\\annotation_implementation_plan.md": {
+    "mtime": 1779591177.3598459,
+    "hash": "1d4a37f3fb889b97b21580c6ec404b1f"
+  },
+  "D:\\starmind\\docs\\claude.md": {
+    "mtime": 1780802980.7216907,
+    "hash": "18378735d21fd4822549d6b59a524e98"
+  },
+  "D:\\starmind\\docs\\CONTEXT.md": {
+    "mtime": 1779555475.9060695,
+    "hash": "6364e70125dc90ce42f0d59a1a0504dd"
+  },
+  "D:\\starmind\\docs\\error.txt": {
+    "mtime": 1779449061.5173452,
+    "hash": "3dd03d645894268dc8dcc6f7af006296"
+  },
+  "D:\\starmind\\docs\\gurumind_demo_deep_analysis.md": {
+    "mtime": 1780201638.0012288,
+    "hash": "175c2ced5960d425f086fcab5f96482a"
+  },
+  "D:\\starmind\\docs\\HEARTBEAT.md": {
+    "mtime": 1780802980.739052,
+    "hash": "a7c2a1b61e463113c62e6e523fb9c6d1"
+  },
+  "D:\\starmind\\docs\\marginnote_data_structure_analysis.md": {
+    "mtime": 1780199858.0089593,
+    "hash": "00f421e4aea1bd6bc99508ad132b3af0"
+  },
+  "D:\\starmind\\docs\\marginnote_vs_gurumind_comparison.md": {
+    "mtime": 1780200774.0209293,
+    "hash": "42cd85b5f7dcb88b24a0c41af755dcd1"
+  },
+  "D:\\starmind\\docs\\memory.md": {
+    "mtime": 1780802980.7308602,
+    "hash": "69ce88f14f3aeced959fe647d7c2fe17"
+  },
+  "D:\\starmind\\docs\\PATH.ai.md": {
+    "mtime": 1780802980.7586641,
+    "hash": "d41d4d04bcb07b62dbd57463dc572806"
+  },
+  "D:\\starmind\\docs\\pdf-annotation-optimization.md": {
+    "mtime": 1779877421.8131335,
+    "hash": "d7d55e8e4ad05dc4c525c058ba725e45"
+  },
+  "D:\\starmind\\docs\\phase2_prd.md": {
+    "mtime": 1779446682.2872562,
+    "hash": "4a1b3ac4c3c1f014546c156478f50f83"
+  },
+  "D:\\starmind\\docs\\phase3_prd.md": {
+    "mtime": 1779464930.0221066,
+    "hash": "7b1bb17b2ba9f3a13982ef73bc8b1957"
+  },
+  "D:\\starmind\\docs\\README.ai.md": {
+    "mtime": 1780802980.7551591,
+    "hash": "2952e4c11ae53526bca8e04155952944"
+  },
+  "D:\\starmind\\docs\\soul.md": {
+    "mtime": 1780803169.0158536,
+    "hash": "59a620c787667c77efd315806d9410db"
+  },
+  "D:\\starmind\\docs\\user.md": {
+    "mtime": 1780802980.7288606,
+    "hash": "58ce53dd66b59aec0f3d5f1e3568dc7b"
+  },
+  "D:\\starmind\\docs\\\u5f00\u53d1\u84dd\u56fe.txt": {
+    "mtime": 1779444793.7550428,
+    "hash": "2844964e801dc1d977242057d2c234ef"
+  },
+  "D:\\starmind\\docs\\agents\\domain.md": {
+    "mtime": 1779516684.8704646,
+    "hash": "c2b71df763d3e8523f8aeb80eed71670"
+  },
+  "D:\\starmind\\docs\\agents\\issue-tracker.md": {
+    "mtime": 1779516684.6438172,
+    "hash": "c8b5596e4469eb40fe944177bac7461e"
+  },
+  "D:\\starmind\\docs\\agents\\triage-labels.md": {
+    "mtime": 1779516684.7875168,
+    "hash": "87f40c339d48aa46b26b646093ac50a5"
+  },
+  "D:\\starmind\\docs\\analysis\\mindmap-connection-position-analysis.md": {
+    "mtime": 1780766187.6271195,
+    "hash": "aa7ceca0eeb500a4e9c672a5cbc071e7"
+  },
+  "D:\\starmind\\docs\\analysis\\mindmap-import-study-mode-analysis.md": {
+    "mtime": 1780806078.5774913,
+    "hash": "2a0d631658ea1b188acd8731cba960b8"
+  },
+  "D:\\starmind\\docs\\analysis\\mindmap-right-connection-gap-special-case.md": {
+    "mtime": 1780766296.3585227,
+    "hash": "53cd649c73ffb7c6a95a773987c36b5f"
+  },
+  "D:\\starmind\\docs\\analysis\\phase1-4-implementation-review.md": {
+    "mtime": 1780804521.9877694,
+    "hash": "70685ae765901c1b1e1ea7ba23590bc5"
+  },
+  "D:\\starmind\\docs\\study\\codebase_analysis.md": {
+    "mtime": 1780285999.7526124,
+    "hash": "b107b94e32184f173e790ddd3f022ca2"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-25-pdf-annotation-enhancement.md": {
+    "mtime": 1779712948.752116,
+    "hash": "ceb58680134f8723369c5e20eceb069f"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-27-pdf-annotation-optimization.md": {
+    "mtime": 1779816441.8558412,
+    "hash": "a463daae4500de4864716c6c3dbb3fb6"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-27-pdf-rendering-optimization.md": {
+    "mtime": 1779868115.119722,
+    "hash": "3e6f0cb73b5f28209d2e7c8a0abeddfc"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-30-mindmap-m1a-data-layer-v2.md": {
+    "mtime": 1780202081.3065102,
+    "hash": "dcb583d2905686668839cab133d82fa7"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-30-mindmap-m1a-data-layer.md": {
+    "mtime": 1780158432.7084186,
+    "hash": "7266f9831a35d67dd381dbdbdc419920"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-31-mindmap-layout-optimization.md": {
+    "mtime": 1780215468.336028,
+    "hash": "094e40073aa430c3a2fa2b74e27a68b5"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-05-31-mindmap-ui-layer.md": {
+    "mtime": 1780211470.8988075,
+    "hash": "10814b70e027838c09b23b7dfc5ea5fc"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-06-02-mindmap-framework-layout.md": {
+    "mtime": 1780332821.163735,
+    "hash": "d5aeefcd4b63fd46b2ff7c38b7f3ecd4"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-06-03-phase1-layout-engine-refactor.md": {
+    "mtime": 1780498729.432348,
+    "hash": "2e946848e185e9cc282584efcf535bb1"
+  },
+  "D:\\starmind\\docs\\superpowers\\plans\\2026-06-09-canvas-ink-rendering.md": {
+    "mtime": 1781004870.2376118,
+    "hash": "470102f01eb789008e62e38ef8fb4a49"
+  },
+  "D:\\starmind\\docs\\superpowers\\prototypes\\mindmap-marginnote-style.html": {
+    "mtime": 1780198973.3177738,
+    "hash": "cb99e2aa9d3e0df492261723a4defa7c"
+  },
+  "D:\\starmind\\docs\\superpowers\\prototypes\\mindmap-preview.html": {
+    "mtime": 1780158756.855467,
+    "hash": "1768aa3c589898b307a8f928c6296b92"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-25-pdf-annotation-enhancement-design.md": {
+    "mtime": 1779712395.7345233,
+    "hash": "a00bc0232475d79d459fd4d737e665c9"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-27-pdf-annotation-optimization-design.md": {
+    "mtime": 1779816200.187517,
+    "hash": "4b812cb5d98940fcd1edc99407e18caf"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-27-pdf-high-dpi-tile-rendering-design.md": {
+    "mtime": 1779865356.5510237,
+    "hash": "87427dcf0fced4ddc05cbed4fc051ee9"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-30-mindmap-feature-design-v1.1-optimized.md": {
+    "mtime": 1780157898.8112,
+    "hash": "e6427b44026afa8b754b066a1ad58fe0"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-30-mindmap-feature-design-v1.2-marginnote-style.md": {
+    "mtime": 1780200171.9169803,
+    "hash": "12f547c25eccd66117a23b5f49ff86d2"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-30-mindmap-feature-design.md": {
+    "mtime": 1780124333.6470256,
+    "hash": "338a7c44f8ed8374c81ffa11afaa641a"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-31-mindmap-high-fidelity-design.md": {
+    "mtime": 1780237937.51765,
+    "hash": "3657c85d3be836b199d105fb8ae3fb31"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-05-31-mindmap-radar-shortcuts-design.md": {
+    "mtime": 1780239357.0142057,
+    "hash": "f7cfe2af2d64a3062dd76574e2a3278d"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-06-02-mindmap-framework-layout-design.md": {
+    "mtime": 1780331846.3741047,
+    "hash": "12e7a6661557c9d20b02921a30aab8f8"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-06-03-phase1-layout-engine-refactor-design.md": {
+    "mtime": 1780496715.039936,
+    "hash": "38125df39d07b6ef60e89f3ae0c4504b"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-06-03-phase2-ink-layer-design.md": {
+    "mtime": 1780497183.7244313,
+    "hash": "16c2284a53c26d46c79c0c73bcca9d1b"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-06-03-phase3-gurumind-import-design.md": {
+    "mtime": 1780497382.3806598,
+    "hash": "c8ba675ca805ff811bcd90151a6ba91c"
+  },
+  "D:\\starmind\\docs\\superpowers\\specs\\2026-06-03-phase4-export-study-design.md": {
+    "mtime": 1780497538.5169797,
+    "hash": "3ef5a44820182509be4ad0eb5e8b4e97"
+  },
+  "D:\\starmind\\docs\\v1\\implementation_plan.md": {
+    "mtime": 1779614201.942565,
+    "hash": "1ee5e5c0542aebb0d7ec6c0d5c0decfe"
+  },
+  "D:\\starmind\\docs\\v1\\walkthrough.md": {
+    "mtime": 1779614205.6723776,
+    "hash": "51089637b575a57c24fa1f576a8ec3ef"
+  },
+  "D:\\starmind\\docs\\v10\\implementation_plan.md": {
+    "mtime": 1780238004.882906,
+    "hash": "1d47ccd20952e2b37b5cddf21d3059c7"
+  },
+  "D:\\starmind\\docs\\v10\\task.md": {
+    "mtime": 1780238829.4781358,
+    "hash": "e77cdc2cee032e89719a50b993728ba9"
+  },
+  "D:\\starmind\\docs\\v10\\walkthrough.md": {
+    "mtime": 1780804482.6970372,
+    "hash": "a1641bc99a8574067f25afd87888c63d"
+  },
+  "D:\\starmind\\docs\\v10\\walkthrough_task3.md": {
+    "mtime": 1780238495.8929763,
+    "hash": "b34e04fa7c86d832f81e56995b700a44"
+  },
+  "D:\\starmind\\docs\\v10\\walkthrough_task4.md": {
+    "mtime": 1780238640.3403409,
+    "hash": "d4e1b865f3be9e4d5dfb8e06d006ef76"
+  },
+  "D:\\starmind\\docs\\v11\\gurumind-import-fix-walkthrough.md": {
+    "mtime": 1780809708.84988,
+    "hash": "b38d5da48096a123fc176094a4c114ba"
+  },
+  "D:\\starmind\\docs\\v11\\gurumind-import-ui-state-investigation.md": {
+    "mtime": 1780807204.3452115,
+    "hash": "7ca3b7b148fbccd1cd626ca5c35622f3"
+  },
+  "D:\\starmind\\docs\\v11\\implementation_plan.md": {
+    "mtime": 1780239390.196057,
+    "hash": "37b1e8ea4884bff9f3ca9c7e5a71960d"
+  },
+  "D:\\starmind\\docs\\v11\\task.md": {
+    "mtime": 1780240152.8428016,
+    "hash": "b6b81afb6fbf7dc1d8a70868b97229e7"
+  },
+  "D:\\starmind\\docs\\v11\\walkthrough.md": {
+    "mtime": 1780240157.0189788,
+    "hash": "15f2c20c8d2eb95ebbf50773022c4235"
+  },
+  "D:\\starmind\\docs\\v12\\design.md": {
+    "mtime": 1780245323.6891925,
+    "hash": "fbf054d57a8ef5d0129707441915ecd7"
+  },
+  "D:\\starmind\\docs\\v12\\implementation_plan.md": {
+    "mtime": 1780245338.0848527,
+    "hash": "1645b124c4fd0000b8b28970d557c63a"
+  },
+  "D:\\starmind\\docs\\v12\\task.md": {
+    "mtime": 1780246604.0172408,
+    "hash": "a07defc503314cebd7aef1d57fd352c3"
+  },
+  "D:\\starmind\\docs\\v12\\walkthrough.md": {
+    "mtime": 1780246611.4940054,
+    "hash": "454ca3d92f6f8594a24bc5c0056fd84e"
+  },
+  "D:\\starmind\\docs\\v13\\design.md": {
+    "mtime": 1780328511.107097,
+    "hash": "b7e9bdd4681567de57713f212f3d30a6"
+  },
+  "D:\\starmind\\docs\\v13\\implementation_plan.md": {
+    "mtime": 1780328975.1127207,
+    "hash": "ef75c7b1969792b5cf2146545ae8f3d3"
+  },
+  "D:\\starmind\\docs\\v13\\task.md": {
+    "mtime": 1780329095.104641,
+    "hash": "607040fd88f3048bdc1d9f3fefc55e2a"
+  },
+  "D:\\starmind\\docs\\v13\\walkthrough.md": {
+    "mtime": 1780329107.0468092,
+    "hash": "3eacd6185c8f69cbb4d53a500959c456"
+  },
+  "D:\\starmind\\docs\\v14\\design.md": {
+    "mtime": 1780503208.1763759,
+    "hash": "350bc480a87560d41ce793204050000f"
+  },
+  "D:\\starmind\\docs\\v14\\task.md": {
+    "mtime": 1780503213.360486,
+    "hash": "46e6c2b4176477a0a2c08cfd60e1913a"
+  },
+  "D:\\starmind\\docs\\v15\\development_blueprint.md": {
+    "mtime": 1780841672.952031,
+    "hash": "e56fbbbc9566d752f48abe526d713f81"
+  },
+  "D:\\starmind\\docs\\v15\\implementation_plan.md": {
+    "mtime": 1780850161.7683403,
+    "hash": "8b5f90608bb32d270b86df7337f64a83"
+  },
+  "D:\\starmind\\docs\\v15\\implementation_plan2.md": {
+    "mtime": 1780845319.3340943,
+    "hash": "14d8300e4172691d41d69d32774fa5c1"
+  },
+  "D:\\starmind\\docs\\v15\\implementation_plan3.md": {
+    "mtime": 1780853952.518784,
+    "hash": "9ba44a0334c561d43eb498dc54b9df43"
+  },
+  "D:\\starmind\\docs\\v15\\known_issues.md": {
+    "mtime": 1781072314.3408628,
+    "hash": "0264c61f19380b0c9a11367d6cc9771c"
+  },
+  "D:\\starmind\\docs\\v15\\task.md": {
+    "mtime": 1781072983.0215535,
+    "hash": "813f0160fdddd71ccb72f1b2260589ad"
+  },
+  "D:\\starmind\\docs\\v15\\walkthrough.md": {
+    "mtime": 1781069930.9294944,
+    "hash": "46ce088984472786e997ab0ab393e7a4"
+  },
+  "D:\\starmind\\docs\\v15\\walkthrough_phase4_6.md": {
+    "mtime": 1781004257.7533567,
+    "hash": "1df5a2ff8bfe755de1e71804a2bde024"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-1-selection-and-inline-editing.md": {
+    "mtime": 1780814952.165738,
+    "hash": "d01abe00eca0287551fac3db0cab335c"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-2-inline-node-creation.md": {
+    "mtime": 1780841881.173534,
+    "hash": "2c9da5bc99347fa357b08c1f8fd3b6f4"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-3-layout-switching.md": {
+    "mtime": 1780841706.5772133,
+    "hash": "182c797d9332400f95391144896646af"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-4-associative-lines.md": {
+    "mtime": 1780840929.3597312,
+    "hash": "3dcd801af4e2bb428a35f7690ecf6e89"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-5-summary-nodes.md": {
+    "mtime": 1780841920.3555367,
+    "hash": "d6ca9cad847f36b4d1c3340c9b007271"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-6-node-tags.md": {
+    "mtime": 1780840109.8901818,
+    "hash": "d2c94ebcfde625e6df9bfafd8734fb1a"
+  },
+  "D:\\starmind\\docs\\v15\\specs\\phase-7-polish-and-regression.md": {
+    "mtime": 1780814998.095495,
+    "hash": "8f6a2ac83ccb54458886eb72c0242539"
+  },
+  "D:\\starmind\\docs\\v15.1\\v15.1-enhancement-plan.md": {
+    "mtime": 1781095550.0784056,
+    "hash": "dce539743cc51f2e641d34c2ff605a07"
+  },
+  "D:\\starmind\\docs\\v16\\development_blueprint.md": {
+    "mtime": 1781163901.5329342,
+    "hash": "1df8d99fba47afa4100cc16962c1b384"
+  },
+  "D:\\starmind\\docs\\v16\\task.md": {
+    "mtime": 1781164068.339198,
+    "hash": "4e41d1067f0fb31846e7f2bf1808686f"
+  },
+  "D:\\starmind\\docs\\v16\\specs\\phase-1-canvas-ink-layer.md": {
+    "mtime": 1781163764.4125168,
+    "hash": "0dcf04f738b2f4cd9ce1054277a7f742"
+  },
+  "D:\\starmind\\docs\\v16\\specs\\phase-2-node-ink-notes.md": {
+    "mtime": 1781163980.4473653,
+    "hash": "73cc34231be5ad63c648351aecbe259e"
+  },
+  "D:\\starmind\\docs\\v16\\specs\\phase-3-ink-to-node.md": {
+    "mtime": 1781164042.5186687,
+    "hash": "60541c5327c54074dfedb663719fecac"
+  },
+  "D:\\starmind\\docs\\v17\\task.md": {
+    "mtime": 1781007419.984784,
+    "hash": "0b9f50fcf52ea7513e95b30722a1ea3a"
+  },
+  "D:\\starmind\\docs\\v17\\specs\\phase-4-pdf-excerpt-linkage.md": {
+    "mtime": 1781006827.29544,
+    "hash": "881ca750bb80655666ef5e89ab19ecf2"
+  },
+  "D:\\starmind\\docs\\v17\\specs\\phase-5-review-system.md": {
+    "mtime": 1781007206.9443219,
+    "hash": "6845d244d1107312c06ee8925ded4336"
+  },
+  "D:\\starmind\\docs\\v2\\implementation_plan.md": {
+    "mtime": 1779953028.7372427,
+    "hash": "4ebf33697bc146cd40e5239a2e06db8f"
+  },
+  "D:\\starmind\\docs\\v2\\task.md": {
+    "mtime": 1779954115.6664557,
+    "hash": "36881741afb7671772e313fe14e94463"
+  },
+  "D:\\starmind\\docs\\v2\\walkthrough.md": {
+    "mtime": 1779954126.436829,
+    "hash": "91edc6b7e0aa746be0d064511386d621"
+  },
+  "D:\\starmind\\docs\\v3\\implementation_plan.md": {
+    "mtime": 1779970230.7310977,
+    "hash": "32a7614f88da87d453549a19af6b6a5d"
+  },
+  "D:\\starmind\\docs\\v3\\task.md": {
+    "mtime": 1779970578.2393966,
+    "hash": "cb0aae5d83cc490d040017efd32db649"
+  },
+  "D:\\starmind\\docs\\v3\\walkthrough.md": {
+    "mtime": 1779970951.2762246,
+    "hash": "7b5c28b4049678476202b1ba14179f2f"
+  },
+  "D:\\starmind\\docs\\v4\\implementation_plan.md": {
+    "mtime": 1780068716.5541277,
+    "hash": "67893035d67ec89373a699e68ba27c17"
+  },
+  "D:\\starmind\\docs\\v4\\task.md": {
+    "mtime": 1780068984.6418867,
+    "hash": "e119bdc8a878aa6341395e3d024f93f5"
+  },
+  "D:\\starmind\\docs\\v4\\walkthrough.md": {
+    "mtime": 1780068992.7586126,
+    "hash": "1718a880b2479c8f4e16a2beb68d6cb6"
+  },
+  "D:\\starmind\\docs\\v5\\design.md": {
+    "mtime": 1780227040.256819,
+    "hash": "7253075be42850b0f9e245c21c2c0d12"
+  },
+  "D:\\starmind\\docs\\v5\\implementation_plan.md": {
+    "mtime": 1780227084.9024022,
+    "hash": "05424a78ff9f8a13fb58701ab924a7ce"
+  },
+  "D:\\starmind\\docs\\v5\\task.md": {
+    "mtime": 1780227157.0090454,
+    "hash": "b166b740d5be09b480227c04d114825b"
+  },
+  "D:\\starmind\\docs\\v5\\walkthrough.md": {
+    "mtime": 1780228818.16559,
+    "hash": "1c95a10bcb4d610e5bae10ce344af497"
+  },
+  "D:\\starmind\\docs\\v6\\design.md": {
+    "mtime": 1780229881.2904606,
+    "hash": "fda78996ae3efa361543292739c26d41"
+  },
+  "D:\\starmind\\docs\\v6\\implementation_plan.md": {
+    "mtime": 1780229990.858558,
+    "hash": "c35b1eb2fce6ab5d68c9a21958fc3bb9"
+  },
+  "D:\\starmind\\docs\\v6\\task.md": {
+    "mtime": 1780230301.3991194,
+    "hash": "465b95f8698391f9db2b29595c9238f3"
+  },
+  "D:\\starmind\\docs\\v6\\walkthrough.md": {
+    "mtime": 1780230311.8153625,
+    "hash": "52bac61079dc26422df075367e3567a4"
+  },
+  "D:\\starmind\\docs\\v7\\design.md": {
+    "mtime": 1780231386.5136364,
+    "hash": "c8010f819432e0266efbd6db5bef660d"
+  },
+  "D:\\starmind\\docs\\v7\\implementation_plan.md": {
+    "mtime": 1780231482.4658363,
+    "hash": "632100b0c190810adc733db7a5c7a331"
+  },
+  "D:\\starmind\\docs\\v7\\task.md": {
+    "mtime": 1780234096.3243067,
+    "hash": "198653c82237760b036d438735acc8cd"
+  },
+  "D:\\starmind\\docs\\v7\\walkthrough.md": {
+    "mtime": 1780234133.589126,
+    "hash": "220fe15493ea036ff119a8aba6cee7eb"
+  },
+  "D:\\starmind\\docs\\v8\\implementation_plan.md": {
+    "mtime": 1780235099.7143557,
+    "hash": "8092d96bb3e480b6e48a9fb0f421c5a1"
+  },
+  "D:\\starmind\\docs\\v8\\task.md": {
+    "mtime": 1780235426.2284682,
+    "hash": "735b12ac505969fcb599f5abfb38c004"
+  },
+  "D:\\starmind\\docs\\v8\\walkthrough.md": {
+    "mtime": 1780235441.243367,
+    "hash": "7ea0b44c3ea469119844e852236ca140"
+  },
+  "D:\\starmind\\docs\\v9\\implementation_plan.md": {
+    "mtime": 1780235760.4552257,
+    "hash": "aa8badee965b96a45c2d85bef0137fe7"
+  },
+  "D:\\starmind\\docs\\v9\\task.md": {
+    "mtime": 1780235893.7988784,
+    "hash": "509414777d2add3ccfe6fe1bfc97ce40"
+  },
+  "D:\\starmind\\docs\\v9\\walkthrough.md": {
+    "mtime": 1780235905.100212,
+    "hash": "d0c1f5089c302eaf109505d57e57f64c"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\LaunchImage.imageset\\README.md": {
+    "mtime": 1765555860.9108672,
+    "hash": "f7ee1b402881509d197f34963e569927"
+  },
+  "D:\\starmind\\linux\\CMakeLists.txt": {
+    "mtime": 1779435471.8538854,
+    "hash": "94b6f32e8814c8a1300e1460cfe12770"
+  },
+  "D:\\starmind\\linux\\flutter\\CMakeLists.txt": {
+    "mtime": 1765555860.9264922,
+    "hash": "2195470ce31675d31db5a37590d011f6"
+  },
+  "D:\\starmind\\linux\\runner\\CMakeLists.txt": {
+    "mtime": 1765555860.92697,
+    "hash": "30cc1614b16214b66c014af09ba699eb"
+  },
+  "D:\\starmind\\memory\\build_strategy.md": {
+    "mtime": 1779534985.5812533,
+    "hash": "92cc95f5b86ec58f6069b1560a48ca4c"
+  },
+  "D:\\starmind\\prototype\\card_layout_dark.html": {
+    "mtime": 1780329085.908061,
+    "hash": "0d0f8a91a00ab02b698d86d210c22b1c"
+  },
+  "D:\\starmind\\prototype\\card_layout_light.html": {
+    "mtime": 1780329071.5464067,
+    "hash": "7d3b298c4d43b2951d6dee915c4c87d1"
+  },
+  "D:\\starmind\\prototype\\mindmap-preview.html": {
+    "mtime": 1781022929.5650704,
+    "hash": "2a805374106563429e37589bc36ea174"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\index.html": {
+    "mtime": 1779506054.4996693,
+    "hash": "876fc494ae90d505afad571f1e7a6e38"
+  },
+  "D:\\starmind\\prototype\\\u601d\u7ef4\u5bfc\u56fe\u9875\u9762\\index.html": {
+    "mtime": 1781023656.6380038,
+    "hash": "597860db7462eaa9de868c74bae3190c"
+  },
+  "D:\\starmind\\prototype\\\u9996\u9875\\index.html": {
+    "mtime": 1779460385.210835,
+    "hash": "5da592e7f52bb9f8ffa8c6bfc26a3799"
+  },
+  "D:\\starmind\\rust_builder\\pubspec.yaml": {
+    "mtime": 1779436290.5276554,
+    "hash": "44a28f81365b74a643249fdfc34aaab1"
+  },
+  "D:\\starmind\\rust_builder\\README.md": {
+    "mtime": 1779436290.446855,
+    "hash": "4de0f2c6be23bcbac81a821905c52618"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\analysis_options.yaml": {
+    "mtime": 1779436290.4834406,
+    "hash": "1239bf1a8d1b94d7720c6e1bf674ed11"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\pubspec.yaml": {
+    "mtime": 1779436290.51469,
+    "hash": "bd0c00f8aa6f5388b10385dfe89961ac"
+  },
+  "D:\\starmind\\rust_builder\\cargokit\\build_tool\\README.md": {
+    "mtime": 1779436290.4828403,
+    "hash": "18789f20b84b8e5e013a4b52bababa02"
+  },
+  "D:\\starmind\\rust_builder\\linux\\CMakeLists.txt": {
+    "mtime": 1779436290.5230043,
+    "hash": "0ba8a3a79e340004056dbdd29ba088e2"
+  },
+  "D:\\starmind\\rust_builder\\windows\\CMakeLists.txt": {
+    "mtime": 1780306777.2055142,
+    "hash": "ab3800bb0ae8adfd4b87a03c0753e485"
+  },
+  "D:\\starmind\\web\\index.html": {
+    "mtime": 1779435472.5038126,
+    "hash": "2a2d26489a955056f9b41ab08fd6f0e2"
+  },
+  "D:\\starmind\\windows\\CMakeLists.txt": {
+    "mtime": 1780305923.9425547,
+    "hash": "1d8112766b035705186f81c969ca80b3"
+  },
+  "D:\\starmind\\windows\\flutter\\CMakeLists.txt": {
+    "mtime": 1765555860.9426165,
+    "hash": "bbf66fed5180bd9ae8198b8d7c4a0001"
+  },
+  "D:\\starmind\\windows\\runner\\CMakeLists.txt": {
+    "mtime": 1765555860.9426165,
+    "hash": "028602ab9754bffe716659ada7590d29"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\res\\mipmap-hdpi\\ic_launcher.png": {
+    "mtime": 1765555860.907021,
+    "hash": "13e9c72ec37fac220397aa819fa1ef2d"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\res\\mipmap-mdpi\\ic_launcher.png": {
+    "mtime": 1765555860.907021,
+    "hash": "6270344430679711b81476e29878caa7"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\res\\mipmap-xhdpi\\ic_launcher.png": {
+    "mtime": 1765555860.9100292,
+    "hash": "a0a8db5985280b3679d99a820ae2db79"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\res\\mipmap-xxhdpi\\ic_launcher.png": {
+    "mtime": 1765555860.9100292,
+    "hash": "afe1b655b9f32da22f9a4301bb8e6ba8"
+  },
+  "D:\\starmind\\android\\app\\src\\main\\res\\mipmap-xxxhdpi\\ic_launcher.png": {
+    "mtime": 1765555860.9108672,
+    "hash": "57838d52c318faff743130c3fcfae0c6"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-1024x1024@1x.png": {
+    "mtime": 1773933774.2636764,
+    "hash": "c785f8932297af4acd5f5ccb7630f01c"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-20x20@1x.png": {
+    "mtime": 1773933774.264683,
+    "hash": "a2f8558fb1d42514111fbbb19fb67314"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-20x20@2x.png": {
+    "mtime": 1773933774.259661,
+    "hash": "2247a840b6ee72b8a069208af170e5b1"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-20x20@3x.png": {
+    "mtime": 1773933774.2666998,
+    "hash": "1b3b1538136316263c7092951e923e9d"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-29x29@1x.png": {
+    "mtime": 1773933774.272728,
+    "hash": "be8887071dd7ec39cb754d236aa9584f"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-29x29@2x.png": {
+    "mtime": 1773933774.2526383,
+    "hash": "043119ef4faa026ff82bd03f241e5338"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-29x29@3x.png": {
+    "mtime": 1773933774.2666998,
+    "hash": "2b1452c4c1bda6177b4fbbb832df217f"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-40x40@1x.png": {
+    "mtime": 1773933774.2546449,
+    "hash": "2247a840b6ee72b8a069208af170e5b1"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-40x40@2x.png": {
+    "mtime": 1773933774.2707205,
+    "hash": "8245359312aea1b0d2412f79a07b0ca5"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-40x40@3x.png": {
+    "mtime": 1773933774.2566524,
+    "hash": "5b3c0902200ce596e9848f22e1f0fe0e"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-60x60@2x.png": {
+    "mtime": 1773933774.2616673,
+    "hash": "5b3c0902200ce596e9848f22e1f0fe0e"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-60x60@3x.png": {
+    "mtime": 1773933774.2526383,
+    "hash": "e419d22a37bc40ba185aca1acb6d4ac6"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-76x76@1x.png": {
+    "mtime": 1773933774.2586615,
+    "hash": "36c0d7a7132bdde18898ffdfcfcdc4d2"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-76x76@2x.png": {
+    "mtime": 1773933774.2747357,
+    "hash": "643842917530acf4c5159ae851b0baf2"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Icon-App-83.5x83.5@2x.png": {
+    "mtime": 1773933774.2687123,
+    "hash": "665cb5e3c5729da6d639d26eff47a503"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\LaunchImage.imageset\\LaunchImage.png": {
+    "mtime": 1773933774.2506287,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\LaunchImage.imageset\\LaunchImage@2x.png": {
+    "mtime": 1773933774.2486148,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "D:\\starmind\\ios\\Runner\\Assets.xcassets\\LaunchImage.imageset\\LaunchImage@3x.png": {
+    "mtime": 1773933774.2465994,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_1024.png": {
+    "mtime": 1773933774.193943,
+    "hash": "c9becc9105f8cabce934d20c7bfb6aac"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_128.png": {
+    "mtime": 1773933774.1693573,
+    "hash": "3ded30823804caaa5ccc944067c54a36"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_16.png": {
+    "mtime": 1773933774.173951,
+    "hash": "8bf511604bc6ed0a6aeb380c5113fdcf"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_256.png": {
+    "mtime": 1773933774.2050562,
+    "hash": "dfe2c93d1536ae02f085cc63faa3430e"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_32.png": {
+    "mtime": 1773933774.175706,
+    "hash": "8e0ae58e362a6636bdfccbc04da2c58c"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_512.png": {
+    "mtime": 1773933774.171365,
+    "hash": "0ad44039155424738917502c69667699"
+  },
+  "D:\\starmind\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\app_icon_64.png": {
+    "mtime": 1773933774.1673486,
+    "hash": "04e7b6ef05346c70b663ca1d97de3ad5"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\1.jpg": {
+    "mtime": 1779503550.293347,
+    "hash": "1e0bf107ece13bebd61dbf9f27175aec"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\2.jpg": {
+    "mtime": 1779503550.7251902,
+    "hash": "c6eb7763e7542129f3bdcd435158038a"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\ref1.jpg": {
+    "mtime": 1779504205.1211386,
+    "hash": "1e0bf107ece13bebd61dbf9f27175aec"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\ref1_small.jpg": {
+    "mtime": 1779504336.828532,
+    "hash": "634514c67834f33c8e129d8ba35bcb3e"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\ref2.jpg": {
+    "mtime": 1779504205.2029092,
+    "hash": "c6eb7763e7542129f3bdcd435158038a"
+  },
+  "D:\\starmind\\prototype\\pdf\u6279\u6ce8\u9875\u9762\\ref2_small.jpg": {
+    "mtime": 1779504336.8305378,
+    "hash": "9c355a8aae3b2a29c68cd64a41ef054f"
+  },
+  "D:\\starmind\\prototype\\\u9996\u9875\\_cgi-bin_mmwebwx-bin_webwxgetmsgimg__&MsgID=3644674020257965294&skey=@crypt_96430c6d_8fe70673f915711edcbd8d9306c7aca3&mmweb_appid=wx_webfilehelper.jpg": {
+    "mtime": 1779454925.569396,
+    "hash": "236761ddee6a7b9af31c0f93eebf4c9a"
+  },
+  "D:\\starmind\\prototype\\\u9996\u9875\\_cgi-bin_mmwebwx-bin_webwxgetmsgimg__&MsgID=7285970093983293967&skey=@crypt_96430c6d_8fe70673f915711edcbd8d9306c7aca3&mmweb_appid=wx_webfilehelper.jpg": {
+    "mtime": 1779454924.4473865,
+    "hash": "6cc6dcf7ce51138e655efaf6d2a0195e"
+  },
+  "D:\\starmind\\web\\favicon.png": {
+    "mtime": 1765555860.92697,
+    "hash": "5dcef449791fa27946b3d35ad8803796"
+  },
+  "D:\\starmind\\web\\icons\\Icon-192.png": {
+    "mtime": 1765555860.92697,
+    "hash": "ac9a721a12bbc803b44f645561ecb1e1"
+  },
+  "D:\\starmind\\web\\icons\\Icon-512.png": {
+    "mtime": 1765555860.92697,
+    "hash": "96e752610906ba2a93c65f8abe1645f1"
+  },
+  "D:\\starmind\\web\\icons\\Icon-maskable-192.png": {
+    "mtime": 1773933774.4068098,
+    "hash": "c457ef57daa1d16f64b27b786ec2ea3c"
+  },
+  "D:\\starmind\\web\\icons\\Icon-maskable-512.png": {
+    "mtime": 1773933774.4048042,
+    "hash": "301a7604d45b3e739efc881eb04896ea"
   }
 }
