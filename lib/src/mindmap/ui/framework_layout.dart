@@ -67,16 +67,18 @@ class FrameworkLayout {
   }
 
   /// 计算所有节点的尺寸（自底向上递归）
-  void calculateNodeSizes(NoteTreeNode node) {
-    if (node.note.layoutStyle == 'framework') {
+  /// isFramework: 表示整个导图是否处于框架式布局模式
+  void calculateNodeSizes(NoteTreeNode node, {bool isFramework = true}) {
+    if (isFramework) {
+      // 框架模式下，所有节点都按框架样式处理
       for (final child in node.children) {
-        calculateNodeSizes(child);
+        calculateNodeSizes(child, isFramework: true);
       }
       _nodeSizes[node.note.id] = calculateFrameworkSize(node);
     } else {
       _nodeSizes[node.note.id] = Size(nodeWidth, nodeHeight);
       for (final child in node.children) {
-        calculateNodeSizes(child);
+        calculateNodeSizes(child, isFramework: false);
       }
     }
   }
@@ -171,10 +173,11 @@ class FrameworkLayout {
   }
 
   /// 计算框架式节点及其子节点的所有位置
-  Map<String, Offset> calculate(NoteTreeNode node, Offset origin) {
+  /// isFramework: 表示整个导图是否处于框架式布局模式
+  Map<String, Offset> calculate(NoteTreeNode node, Offset origin, {bool isFramework = true}) {
     final positions = <String, Offset>{};
 
-    calculateNodeSizes(node);
+    calculateNodeSizes(node, isFramework: isFramework);
 
     // origin 现在是节点中心坐标
     positions[node.note.id] = origin;
@@ -184,8 +187,8 @@ class FrameworkLayout {
 
     for (final child in node.children) {
       final childPos = positions[child.note.id];
-      if (childPos != null && child.note.layoutStyle == 'framework') {
-        final subPositions = calculate(child, childPos);
+      if (childPos != null && isFramework) {
+        final subPositions = calculate(child, childPos, isFramework: true);
         positions.addAll(subPositions);
       }
     }
@@ -196,13 +199,15 @@ class FrameworkLayout {
   /// 计算框架内部的连线
   ///
   /// positions 存储的是节点中心坐标
+  /// isFramework: 表示整个导图是否处于框架式布局模式
   List<Connection> calculateConnections(
     NoteTreeNode node,
-    Map<String, Offset> positions,
-  ) {
+    Map<String, Offset> positions, {
+    bool isFramework = true,
+  }) {
     final connections = <Connection>[];
 
-    if (node.note.layoutStyle != 'framework') {
+    if (!isFramework) {
       return connections;
     }
 
@@ -229,8 +234,8 @@ class FrameworkLayout {
         end: Offset(childCenter.dx, childCenter.dy - childSize.height / 2),
       ));
 
-      if (child.note.layoutStyle == 'framework') {
-        connections.addAll(calculateConnections(child, positions));
+      if (isFramework) {
+        connections.addAll(calculateConnections(child, positions, isFramework: true));
       }
     }
 

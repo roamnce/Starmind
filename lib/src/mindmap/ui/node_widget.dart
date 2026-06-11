@@ -1,6 +1,8 @@
-// lib/src/mindmap/ui/node_widget.dart
+﻿// lib/src/mindmap/ui/node_widget.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../utils/mindmap_colors.dart';
 import '../domain/note.dart';
 import 'mindmap_controller.dart';
 
@@ -11,9 +13,11 @@ class NodeWidget extends StatelessWidget {
   final Note note;
   final bool isSelected;
   final bool isCollapsed;
+  final bool isFrameworkNode;
   final VoidCallback onTap;
   final VoidCallback? onDoubleTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onSecondaryTap;  // 右键菜单（桌面端）
   final VoidCallback? onAddChild;
   final VoidCallback? onDelete;
   final VoidCallback? onToggleCollapse;
@@ -25,9 +29,11 @@ class NodeWidget extends StatelessWidget {
     required this.note,
     this.isSelected = false,
     this.isCollapsed = false,
+    this.isFrameworkNode = false,
     required this.onTap,
     this.onDoubleTap,
     this.onLongPress,
+    this.onSecondaryTap,
     this.onAddChild,
     this.onDelete,
     this.onToggleCollapse,
@@ -39,15 +45,13 @@ class NodeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    // 自定义金黄色选中状态
-    final accentColor = const Color(0xFFC8841A);
+    final accentColor = MindMapColors.accent;
 
     // 判断是否为被选中状态 (或者在控制器的多选列表中)
     final selected = isSelected || (controller != null && controller!.selectedNoteIds.contains(note.id));
 
-    // 新增：根据布局样式选择渲染方式
-    if (note.layoutStyle == 'framework') {
+    // 根据布局样式选择渲染方式（使用 topic 级布局状态）
+    if (isFrameworkNode) {
       return _buildFrameworkNode(context, theme, accentColor, selected);
     }
 
@@ -63,15 +67,16 @@ class NodeWidget extends StatelessWidget {
         onTap: onTap,
         onDoubleTap: onDoubleTap ?? onToggleCollapse,
         onLongPress: onLongPress,
+        onSecondaryTap: onSecondaryTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           width: w,
           height: h,
           decoration: BoxDecoration(
-            color: const Color(0x0DFFFFFF), // 半透明高质感背景
+            color: MindMapColors.nestedCardBackground,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? accentColor : const Color(0x40C8841A),
+              color: selected ? accentColor : MindMapColors.accentBorder,
               width: selected ? 2.5 : 1.5,
             ),
             boxShadow: [
@@ -90,7 +95,7 @@ class NodeWidget extends StatelessWidget {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0x1CC8841A) : const Color(0x0DFFFFFF),
+                  color: selected ? MindMapColors.accentSelectedHeader : MindMapColors.nestedCardBackground,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(11),
                     topRight: Radius.circular(11),
@@ -102,7 +107,7 @@ class NodeWidget extends StatelessWidget {
                     Icon(
                       Icons.grid_view_rounded,
                       size: 16,
-                      color: selected ? accentColor : const Color(0xFFC8841A).withOpacity(0.8),
+                      color: selected ? accentColor : MindMapColors.accent.withOpacity(0.8),
                     ),
                     const SizedBox(width: 8),
                     // 容器名称
@@ -144,18 +149,19 @@ class NodeWidget extends StatelessWidget {
       onTap: onTap,
       onDoubleTap: onDoubleTap ?? onToggleCollapse,
       onLongPress: onLongPress,
+      onSecondaryTap: onSecondaryTap,  // 右键菜单（桌面端）
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         width: customSize?.width,
         height: customSize?.height,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF242930), // 原型经典深灰色
+          color: MindMapColors.nodeBackground,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: selected 
                 ? accentColor 
-                : (isNestedCard ? const Color(0xFFC8841A).withOpacity(0.5) : const Color(0x15FFDC8C)),
+                : (isNestedCard ? MindMapColors.accent.withOpacity(0.5) : MindMapColors.nodeBorder),
             width: selected ? 2.0 : 1.0,
           ),
           boxShadow: [
@@ -181,7 +187,7 @@ class NodeWidget extends StatelessWidget {
               Icon(
                 Icons.grid_view_rounded,
                 size: 14,
-                color: selected ? accentColor : const Color(0xFFC8841A).withOpacity(0.8),
+                color: selected ? accentColor : MindMapColors.accent.withOpacity(0.8),
               ),
               const SizedBox(width: 6),
             ] else if (note.pdfId != null) ...[
@@ -195,16 +201,75 @@ class NodeWidget extends StatelessWidget {
             ],
             // 标题
             Flexible(
-              child: Text(
-                note.title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
-                  fontWeight: (selected || isNestedCard) ? FontWeight.w600 : FontWeight.normal,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: controller?.editingNoteId == note.id
+                  ? Shortcuts(
+                      shortcuts: const {
+                        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+                      },
+                      child: Actions(
+                        actions: {
+                          DismissIntent: CallbackAction<DismissIntent>(
+                            onInvoke: (_) {
+                              controller?.cancelEditing(note.id);
+                              return null;
+                            },
+                          ),
+                        },
+                        child: TextField(
+                          controller: TextEditingController(text: note.title)
+                            ..selection = TextSelection(
+                              baseOffset: 0,
+                              extentOffset: note.title.length,
+                            ),
+                          autofocus: true,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onSubmitted: (value) {
+                            controller?.commitEditing(note.id, value);
+                          },
+                        ),
+                      ),
+                    )
+                  : Text(
+                      note.title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: (selected || isNestedCard) ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
             ),
+            // 标签芯片（最多 3 个）
+            if (controller != null &&
+                controller!.tagsByNoteId.containsKey(note.id)) ...[
+              const SizedBox(width: 4),
+              ...controller!.tagsByNoteId[note.id]!.take(3).map((tag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC8841A).withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    tag.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFE8A83C),
+                      fontSize: 9,
+                    ),
+                  ),
+                );
+              }),
+            ],
             // 子节点数量
             if (note.childIds.isNotEmpty) ...[
               const SizedBox(width: 8),
@@ -217,7 +282,7 @@ class NodeWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                '${note.childIds.length}',
+                '',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -243,15 +308,16 @@ class NodeWidget extends StatelessWidget {
       onTap: onTap,
       onDoubleTap: onDoubleTap ?? onToggleCollapse,
       onLongPress: onLongPress,
+      onSecondaryTap: onSecondaryTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         width: w,
         height: h,
         decoration: BoxDecoration(
-          color: const Color(0x0DFFFFFF),
+          color: MindMapColors.nestedCardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? accentColor : const Color(0x25C8841A),
+            color: selected ? accentColor : MindMapColors.frameworkBorder,
             width: selected ? 2.5 : 1.5,
           ),
           boxShadow: [
@@ -269,7 +335,7 @@ class NodeWidget extends StatelessWidget {
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: selected ? const Color(0x1CC8841A) : const Color(0x0DFFFFFF),
+                color: selected ? MindMapColors.accentSelectedHeader : MindMapColors.nestedCardBackground,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(11),
                   topRight: Radius.circular(11),
@@ -280,7 +346,7 @@ class NodeWidget extends StatelessWidget {
                   Icon(
                     Icons.view_module_rounded,
                     size: 16,
-                    color: selected ? accentColor : const Color(0xFFC8841A).withOpacity(0.8),
+                    color: selected ? accentColor : MindMapColors.accent.withOpacity(0.8),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -314,3 +380,4 @@ class NodeWidget extends StatelessWidget {
     );
   }
 }
+

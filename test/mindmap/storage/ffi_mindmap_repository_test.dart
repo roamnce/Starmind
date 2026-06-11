@@ -3,6 +3,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:starmind/src/mindmap/domain/mindmap_relation.dart';
+import 'package:starmind/src/mindmap/domain/mindmap_summary.dart';
+import 'package:starmind/src/mindmap/domain/note.dart';
+import 'package:starmind/src/mindmap/domain/topic.dart';
 import 'package:starmind/src/mindmap/storage/ffi_mindmap_repository.dart';
 import 'package:starmind/src/rust/api/storage.dart';
 import 'package:starmind/src/rust/frb_generated.dart';
@@ -97,6 +101,33 @@ void main() {
         expect(topic!.isTrashed, isTrue);
       });
 
+      test(
+        'updateTopic inserts imported topic when it does not exist',
+        () async {
+          final now = DateTime.utc(2026, 6, 7);
+          final topic = Topic(
+            id: '0-imported-topic',
+            title: 'Imported GuruMind',
+            rootNoteIds: const ['1-root'],
+            createdAt: now,
+            updatedAt: now,
+          );
+
+          await repository.updateTopic(topic);
+
+          final retrieved = await repository.getTopic(topic.id);
+          expect(retrieved, isNotNull);
+          expect(retrieved!.title, equals('Imported GuruMind'));
+          expect(retrieved.rootNoteIds, equals(['1-root']));
+          expect(
+            (await repository.getAllTopics()).any(
+              (item) => item.id == topic.id,
+            ),
+            isTrue,
+          );
+        },
+      );
+
       test('getAllTopics returns only non-trashed topics', () async {
         final id1 = await repository.createTopic('活跃笔记本');
         final id2 = await repository.createTopic('已删除笔记本');
@@ -162,6 +193,31 @@ void main() {
 
         final note = await repository.getNote(id);
         expect(note, isNull);
+      });
+
+      test('updateNote inserts imported note when it does not exist', () async {
+        final now = DateTime.utc(2026, 6, 7);
+        final note = Note(
+          id: '1-imported-root',
+          topicId: topicId,
+          title: 'Imported Root',
+          childIds: const ['1-imported-child'],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await repository.updateNote(note);
+
+        final retrieved = await repository.getNote(note.id);
+        expect(retrieved, isNotNull);
+        expect(retrieved!.title, equals('Imported Root'));
+        expect(retrieved.childIds, equals(['1-imported-child']));
+        expect(
+          (await repository.getNotesByTopic(
+            topicId,
+          )).any((item) => item.id == note.id),
+          isTrue,
+        );
       });
     });
 
@@ -241,9 +297,7 @@ void main() {
         // 获取 pdfId 用于后续查询（待 API 扩展）
         // final pdfId = 'test-pdf-md5';
 
-        final updatedNote = note!.copyWith(
-          updatedAt: DateTime.now(),
-        );
+        final updatedNote = note!.copyWith(updatedAt: DateTime.now());
         await repository.updateNote(updatedNote);
 
         // 实际测试需要在创建时提供 pdfId

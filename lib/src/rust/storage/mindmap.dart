@@ -6,7 +6,107 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-/// Note (导图节点) 实体
+/// comment
+class MindMapRelation {
+  final String id;
+  final String topicId;
+  final String sourceNoteId;
+  final String targetNoteId;
+  final String text;
+  final String? controlPointsJson;
+  final String style;
+  final PlatformInt64 createdAt;
+  final PlatformInt64 updatedAt;
+
+  const MindMapRelation({
+    required this.id,
+    required this.topicId,
+    required this.sourceNoteId,
+    required this.targetNoteId,
+    required this.text,
+    this.controlPointsJson,
+    required this.style,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      topicId.hashCode ^
+      sourceNoteId.hashCode ^
+      targetNoteId.hashCode ^
+      text.hashCode ^
+      controlPointsJson.hashCode ^
+      style.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MindMapRelation &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          topicId == other.topicId &&
+          sourceNoteId == other.sourceNoteId &&
+          targetNoteId == other.targetNoteId &&
+          text == other.text &&
+          controlPointsJson == other.controlPointsJson &&
+          style == other.style &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
+}
+
+/// MindMap Summary entity
+class MindMapSummary {
+  final String id;
+  final String topicId;
+  final String parentId;
+  final int startIndex;
+  final int endIndex;
+  final String text;
+  final PlatformInt64 createdAt;
+  final PlatformInt64 updatedAt;
+
+  const MindMapSummary({
+    required this.id,
+    required this.topicId,
+    required this.parentId,
+    required this.startIndex,
+    required this.endIndex,
+    required this.text,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      topicId.hashCode ^
+      parentId.hashCode ^
+      startIndex.hashCode ^
+      endIndex.hashCode ^
+      text.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MindMapSummary &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          topicId == other.topicId &&
+          parentId == other.parentId &&
+          startIndex == other.startIndex &&
+          endIndex == other.endIndex &&
+          text == other.text &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
+}
+
+/// comment
 class Note {
   final String id;
   final String topicId;
@@ -106,7 +206,7 @@ class Note {
           syncVersion == other.syncVersion;
 }
 
-/// Topic (笔记本) 实体
+/// comment
 class Topic {
   final String id;
   final String title;
@@ -119,6 +219,8 @@ class Topic {
   final PlatformInt64? lastVisitAt;
   final bool isTrashed;
   final PlatformInt64 syncVersion;
+  final String layoutDirection;
+  final String layoutStyle;
 
   const Topic({
     required this.id,
@@ -132,6 +234,8 @@ class Topic {
     this.lastVisitAt,
     required this.isTrashed,
     required this.syncVersion,
+    required this.layoutDirection,
+    required this.layoutStyle,
   });
 
   @override
@@ -146,7 +250,9 @@ class Topic {
       updatedAt.hashCode ^
       lastVisitAt.hashCode ^
       isTrashed.hashCode ^
-      syncVersion.hashCode;
+      syncVersion.hashCode ^
+      layoutDirection.hashCode ^
+      layoutStyle.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -163,5 +269,7 @@ class Topic {
           updatedAt == other.updatedAt &&
           lastVisitAt == other.lastVisitAt &&
           isTrashed == other.isTrashed &&
-          syncVersion == other.syncVersion;
+          syncVersion == other.syncVersion &&
+          layoutDirection == other.layoutDirection &&
+          layoutStyle == other.layoutStyle;
 }

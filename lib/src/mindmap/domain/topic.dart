@@ -1,49 +1,49 @@
-﻿// lib/src/mindmap/domain/topic.dart
+// lib/src/mindmap/domain/topic.dart
 
-/// 思维导图笔记本（对应 MarginNote ZTOPIC）。
+/// ˼ά��ͼ�ʼǱ�����Ӧ MarginNote ZTOPIC����
 ///
-/// 设计依据：
-/// - MarginNote: 单文件笔记本模式
-/// - 支持多 PDF 关联（pdfIds）
-/// - ID前缀: "0-{UUID}" (GuruMind 风格)
+/// ������ݣ�
+/// - MarginNote: ���ļ��ʼǱ�ģʽ
+/// - ֧�ֶ� PDF ������pdfIds��
+/// - IDǰ׺: "0-{UUID}" (GuruMind ���)
 class Topic {
-  /// 笔记本 ID（格式 "0-{UUID}"）
+  /// �ʼǱ� ID����ʽ "0-{UUID}"��
   final String id;
 
-  /// 笔记本标题
+  /// �ʼǱ�����
   final String title;
 
-  /// 作者（可选）
+  /// ���ߣ���ѡ��
   final String? author;
 
-  /// 关联的 PDF 文档 MD5 列表（竖道分隔存储）
+  /// ������ PDF �ĵ� MD5 �б��������ָ��洢��
   final List<String> pdfIds;
 
-  /// 根节点 ID 列表（竖道分隔存储）
+  /// ���ڵ� ID �б��������ָ��洢��
   final List<String> rootNoteIds;
 
-  /// 布局方向: 'both', 'left', 'right' (默认 'both')
+  /// ���ַ���: 'both', 'left', 'right' (Ĭ�� 'both')
   final String layoutDirection;
 
-  /// 布局样式: 'tree', 'framework' (默认 'tree')
+  /// ������ʽ: 'tree', 'framework' (Ĭ�� 'tree')
   final String layoutStyle;
 
-  /// 缩略图路径
+  /// ����ͼ·��
   final String? thumbnailPath;
 
-  /// 创建时间
+  /// ����ʱ��
   final DateTime createdAt;
 
-  /// 更新时间
+  /// ����ʱ��
   final DateTime updatedAt;
 
-  /// 最后访问时间
+  /// ������ʱ��
   final DateTime? lastVisitAt;
 
-  /// 是否已删除
+  /// �Ƿ���ɾ��
   final bool isTrashed;
 
-  /// 同步版本号（USN 机制）
+  /// ͬ���汾�ţ�USN ���ƣ�
   final int syncVersion;
 
   const Topic({
@@ -62,7 +62,7 @@ class Topic {
     this.syncVersion = 0,
   });
 
-  /// 从数据库 Map 创建（支持竖道分隔字段）
+  /// �����ݿ� Map ������֧�������ָ��ֶΣ�
   factory Topic.fromMap(Map<String, dynamic> map) {
     return Topic(
       id: map['id'] as String,
@@ -83,7 +83,7 @@ class Topic {
     );
   }
 
-  /// 转换为数据库 Map（竖道分隔字段）
+  /// ת��Ϊ���ݿ� Map�������ָ��ֶΣ�
   Map<String, dynamic> toMap() => {
         'id': id,
         'title': title,
@@ -100,13 +100,13 @@ class Topic {
         'sync_version': syncVersion,
       };
 
-  /// 解析管道分隔字符串为列表
+  /// �����ܵ��ָ��ַ���Ϊ�б�
   static List<String> _parsePipedList(String? value) {
     if (value == null || value.isEmpty) return [];
     return value.split('|').where((s) => s.isNotEmpty).toList();
   }
 
-  /// 复制并更新字段
+  /// ���Ʋ������ֶ�
   Topic copyWith({
     String? title,
     List<String>? pdfIds,
@@ -117,6 +117,7 @@ class Topic {
     DateTime? updatedAt,
     DateTime? lastVisitAt,
     int? syncVersion,
+    bool? isTrashed,
   }) {
     return Topic(
       id: id,
@@ -130,7 +131,7 @@ class Topic {
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastVisitAt: lastVisitAt ?? this.lastVisitAt,
-      isTrashed: isTrashed,
+      isTrashed: isTrashed ?? this.isTrashed,
       syncVersion: syncVersion ?? this.syncVersion,
     );
   }

@@ -13,31 +13,20 @@ import 'tree_layout.dart';
 class BottomActionBar extends StatelessWidget {
   final MindMapController controller;
   final VoidCallback? onFitToScreen;
-  final VoidCallback? onShowAddChildDialog;
-  final VoidCallback? onShowAddSiblingDialog;
+  final VoidCallback? onAddChild;
+  final VoidCallback? onAddSibling;
   final VoidCallback? onAddNote;
+  final VoidCallback? onToggleTagPicker;
 
   const BottomActionBar({
     super.key,
     required this.controller,
     this.onFitToScreen,
-    this.onShowAddChildDialog,
-    this.onShowAddSiblingDialog,
+    this.onAddChild,
+    this.onAddSibling,
     this.onAddNote,
+    this.onToggleTagPicker,
   });
-
-  String _getLayoutText(LayoutDirection direction) {
-    switch (direction) {
-      case LayoutDirection.bothSides:
-        return '两侧布局';
-      case LayoutDirection.left:
-        return '左侧布局';
-      case LayoutDirection.horizontal:
-        return '右侧布局';
-      case LayoutDirection.vertical:
-        return '垂直布局';
-    }
-  }
 
   void _showLayoutMenu(BuildContext context, RenderBox button, RenderBox overlay) {
     final Offset buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
@@ -58,28 +47,35 @@ class BottomActionBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: Color(0x14FFDC8C), width: 1),
       ),
-      items: const [
+      items: [
         PopupMenuItem<String>(
           value: 'bothSides',
-          child: Text('两侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
+          child: Text('两侧布局', style: TextStyle(color: controller.layoutStyle == 'framework' ? const Color(0x40FFF8E6) : const Color(0xB3FFF8E6), fontSize: 13)),
         ),
         PopupMenuItem<String>(
           value: 'left',
-          child: Text('左侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
+          child: Text('左侧布局', style: TextStyle(color: controller.layoutStyle == 'framework' ? const Color(0x40FFF8E6) : const Color(0xB3FFF8E6), fontSize: 13)),
         ),
         PopupMenuItem<String>(
           value: 'horizontal',
-          child: Text('右侧布局', style: TextStyle(color: Color(0xB3FFF8E6), fontSize: 13)),
+          child: Text('右侧布局', style: TextStyle(color: controller.layoutStyle == 'framework' ? const Color(0x40FFF8E6) : const Color(0xB3FFF8E6), fontSize: 13)),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'framework',
+          child: Text('框架式布局', style: TextStyle(color: controller.layoutStyle == 'framework' ? const Color(0xFFE8A83C) : const Color(0xB3FFF8E6), fontSize: 13)),
         ),
       ],
     ).then((value) {
       if (value == null) return;
       if (value == 'bothSides') {
-        controller.changeLayoutDirection(LayoutDirection.bothSides);
+        controller.changeLayout(LayoutDirection.bothSides, 'tree');
       } else if (value == 'left') {
-        controller.changeLayoutDirection(LayoutDirection.left);
+        controller.changeLayout(LayoutDirection.left, 'tree');
       } else if (value == 'horizontal') {
-        controller.changeLayoutDirection(LayoutDirection.horizontal);
+        controller.changeLayout(LayoutDirection.horizontal, 'tree');
+      } else if (value == 'framework') {
+        controller.changeLayoutStyle('framework');
       }
     });
   }
@@ -125,20 +121,20 @@ class BottomActionBar extends StatelessWidget {
                 // 3. 添加子节点
                 _buildButton(
                   icon: Icons.add_circle_outline_rounded,
-                  onPressed: onShowAddChildDialog,
+                  onPressed: onAddChild,
                   tooltip: '添加子节点 (Tab)',
                 ),
                 // 4. 添加同级节点
                 _buildButton(
                   icon: Icons.control_point_duplicate_rounded,
-                  onPressed: onShowAddSiblingDialog,
+                  onPressed: onAddSibling,
                   tooltip: '添加同级节点 (Enter)',
                 ),
                 _buildDivider(),
                 // 5. 创建概要
                 _buildButton(
                   icon: Icons.subject_rounded,
-                  onPressed: null, // TODO: 实现创建概要
+                  onPressed: () => controller.createSummariesFromSelection(),
                   tooltip: '创建概要',
                 ),
                 // 6. 创建边框
@@ -150,13 +146,13 @@ class BottomActionBar extends StatelessWidget {
                 // 7. 关联线
                 _buildButton(
                   icon: Icons.link_rounded,
-                  onPressed: null, // TODO: 实现关联线
+                  onPressed: () => controller.startRelationCreation(),
                   tooltip: '关联线',
                 ),
                 // 8. 创建标签
                 _buildButton(
                   icon: Icons.local_offer_outlined,
-                  onPressed: null, // TODO: 实现创建标签
+                  onPressed: onToggleTagPicker,
                   tooltip: '创建标签',
                 ),
                 _buildDivider(),

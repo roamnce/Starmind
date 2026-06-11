@@ -270,3 +270,107 @@ Future<InkLayerRecord?> mindmapGetInkLayer({
 
 Future<void> mindmapDeleteInkLayer({required String id}) =>
     RustLib.instance.api.crateApiStorageMindmapDeleteInkLayer(id: id);
+
+Future<String> mindmapCreateRelation({
+  required String topicId,
+  required String sourceNoteId,
+  required String targetNoteId,
+  required String text,
+}) => RustLib.instance.api.crateApiStorageMindmapCreateRelation(
+  topicId: topicId,
+  sourceNoteId: sourceNoteId,
+  targetNoteId: targetNoteId,
+  text: text,
+);
+
+Future<MindMapRelation?> mindmapGetRelation({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetRelation(id: id);
+
+Future<void> mindmapUpdateRelation({required MindMapRelation relation}) =>
+    RustLib.instance.api.crateApiStorageMindmapUpdateRelation(
+      relation: relation,
+    );
+
+Future<void> mindmapDeleteRelation({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapDeleteRelation(id: id);
+
+Future<List<MindMapRelation>> mindmapListRelations({required String topicId}) =>
+    RustLib.instance.api.crateApiStorageMindmapListRelations(topicId: topicId);
+
+Future<MindMapRelation?> mindmapFindRelationByEndpoints({
+  required String topicId,
+  required String sourceNoteId,
+  required String targetNoteId,
+}) => RustLib.instance.api.crateApiStorageMindmapFindRelationByEndpoints(
+  topicId: topicId,
+  sourceNoteId: sourceNoteId,
+  targetNoteId: targetNoteId,
+);
+
+Future<void> mindmapDeleteRelationsForNote({required String noteId}) => RustLib
+    .instance
+    .api
+    .crateApiStorageMindmapDeleteRelationsForNote(noteId: noteId);
+
+Future<String> mindmapCreateSummary({
+  required String topicId,
+  required String parentId,
+  required int startIndex,
+  required int endIndex,
+  required String text,
+}) => RustLib.instance.api.crateApiStorageMindmapCreateSummary(
+  topicId: topicId,
+  parentId: parentId,
+  startIndex: startIndex,
+  endIndex: endIndex,
+  text: text,
+);
+
+Future<MindMapSummary?> mindmapGetSummary({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapGetSummary(id: id);
+
+Future<void> mindmapUpdateSummary({required MindMapSummary summary}) =>
+    RustLib.instance.api.crateApiStorageMindmapUpdateSummary(summary: summary);
+
+Future<void> mindmapDeleteSummary({required String id}) =>
+    RustLib.instance.api.crateApiStorageMindmapDeleteSummary(id: id);
+
+Future<List<MindMapSummary>> mindmapListSummaries({required String topicId}) =>
+    RustLib.instance.api.crateApiStorageMindmapListSummaries(topicId: topicId);
+
+Future<void> mindmapDeleteSummariesForNote({required String noteId}) => RustLib
+    .instance
+    .api
+    .crateApiStorageMindmapDeleteSummariesForNote(noteId: noteId);
+
+Future<void> mindmapBindTagToNote({
+  required String noteId,
+  required String tagId,
+}) => RustLib.instance.api.crateApiStorageMindmapBindTagToNote(
+  noteId: noteId,
+  tagId: tagId,
+);
+
+Future<void> mindmapUnbindTagFromNote({
+  required String noteId,
+  required String tagId,
+}) => RustLib.instance.api.crateApiStorageMindmapUnbindTagFromNote(
+  noteId: noteId,
+  tagId: tagId,
+);
+
+Future<List<String>> mindmapListTagIdsForNote({required String noteId}) =>
+    RustLib.instance.api.crateApiStorageMindmapListTagIdsForNote(
+      noteId: noteId,
+    );
+
+Future<Map<String, List<String>>> mindmapListTagIdsForTopic({
+  required String topicId,
+}) => RustLib.instance.api.crateApiStorageMindmapListTagIdsForTopic(
+  topicId: topicId,
+);
+
+Future<void> mindmapDeleteNoteTagBindingsForNote({required String noteId}) =>
+    RustLib.instance.api.crateApiStorageMindmapDeleteNoteTagBindingsForNote(
+      noteId: noteId,
+    );

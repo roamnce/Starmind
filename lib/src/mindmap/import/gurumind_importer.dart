@@ -1,5 +1,7 @@
 ﻿import 'dart:io';
 
+import '../domain/mindmap_relation.dart';
+import '../domain/mindmap_summary.dart';
 import '../domain/note.dart';
 import '../domain/topic.dart';
 import '../storage/mindmap_repository.dart';
@@ -71,12 +73,55 @@ class GuruMindImporter {
       for (final note in notes) {
         await _repository.updateNote(note);
       }
+
+      await _importRelations(manifest.rawManifest, topic.id);
+      await _importSummaries(manifest.rawManifest, topic.id);
+      await _importNodeTags(manifest.rawManifest);
+
       await _copyResources(archive, manifest.assetPaths);
       return ImportResult(topic: topic, notes: notes);
     } on ImportException catch (error) {
       return ImportResult(error: error);
     } catch (error) {
       return ImportResult(error: ImportException('Import failed', details: error.toString()));
+    }
+  }
+
+  Future<void> _importRelations(Map<String, dynamic> rawManifest, String topicId) async {
+    final relationMaps = _converter.relationsFromDocument(rawManifest, topicId: topicId);
+    for (final relMap in relationMaps) {
+      final relation = MindMapRelation.fromMap(relMap);
+      await _repository.createRelation(
+        topicId: relation.topicId,
+        sourceNoteId: relation.sourceNoteId,
+        targetNoteId: relation.targetNoteId,
+        text: relation.text,
+      );
+    }
+  }
+
+  Future<void> _importSummaries(Map<String, dynamic> rawManifest, String topicId) async {
+    final summaryMaps = _converter.summariesFromDocument(rawManifest, topicId: topicId);
+    for (final sumMap in summaryMaps) {
+      final summary = MindMapSummary.fromMap(sumMap);
+      await _repository.createSummary(
+        topicId: summary.topicId,
+        parentId: summary.parentId,
+        startIndex: summary.startIndex,
+        endIndex: summary.endIndex,
+        text: summary.text,
+      );
+    }
+  }
+
+  Future<void> _importNodeTags(Map<String, dynamic> rawManifest) async {
+    final noteTagNames = _converter.noteTagNamesFromDocument(rawManifest);
+    for (final entry in noteTagNames.entries) {
+      final noteId = entry.key;
+      for (final tagName in entry.value) {
+        final tagId = await _repository.createTag(tagName, null, null);
+        await _repository.bindTagToNote(noteId: noteId, tagId: tagId);
+      }
     }
   }
 

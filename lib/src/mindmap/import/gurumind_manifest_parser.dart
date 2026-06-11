@@ -9,12 +9,14 @@ class GuruMindManifest {
     required this.notePaths,
     this.meta = const {},
     this.assetPaths = const [],
+    this.rawManifest = const {},
   });
 
   final String topicPath;
   final List<String> notePaths;
   final Map<String, dynamic> meta;
   final List<String> assetPaths;
+  final Map<String, dynamic> rawManifest;
 }
 
 class GuruMindManifestParser {
@@ -48,7 +50,7 @@ class GuruMindManifestParser {
     final metaPath = '$metaDirectory/meta.json';
     final metaBytes = archive[metaPath] ?? archive['meta.json'];
     final meta = metaBytes == null ? <String, dynamic>{} : Map<String, dynamic>.from(jsonDecode(utf8.decode(metaBytes)) as Map);
-    return GuruMindManifest(topicPath: topicPath, notePaths: notePaths, assetPaths: assetPaths, meta: meta);
+    return GuruMindManifest(topicPath: topicPath, notePaths: notePaths, assetPaths: assetPaths, meta: meta, rawManifest: manifest);
   }
 
   String _findHivePath(GuruMindArchive archive, String prefix) {

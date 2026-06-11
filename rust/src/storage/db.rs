@@ -1,4 +1,4 @@
-// 🤖 Generated wholly or partially with Gemini Code; Google Antigravity
+﻿// Generated with Gemini Code; Google Antigravity
 use once_cell::sync::Lazy;
 use rusqlite::Connection;
 use std::sync::Mutex;
@@ -119,11 +119,23 @@ pub fn init_db(db_path: &str) -> Result<(), String> {
             updated_at INTEGER NOT NULL,
             last_visit_at INTEGER,
             is_trashed INTEGER DEFAULT 0,
-            sync_version INTEGER DEFAULT 0
+            sync_version INTEGER DEFAULT 0,
+            layout_direction TEXT DEFAULT 'both',
+            layout_style TEXT DEFAULT 'tree'
         )
         "#,
         [],
     ).map_err(|e| format!("Failed to create mindmap_topics table: {}", e))?;
+
+    // Add layout columns if they don't exist (migration for existing databases)
+    let _ = conn.execute(
+        "ALTER TABLE mindmap_topics ADD COLUMN layout_direction TEXT DEFAULT 'both';",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE mindmap_topics ADD COLUMN layout_style TEXT DEFAULT 'tree';",
+        [],
+    );
 
     // MindMap Notes table
     conn.execute(
@@ -171,6 +183,83 @@ pub fn init_db(db_path: &str) -> Result<(), String> {
         "CREATE INDEX IF NOT EXISTS idx_notes_pdf ON mindmap_notes(pdf_id)",
         [],
     ).map_err(|e| format!("Failed to create idx_notes_pdf index: {}", e))?;
+
+    // MindMap Relations table (关联线)
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS mindmap_relations (
+            id TEXT PRIMARY KEY,
+            topic_id TEXT NOT NULL,
+            source_note_id TEXT NOT NULL,
+            target_note_id TEXT NOT NULL,
+            text TEXT NOT NULL DEFAULT '关联',
+            control_points_json TEXT,
+            style TEXT NOT NULL DEFAULT 'solid',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(topic_id, source_note_id, target_note_id),
+            FOREIGN KEY(topic_id) REFERENCES mindmap_topics(id) ON DELETE CASCADE,
+            FOREIGN KEY(source_note_id) REFERENCES mindmap_notes(id) ON DELETE CASCADE,
+            FOREIGN KEY(target_note_id) REFERENCES mindmap_notes(id) ON DELETE CASCADE
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create mindmap_relations table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mindmap_relations_topic ON mindmap_relations(topic_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_mindmap_relations_topic index: {}", e))?;
+
+    // MindMap Summaries table (概要节点)
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS mindmap_summaries (
+            id TEXT PRIMARY KEY,
+            topic_id TEXT NOT NULL,
+            parent_id TEXT NOT NULL,
+            start_index INTEGER NOT NULL,
+            end_index INTEGER NOT NULL,
+            text TEXT NOT NULL DEFAULT '概要',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(topic_id, parent_id, start_index, end_index),
+            FOREIGN KEY(topic_id) REFERENCES mindmap_topics(id) ON DELETE CASCADE,
+            FOREIGN KEY(parent_id) REFERENCES mindmap_notes(id) ON DELETE CASCADE
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create mindmap_summaries table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mindmap_summaries_topic ON mindmap_summaries(topic_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_mindmap_summaries_topic index: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mindmap_summaries_parent ON mindmap_summaries(parent_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_mindmap_summaries_parent index: {}", e))?;
+
+    // MindMap Note Tags table (节点标签绑定)
+    conn.execute(
+        r#"
+        CREATE TABLE IF NOT EXISTS mindmap_note_tags (
+            note_id TEXT NOT NULL,
+            tag_id TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY(note_id, tag_id),
+            FOREIGN KEY(note_id) REFERENCES mindmap_notes(id) ON DELETE CASCADE,
+            FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )
+        "#,
+        [],
+    ).map_err(|e| format!("Failed to create mindmap_note_tags table: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mindmap_note_tags_note ON mindmap_note_tags(note_id)",
+        [],
+    ).map_err(|e| format!("Failed to create idx_mindmap_note_tags_note index: {}", e))?;
 
     // MindMap Ink Layers table
     conn.execute(

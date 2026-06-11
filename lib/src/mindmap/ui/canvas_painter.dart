@@ -1,5 +1,6 @@
 // lib/src/mindmap/ui/canvas_painter.dart
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../layout/layout_result.dart';
 import '../rendering/connection_renderer.dart';
@@ -8,6 +9,56 @@ import '../rendering/straight_renderer.dart';
 import '../rendering/ortho_renderer.dart';
 import 'mindmap_controller.dart' show LineStyle;
 import 'tree_layout.dart' show Connection;
+
+/// 关联线绘制数据
+class AssociativeRelationPaintData {
+  final String id;
+  final String sourceId;
+  final String targetId;
+  final Offset startPoint;
+  final Offset endPoint;
+  final Offset labelCenter;
+  final String text;
+  final bool isSelected;
+
+  const AssociativeRelationPaintData({
+    required this.id,
+    required this.sourceId,
+    required this.targetId,
+    required this.startPoint,
+    required this.endPoint,
+    required this.labelCenter,
+    required this.text,
+    required this.isSelected,
+  });
+}
+
+/// 概要括线绘制数据
+class SummaryPaintData {
+  final String id;
+  final String parentId;
+  final int startIndex;
+  final int endIndex;
+  final Offset topPoint;  // 覆盖范围顶部锚点
+  final Offset bottomPoint;  // 覆盖范围底部锚点
+  final Offset labelPoint;  // 概要标签位置
+  final String text;
+  final bool isSelected;
+  final bool isRightward;  // 括线方向：true=向右，false=向左
+
+  const SummaryPaintData({
+    required this.id,
+    required this.parentId,
+    required this.startIndex,
+    required this.endIndex,
+    required this.topPoint,
+    required this.bottomPoint,
+    required this.labelPoint,
+    required this.text,
+    required this.isSelected,
+    this.isRightward = true,
+  });
+}
 
 /// MindMap canvas painter.
 ///
@@ -23,6 +74,12 @@ class MindMapCanvasPainter extends CustomPainter {
 
   /// Legacy connections list (backward compatibility)
   final List<Connection>? connections;
+
+  /// 关联线数据
+  final List<AssociativeRelationPaintData> associativeRelations;
+
+  /// 概要括线数据
+  final List<SummaryPaintData> summaries;
 
   /// Connection style (from rendering module)
   final ConnectionStyle? connectionStyle;
@@ -48,12 +105,17 @@ class MindMapCanvasPainter extends CustomPainter {
   /// Rainbow branch colors
   final bool isRainbowBranch;
 
+  /// Layout direction (for summary bracket direction)
+  final String? layoutDirection;
+
   /// Renderer cache
   final Map<ConnectionStyle, ConnectionRenderer> _renderers = {};
 
   MindMapCanvasPainter({
     this.layoutResult,
     this.connections,
+    this.associativeRelations = const [],
+    this.summaries = const [],
     this.connectionStyle,
     this.lineStyle,
     this.lineColor = const Color(0xFFC8841A),
@@ -62,6 +124,7 @@ class MindMapCanvasPainter extends CustomPainter {
     this.gridSize = 40.0,
     this.gridColor = const Color(0x05FFFFFF),
     this.isRainbowBranch = false,
+    this.layoutDirection,
   }) {
     _renderers[ConnectionStyle.bezier] = BezierConnectionRenderer();
     _renderers[ConnectionStyle.straight] = StraightConnectionRenderer();
@@ -126,6 +189,168 @@ class MindMapCanvasPainter extends CustomPainter {
         renderer.render(canvas, connData, config);
       }
     }
+
+    // 绘制关联线
+    for (final relation in associativeRelations) {
+      _drawAssociativeLine(canvas, relation);
+    }
+
+    // 绘制概要括线
+    for (final summary in summaries) {
+      _drawSummaryBracket(canvas, summary);
+    }
+  }
+
+  /// 绘制关联线（带箭头）
+  void _drawAssociativeLine(Canvas canvas, AssociativeRelationPaintData data) {
+    final paint = Paint()
+      ..color = data.isSelected
+          ? const Color(0xFFE8A83C)
+          : const Color(0xFF8B7355)
+      ..strokeWidth = data.isSelected ? 2.5 : 1.8
+      ..style = PaintingStyle.stroke;
+
+    // 绘制贝塞尔曲线
+    final path = Path();
+    final start = data.startPoint;
+    final end = data.endPoint;
+    final midX = (start.dx + end.dx) / 2;
+
+    path.moveTo(start.dx, start.dy);
+    path.cubicTo(
+      midX, start.dy,
+      midX, end.dy,
+      end.dx, end.dy,
+    );
+    canvas.drawPath(path, paint);
+
+    // 绘制箭头
+    _drawArrowHead(canvas, end, start, paint);
+
+    // 选中时绘制控制点
+    if (data.isSelected) {
+      final controlPaint = Paint()
+        ..color = const Color(0xFFE8A83C)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(start, 4, controlPaint);
+      canvas.drawCircle(end, 4, controlPaint);
+    }
+  }
+
+  /// 绘制箭头
+  void _drawArrowHead(Canvas canvas, Offset tip, Offset from, Paint paint) {
+    final arrowPaint = Paint()
+      ..color = paint.color
+      ..style = PaintingStyle.fill;
+
+    final angle = math.atan2(tip.dy - from.dy, tip.dx - from.dx);
+    const arrowAngle = math.pi / 6;
+    const arrowLength = 10.0;
+
+    final path = Path();
+    path.moveTo(tip.dx, tip.dy);
+    path.lineTo(
+      tip.dx - arrowLength * math.cos(angle - arrowAngle),
+      tip.dy - arrowLength * math.sin(angle - arrowAngle),
+    );
+    path.lineTo(
+      tip.dx - arrowLength * math.cos(angle + arrowAngle),
+      tip.dy - arrowLength * math.sin(angle + arrowAngle),
+    );
+    path.close();
+    canvas.drawPath(path, arrowPaint);
+  }
+
+  /// 绘制概要括线（直角折线）
+  ///
+  /// 根据布局方向确定括线方向：
+  /// - right: 括线在右侧，向右延伸
+  /// - left: 括线在左侧，向左延伸
+  /// - both: 根据节点位置判断
+  void _drawSummaryBracket(Canvas canvas, SummaryPaintData data) {
+    final paint = Paint()
+      ..color = data.isSelected
+          ? const Color(0xFFE8A83C)
+          : const Color(0xFF8B7355)
+      ..strokeWidth = data.isSelected ? 2.5 : 1.8
+      ..style = PaintingStyle.stroke;
+
+    final top = data.topPoint;
+    final bottom = data.bottomPoint;
+    final label = data.labelPoint;
+
+    // 使用概要数据中的方向（已根据子节点位置计算）
+    final isRightward = data.isRightward;
+
+    // 计算括线的水平延伸距离
+    const bracketExtension = 20.0;
+
+    final path = Path();
+
+    if (isRightward) {
+      // 向右延伸的括线
+      // 从顶部向下
+      path.moveTo(top.dx, top.dy);
+      path.lineTo(top.dx + bracketExtension, top.dy);
+      path.lineTo(top.dx + bracketExtension, bottom.dy);
+      path.lineTo(bottom.dx, bottom.dy);
+
+      // 连接到标签
+      path.moveTo(top.dx + bracketExtension, (top.dy + bottom.dy) / 2);
+      path.lineTo(label.dx, label.dy);
+    } else {
+      // 向左延伸的括线
+      path.moveTo(top.dx, top.dy);
+      path.lineTo(top.dx - bracketExtension, top.dy);
+      path.lineTo(top.dx - bracketExtension, bottom.dy);
+      path.lineTo(bottom.dx, bottom.dy);
+
+      // 连接到标签
+      path.moveTo(top.dx - bracketExtension, (top.dy + bottom.dy) / 2);
+      path.lineTo(label.dx, label.dy);
+    }
+
+    canvas.drawPath(path, paint);
+
+    // 绘制概要文本背景
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: data.text,
+        style: TextStyle(
+          color: data.isSelected ? const Color(0xFFE8A83C) : const Color(0xFF8B7355),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    // 绘制文本背景
+    final textRect = Rect.fromCenter(
+      center: label,
+      width: textPainter.width + 12,
+      height: textPainter.height + 6,
+    );
+    final bgPaint = Paint()
+      ..color = const Color(0xFF1C1710)
+      ..style = PaintingStyle.fill;
+    final bgRRect = RRect.fromRectAndRadius(textRect, const Radius.circular(4));
+    canvas.drawRRect(bgRRect, bgPaint);
+
+    // 绘制边框
+    final borderPaint = Paint()
+      ..color = data.isSelected
+          ? const Color(0xFFE8A83C)
+          : const Color(0x33FFDC8C)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawRRect(bgRRect, borderPaint);
+
+    // 绘制文本
+    textPainter.paint(
+      canvas,
+      Offset(label.dx - textPainter.width / 2, label.dy - textPainter.height / 2),
+    );
   }
 
   /// Draw grid background
@@ -175,6 +400,30 @@ class MindMapCanvasPainter extends CustomPainter {
       }
     }
 
+    // Compare associative relations
+    if (associativeRelations.length != oldDelegate.associativeRelations.length) {
+      return true;
+    }
+    for (int i = 0; i < associativeRelations.length; i++) {
+      if (associativeRelations[i].isSelected != oldDelegate.associativeRelations[i].isSelected ||
+          associativeRelations[i].text != oldDelegate.associativeRelations[i].text) {
+        return true;
+      }
+    }
+
+    // Compare summaries
+    if (summaries.length != oldDelegate.summaries.length) {
+      return true;
+    }
+    for (int i = 0; i < summaries.length; i++) {
+      if (summaries[i].isSelected != oldDelegate.summaries[i].isSelected ||
+          summaries[i].text != oldDelegate.summaries[i].text ||
+          summaries[i].startIndex != oldDelegate.summaries[i].startIndex ||
+          summaries[i].endIndex != oldDelegate.summaries[i].endIndex) {
+        return true;
+      }
+    }
+
     return layoutResult != oldDelegate.layoutResult ||
         connections != oldDelegate.connections ||
         connectionStyle != oldDelegate.connectionStyle ||
@@ -184,6 +433,7 @@ class MindMapCanvasPainter extends CustomPainter {
         showGrid != oldDelegate.showGrid ||
         gridSize != oldDelegate.gridSize ||
         gridColor != oldDelegate.gridColor ||
-        isRainbowBranch != oldDelegate.isRainbowBranch;
+        isRainbowBranch != oldDelegate.isRainbowBranch ||
+        layoutDirection != oldDelegate.layoutDirection;
   }
 }

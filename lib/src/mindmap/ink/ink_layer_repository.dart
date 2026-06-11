@@ -3,6 +3,7 @@ import 'dart:io';
 
 import '../../rust/api/storage.dart' as frb_api;
 import '../../rust/storage/ink_layers.dart' as frb;
+import '../../utils/type_conversion.dart';
 import 'ink_layer.dart';
 
 abstract class InkLayerRepository {
@@ -37,8 +38,8 @@ class FfiInkLayerRepository implements InkLayerRepository {
       ownerId: record.ownerId,
       strokes: strokes,
       zIndex: record.zIndex,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(record.createdAt),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(record.updatedAt),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(record.createdAt)),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(record.updatedAt)),
     );
   }
 
@@ -49,8 +50,8 @@ class FfiInkLayerRepository implements InkLayerRepository {
       ownerId: layer.ownerId,
       strokesJson: layer.strokesJson,
       zIndex: layer.zIndex,
-      createdAt: layer.createdAt.millisecondsSinceEpoch,
-      updatedAt: layer.updatedAt.millisecondsSinceEpoch,
+      createdAt: intToI64(layer.createdAt.millisecondsSinceEpoch),
+      updatedAt: intToI64(layer.updatedAt.millisecondsSinceEpoch),
     );
   }
 }

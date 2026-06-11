@@ -6,7 +6,7 @@ pub use crate::storage::folders::FolderNode;
 pub use crate::storage::tags::TagNode;
 pub use crate::storage::documents::DocumentInfo;
 pub use crate::storage::annotations::{AnnotationRecord, AnnotationType, AnnotationRect, InkPoint, InkStroke};
-pub use crate::storage::mindmap::{Topic, Note};
+pub use crate::storage::mindmap::{Topic, Note, MindMapRelation, MindMapSummary};
 pub use crate::storage::ink_layers::InkLayerRecord;
 
 static SANDBOX_DIR: OnceCell<String> = OnceCell::new();
@@ -259,4 +259,97 @@ pub fn mindmap_get_ink_layer(owner_id: String, layer_type: String) -> Result<Opt
 
 pub fn mindmap_delete_ink_layer(id: String) -> Result<(), String> {
     crate::storage::ink_layers::delete_ink_layer(id)
+}
+
+// ============== Relation APIs ==============
+
+pub fn mindmap_create_relation(
+    topic_id: String,
+    source_note_id: String,
+    target_note_id: String,
+    text: String,
+) -> Result<String, String> {
+    crate::storage::mindmap::create_relation(topic_id, source_note_id, target_note_id, text)
+}
+
+pub fn mindmap_get_relation(id: String) -> Result<Option<MindMapRelation>, String> {
+    crate::storage::mindmap::get_relation(id)
+}
+
+pub fn mindmap_update_relation(relation: MindMapRelation) -> Result<(), String> {
+    crate::storage::mindmap::update_relation(relation)
+}
+
+pub fn mindmap_delete_relation(id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_relation(id)
+}
+
+pub fn mindmap_list_relations(topic_id: String) -> Result<Vec<MindMapRelation>, String> {
+    crate::storage::mindmap::list_relations(topic_id)
+}
+
+pub fn mindmap_find_relation_by_endpoints(
+    topic_id: String,
+    source_note_id: String,
+    target_note_id: String,
+) -> Result<Option<MindMapRelation>, String> {
+    crate::storage::mindmap::find_relation_by_endpoints(topic_id, source_note_id, target_note_id)
+}
+
+pub fn mindmap_delete_relations_for_note(note_id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_relations_for_note(note_id)
+}
+
+// ==================== Summary CRUD ====================
+
+pub fn mindmap_create_summary(
+    topic_id: String,
+    parent_id: String,
+    start_index: i32,
+    end_index: i32,
+    text: String,
+) -> Result<String, String> {
+    crate::storage::mindmap::create_summary(topic_id, parent_id, start_index, end_index, text)
+}
+
+pub fn mindmap_get_summary(id: String) -> Result<Option<MindMapSummary>, String> {
+    crate::storage::mindmap::get_summary(id)
+}
+
+pub fn mindmap_update_summary(summary: MindMapSummary) -> Result<(), String> {
+    crate::storage::mindmap::update_summary(summary)
+}
+
+pub fn mindmap_delete_summary(id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_summary(id)
+}
+
+pub fn mindmap_list_summaries(topic_id: String) -> Result<Vec<MindMapSummary>, String> {
+    crate::storage::mindmap::list_summaries(topic_id)
+}
+
+pub fn mindmap_delete_summaries_for_note(note_id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_summaries_for_note(note_id)
+}
+
+// ==================== Note-Tag Binding ====================
+
+pub fn mindmap_bind_tag_to_note(note_id: String, tag_id: String) -> Result<(), String> {
+    crate::storage::mindmap::bind_tag_to_note(note_id, tag_id)
+}
+
+pub fn mindmap_unbind_tag_from_note(note_id: String, tag_id: String) -> Result<(), String> {
+    crate::storage::mindmap::unbind_tag_from_note(note_id, tag_id)
+}
+
+pub fn mindmap_list_tag_ids_for_note(note_id: String) -> Result<Vec<String>, String> {
+    crate::storage::mindmap::list_tag_ids_for_note(note_id)
+}
+
+pub fn mindmap_list_tag_ids_for_topic(topic_id: String) -> Result<std::collections::HashMap<String, Vec<String>>, String> {
+    crate::storage::mindmap::list_tag_ids_for_topic(topic_id)
+}
+
+pub fn mindmap_delete_note_tag_bindings_for_note(note_id: String) -> Result<(), String> {
+    crate::storage::mindmap::delete_note_tag_bindings_for_note(note_id)
 }

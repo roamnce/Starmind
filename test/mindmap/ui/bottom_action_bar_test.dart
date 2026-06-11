@@ -33,8 +33,8 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
-              onShowAddChildDialog: () {},
-              onShowAddSiblingDialog: () {},
+              onAddChild: () {},
+              onAddSibling: () {},
               onAddNote: () {},
             ),
           ),
@@ -65,8 +65,8 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
-              onShowAddChildDialog: () {},
-              onShowAddSiblingDialog: () {},
+              onAddChild: () {},
+              onAddSibling: () {},
               onAddNote: () {},
             ),
           ),
@@ -95,8 +95,8 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
-              onShowAddChildDialog: () {},
-              onShowAddSiblingDialog: () {},
+              onAddChild: () {},
+              onAddSibling: () {},
               onAddNote: () {},
             ),
           ),
@@ -127,8 +127,8 @@ void main() {
             builder: (_, __) => BottomActionBar(
               controller: controller,
               onFitToScreen: () {},
-              onShowAddChildDialog: () {},
-              onShowAddSiblingDialog: () {},
+              onAddChild: () {},
+              onAddSibling: () {},
               onAddNote: () {},
             ),
           ),
@@ -170,13 +170,14 @@ void main() {
       controller.selectNote(rootNode);
       await tester.pumpAndSettle();
 
-      // 1. With unlock, tab key should open the dialog
+      // 1. With unlock, tab key should create child and enter inline editing
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(find.text('Create Child Node'), findsOneWidget);
+      expect(controller.editingNoteId, isNotNull);
+      expect(find.byType(TextField), findsOneWidget);
 
-      // Cancel the dialog
-      await tester.tap(find.text('Cancel'));
+      // Cancel editing via Escape
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
 
       // 2. Lock the editor via controller
@@ -184,16 +185,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.isLocked, isTrue);
 
-      // 3. With lock, tab key should be ignored and dialog not shown
+      // 3. With lock, tab key should be ignored
+      final noteCountBefore = controller.noteTree.length;
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(find.text('Create Child Node'), findsNothing);
-
-      // 4. With lock, tapping FAB should show lock message toast and not open dialog
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-      expect(find.text('Create Child Node'), findsNothing);
-      expect(find.text('思维导图已锁定，无法编辑'), findsOneWidget);
+      expect(controller.noteTree.length, equals(noteCountBefore));
     });
   });
 }

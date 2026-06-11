@@ -133,4 +133,221 @@ void main() {
       expect(notes2.length, 1);
     });
   });
+
+  group('Relation CRUD', () {
+    test('relation CRUD prevents same-direction duplicates', () async {
+      final topicId = await repository.createTopic('topic');
+      final sourceId = await repository.createNote(topicId, 'source');
+      await Future.delayed(const Duration(milliseconds: 10));
+      final targetId = await repository.createNote(topicId, 'target');
+
+      final created = await repository.createRelation(
+        topicId: topicId,
+        sourceNoteId: sourceId,
+        targetNoteId: targetId,
+      );
+      final duplicate = await repository.createRelation(
+        topicId: topicId,
+        sourceNoteId: sourceId,
+        targetNoteId: targetId,
+      );
+      await Future.delayed(const Duration(milliseconds: 10));
+      final reverse = await repository.createRelation(
+        topicId: topicId,
+        sourceNoteId: targetId,
+        targetNoteId: sourceId,
+      );
+
+      expect(duplicate, created);
+      expect(reverse, isNot(created));
+      expect(await repository.listRelations(topicId), hasLength(2));
+    });
+
+    test('deleting a note removes connected relations', () async {
+      final topicId = await repository.createTopic('topic');
+      final sourceId = await repository.createNote(topicId, 'source');
+      await Future.delayed(const Duration(milliseconds: 10));
+      final targetId = await repository.createNote(topicId, 'target');
+      await repository.createRelation(
+        topicId: topicId,
+        sourceNoteId: sourceId,
+        targetNoteId: targetId,
+      );
+
+      await repository.deleteNote(targetId);
+
+      expect(await repository.listRelations(topicId), isEmpty);
+    });
+
+    test('updateRelation persists text changes', () async {
+      final topicId = await repository.createTopic('topic');
+      final sourceId = await repository.createNote(topicId, 'source');
+      await Future.delayed(const Duration(milliseconds: 10));
+      final targetId = await repository.createNote(topicId, 'target');
+
+      final id = await repository.createRelation(
+        topicId: topicId,
+        sourceNoteId: sourceId,
+        targetNoteId: targetId,
+      );
+
+      final relation = await repository.getRelation(id);
+      await repository.updateRelation(relation!.copyWith(text: 'depends on'));
+
+      final updated = await repository.getRelation(id);
+      expect(updated!.text, 'depends on');
+    });
+  });
+
+  group('Summary CRUD', () {
+    test('summary CRUD prevents duplicate ranges', () async {
+      final topicId = await repository.createTopic('topic');
+      final parentId = await repository.createNote(topicId, 'parent');
+      await Future.delayed(const Duration(milliseconds: 10));
+      await repository.createNote(topicId, 'child1');
+      await Future.delayed(const Duration(milliseconds: 10));
+      await repository.createNote(topicId, 'child2');
+
+      final first = await repository.createSummary(
+        topicId: topicId,
+        parentId: parentId,
+        startIndex: 0,
+        endIndex: 1,
+      );
+      final duplicate = await repository.createSummary(
+        topicId: topicId,
+        parentId: parentId,
+        startIndex: 0,
+        endIndex: 1,
+      );
+
+      expect(duplicate, first);
+      expect(await repository.listSummaries(topicId), hasLength(1));
+    });
+
+    test('deleting a parent note removes its summaries', () async {
+      final topicId = await repository.createTopic('topic');
+      final parentId = await repository.createNote(topicId, 'parent');
+      await Future.delayed(const Duration(milliseconds: 10));
+      await repository.createNote(topicId, 'child1');
+
+      await repository.createSummary(
+        topicId: topicId,
+        parentId: parentId,
+        startIndex: 0,
+        endIndex: 0,
+      );
+
+      await repository.deleteNote(parentId);
+
+      expect(await repository.listSummaries(topicId), isEmpty);
+    });
+
+    test('listSummaries returns sorted by parent then start index', () async {
+      final topicId = await repository.createTopic('topic');
+      final parent1 = await repository.createNote(topicId, 'parent1');
+      await Future.delayed(const Duration(milliseconds: 10));
+      final parent2 = await repository.createNote(topicId, 'parent2');
+
+      await repository.createSummary(
+        topicId: topicId,
+        parentId: parent2,
+        startIndex: 0,
+        endIndex: 0,
+      );
+      await Future.delayed(const Duration(milliseconds: 10));
+      await repository.createSummary(
+        topicId: topicId,
+        parentId: parent1,
+        startIndex: 1,
+        endIndex: 2,
+      );
+      await Future.delayed(const Duration(milliseconds: 10));
+      await repository.createSummary(
+        topicId: topicId,
+        parentId: parent1,
+        startIndex: 0,
+        endIndex: 0,
+      );
+
+      final summaries = await repository.listSummaries(topicId);
+      expect(summaries, hasLength(3));
+      expect(summaries[0].parentId, parent1);
+      expect(summaries[0].startIndex, 0);
+      expect(summaries[1].parentId, parent1);
+      expect(summaries[1].startIndex, 1);
+      expect(summaries[2].parentId, parent2);
+    });
+  });
+
+  group('Tag Binding', () {
+    test('bindTagToNote and listTagIdsForNote', () async {
+      final topicId = await repository.createTopic('topic');
+      final noteId = await repository.createNote(topicId, 'note');
+      final tagId = await repository.createTag('标签1', null, '#FF6B6B');
+
+      await repository.bindTagToNote(noteId: noteId, tagId: tagId);
+
+      final tagIds = await repository.listTagIdsForNote(noteId);
+      expect(tagIds, contains(tagId));
+    });
+
+    test('unbindTagFromNote removes binding', () async {
+      final topicId = await repository.createTopic('topic');
+      final noteId = await repository.createNote(topicId, 'note');
+      final tagId = await repository.createTag('标签1', null, '#FF6B6B');
+
+      await repository.bindTagToNote(noteId: noteId, tagId: tagId);
+      await repository.unbindTagFromNote(noteId: noteId, tagId: tagId);
+
+      final tagIds = await repository.listTagIdsForNote(noteId);
+      expect(tagIds, isEmpty);
+    });
+
+    test('deleteNoteTagBindingsForNote removes all bindings', () async {
+      final topicId = await repository.createTopic('topic');
+      final noteId = await repository.createNote(topicId, 'note');
+      final tag1 = await repository.createTag('标签1', null, '#FF6B6B');
+      final tag2 = await repository.createTag('标签2', null, '#6BCB77');
+
+      await repository.bindTagToNote(noteId: noteId, tagId: tag1);
+      await repository.bindTagToNote(noteId: noteId, tagId: tag2);
+
+      await repository.deleteNoteTagBindingsForNote(noteId);
+
+      final tagIds = await repository.listTagIdsForNote(noteId);
+      expect(tagIds, isEmpty);
+    });
+
+    test('getTagTree returns hierarchical tags', () async {
+      final parentId = await repository.createTag('父标签', null, '#FF6B6B');
+      final childId = await repository.createTag('子标签', parentId, '#6BCB77');
+
+      final tree = await repository.getTagTree();
+
+      // 树中应包含父标签和子标签
+      expect(tree.children, isNotEmpty);
+
+      // 查找父标签
+      final parentTag = tree.children.firstWhere((t) => t.id == parentId, orElse: () => tree);
+      expect(parentTag.name, '父标签');
+      expect(parentTag.children.any((t) => t.id == childId), isTrue);
+    });
+
+    test('note can have multiple tags', () async {
+      final topicId = await repository.createTopic('topic');
+      final noteId = await repository.createNote(topicId, 'note');
+      final tag1 = await repository.createTag('标签1', null, '#FF6B6B');
+      final tag2 = await repository.createTag('标签2', null, '#6BCB77');
+      final tag3 = await repository.createTag('标签3', null, '#4D96FF');
+
+      await repository.bindTagToNote(noteId: noteId, tagId: tag1);
+      await repository.bindTagToNote(noteId: noteId, tagId: tag2);
+      await repository.bindTagToNote(noteId: noteId, tagId: tag3);
+
+      final tagIds = await repository.listTagIdsForNote(noteId);
+      expect(tagIds.length, 3);
+      expect(tagIds, containsAll([tag1, tag2, tag3]));
+    });
+  });
 }

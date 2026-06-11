@@ -1,4 +1,4 @@
-ï»¿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../layout/layout_engine.dart';
 import '../../layout/tree_layout_engine.dart';
 import '../../layout/layout_config.dart';
@@ -7,17 +7,17 @@ import '../../rendering/connection_renderer.dart';
 import '../../service/mindmap_service.dart';
 import '../tree_layout.dart' show LayoutDirection;
 
-/// å¯¼å›¾çº¿æ ·å¼
+/// µ¼Í¼ÏßÑùÊ½
 enum LineStyle {
   bezier,
   straight,
   ortho,
 }
 
-/// å¸ƒå±€çŠ¶æ€ä¸è®¡ç®—ã€‚
+/// ²¼¾Ö×´Ì¬Óë¼ÆËã¡£
 ///
-/// ç®¡ç†å¸ƒå±€å¼•æ“ã€å¸ƒå±€ç»“æœã€å¸ƒå±€æ–¹å‘ç­‰ã€‚
-/// æ·±åº¦æ¨¡å—ï¼šå¸ƒå±€ç®—æ³•å¤æ‚åº¦éšè—åœ¨æ¥å£èƒŒåã€‚
+/// ¹ÜÀí²¼¾ÖÒıÇæ¡¢²¼¾Ö½á¹û¡¢²¼¾Ö·½ÏòµÈ¡£
+/// Éî¶ÈÄ£¿é£º²¼¾ÖËã·¨¸´ÔÓ¶ÈÒş²ØÔÚ½Ó¿Ú±³ºó¡£
 class MindMapLayoutController extends ChangeNotifier {
   final LayoutEngine _layoutEngine = const TreeLayoutEngine();
 
@@ -35,31 +35,31 @@ class MindMapLayoutController extends ChangeNotifier {
   String get layoutStyle => _layoutStyle;
   LayoutResult? get result => _cachedResult;
 
-  /// è®¾ç½®æ˜¯å¦ä½¿ç”¨æ–°å¸ƒå±€å¼•æ“
+  /// ÉèÖÃÊÇ·ñÊ¹ÓÃĞÂ²¼¾ÖÒıÇæ
   void setUseNewLayoutEngine(bool value) {
     _useNewLayoutEngine = value;
     notifyListeners();
   }
 
-  /// è®¾ç½®å¸ƒå±€æ–¹å‘
+  /// ÉèÖÃ²¼¾Ö·½Ïò
   void setDirection(LayoutDirection value) {
     _direction = value;
     notifyListeners();
   }
 
-  /// è®¾ç½®è¿çº¿æ ·å¼
+  /// ÉèÖÃÁ¬ÏßÑùÊ½
   void setConnectionStyle(ConnectionStyle value) {
     _connectionStyle = value;
     notifyListeners();
   }
 
-  /// è®¾ç½®å¯¼å›¾çº¿æ ·å¼
+  /// ÉèÖÃµ¼Í¼ÏßÑùÊ½
   void setLineStyle(LineStyle value) {
     _lineStyle = value;
     notifyListeners();
   }
 
-  /// è®¾ç½®å¸ƒå±€æ ·å¼ ('tree' or 'framework')
+  /// ÉèÖÃ²¼¾ÖÑùÊ½ ('tree' or 'framework')
   void setLayoutStyle(String value) {
     if (value == 'tree' || value == 'framework') {
       _layoutStyle = value;
@@ -67,12 +67,12 @@ class MindMapLayoutController extends ChangeNotifier {
     }
   }
 
-  /// æ¸…é™¤ç¼“å­˜çš„å¸ƒå±€ç»“æœ
+  /// Çå³ı»º´æµÄ²¼¾Ö½á¹û
   void clearCache() {
     _cachedResult = null;
   }
 
-  /// é‡æ–°è®¡ç®—å¸ƒå±€
+  /// ÖØĞÂ¼ÆËã²¼¾Ö
   void recalculate(List<NoteTreeNode> noteTree) {
     if (noteTree.isEmpty) {
       _cachedResult = null;
@@ -144,7 +144,7 @@ class MindMapLayoutController extends ChangeNotifier {
       case LayoutDirection.bothSides:
         return LayoutStrategy.bothSides;
       case LayoutDirection.horizontal:
-      case LayoutDirection.right:
+      
         return LayoutStrategy.rightOnly;
       case LayoutDirection.left:
         return LayoutStrategy.leftOnly;

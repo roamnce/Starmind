@@ -92,5 +92,81 @@ void main() {
       expect(conn.start.dy, equals(rootPos.dy));
       expect(conn.end.dy, equals(childPos.dy));
     });
+
+    test('right layout long title anchor touches node right edge', () {
+      final layout = const TreeLayout();
+      final child = NoteTreeNode(
+        note: Note(
+          id: '1-child',
+          topicId: '0-topic',
+          title: 'This is a very long node title that should be wider than default',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final root = NoteTreeNode(
+        note: Note(
+          id: '1-root',
+          topicId: '0-topic',
+          title: 'Root',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        children: [child],
+      );
+
+      final positions = layout.calculate(root);
+      final connections = layout.calculateConnections(root, positions);
+      final conn = connections.first;
+
+      final rootPos = positions['1-root']!;
+      final childPos = positions['1-child']!;
+      final rootSize = layout.nodeSizes['1-root'] ?? const Size(120, 40);
+      final childSize = layout.nodeSizes['1-child'] ?? const Size(120, 40);
+
+      // 右侧布局：父节点右边缘 = 子节点左边缘
+      expect(conn.start.dx, equals(rootPos.dx + rootSize.width / 2));
+      expect(conn.end.dx, equals(childPos.dx - childSize.width / 2));
+      expect(conn.start.dy, equals(rootPos.dy));
+      expect(conn.end.dy, equals(childPos.dy));
+    });
+
+    test('left layout long title anchor touches node left edge', () {
+      final layout = const TreeLayout(direction: LayoutDirection.left);
+      final child = NoteTreeNode(
+        note: Note(
+          id: '1-child',
+          topicId: '0-topic',
+          title: 'This is a very long node title that should be wider than default',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final root = NoteTreeNode(
+        note: Note(
+          id: '1-root',
+          topicId: '0-topic',
+          title: 'Root',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        children: [child],
+      );
+
+      final positions = layout.calculate(root);
+      final connections = layout.calculateConnections(root, positions);
+      final conn = connections.first;
+
+      final rootPos = positions['1-root']!;
+      final childPos = positions['1-child']!;
+      final rootSize = layout.nodeSizes['1-root'] ?? const Size(120, 40);
+      final childSize = layout.nodeSizes['1-child'] ?? const Size(120, 40);
+
+      // 左侧布局：父节点左边缘 = 子节点右边缘
+      expect(conn.start.dx, equals(rootPos.dx - rootSize.width / 2));
+      expect(conn.end.dx, equals(childPos.dx + childSize.width / 2));
+      expect(conn.start.dy, equals(rootPos.dy));
+      expect(conn.end.dy, equals(childPos.dy));
+    });
   });
 }

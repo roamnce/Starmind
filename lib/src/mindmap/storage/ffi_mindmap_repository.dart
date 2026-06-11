@@ -1,12 +1,16 @@
-// lib/src/mindmap/storage/ffi_mindmap_repository.dart
+﻿// lib/src/mindmap/storage/ffi_mindmap_repository.dart
 
 import 'dart:convert';
 
 import '../domain/topic.dart';
 import '../domain/note.dart';
+import '../domain/mindmap_relation.dart';
+import '../domain/mindmap_summary.dart';
 import 'mindmap_repository.dart';
 import '../../rust/frb_generated.dart';
 import '../../rust/storage/mindmap.dart' as frb;
+import '../../rust/storage/tags.dart' show TagNode;
+import '../../utils/type_conversion.dart';
 
 /// FFI 仓库适配器（生产环境）。
 ///
@@ -135,13 +139,21 @@ class FfiMindMapRepository implements MindMapRepository {
       pdfIds: _parsePipedList(frbTopic.pdfIds),
       rootNoteIds: _parsePipedList(frbTopic.rootNoteIds),
       thumbnailPath: frbTopic.thumbnailPath,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(frbTopic.createdAt),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(frbTopic.updatedAt),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        i64ToInt(frbTopic.createdAt),
+      ),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(
+        i64ToInt(frbTopic.updatedAt),
+      ),
       lastVisitAt: frbTopic.lastVisitAt != null
-          ? DateTime.fromMillisecondsSinceEpoch(frbTopic.lastVisitAt!)
+          ? DateTime.fromMillisecondsSinceEpoch(
+              i64ToInt(frbTopic.lastVisitAt!),
+            )
           : null,
       isTrashed: frbTopic.isTrashed,
-      syncVersion: frbTopic.syncVersion,
+      syncVersion: i64ToInt(frbTopic.syncVersion),
+      layoutDirection: frbTopic.layoutDirection,
+      layoutStyle: frbTopic.layoutStyle,
     );
   }
 
@@ -154,11 +166,15 @@ class FfiMindMapRepository implements MindMapRepository {
       pdfIds: topic.pdfIds.isEmpty ? null : topic.pdfIds.join('|'),
       rootNoteIds: topic.rootNoteIds.isEmpty ? null : topic.rootNoteIds.join('|'),
       thumbnailPath: topic.thumbnailPath,
-      createdAt: topic.createdAt.millisecondsSinceEpoch,
-      updatedAt: topic.updatedAt.millisecondsSinceEpoch,
-      lastVisitAt: topic.lastVisitAt?.millisecondsSinceEpoch,
+      createdAt: intToI64(topic.createdAt.millisecondsSinceEpoch),
+      updatedAt: intToI64(topic.updatedAt.millisecondsSinceEpoch),
+      lastVisitAt: topic.lastVisitAt != null
+          ? intToI64(topic.lastVisitAt!.millisecondsSinceEpoch)
+          : null,
       isTrashed: topic.isTrashed,
-      syncVersion: topic.syncVersion,
+      syncVersion: intToI64(topic.syncVersion),
+      layoutDirection: topic.layoutDirection,
+      layoutStyle: topic.layoutStyle,
     );
   }
 
@@ -169,9 +185,6 @@ class FfiMindMapRepository implements MindMapRepository {
       topicId: frbNote.topicId,
       parentId: frbNote.parentId,
       title: frbNote.title,
-      // contentJson 在 Note 模型中通过 NoteContent 解析
-      // 这里暂不处理，因为 FFI 生成的是 String 类型
-      // 实际使用时需要在 Note.fromMap 中处理
       childIds: _parsePipedList(frbNote.childIds),
       pdfId: frbNote.pdfId,
       startPage: frbNote.startPage,
@@ -185,9 +198,13 @@ class FfiMindMapRepository implements MindMapRepository {
       positionY: frbNote.positionY,
       zIndex: frbNote.zIndex,
       isCollapsed: frbNote.isCollapsed,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(frbNote.createdAt),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(frbNote.updatedAt),
-      syncVersion: frbNote.syncVersion,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        i64ToInt(frbNote.createdAt),
+      ),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(
+        i64ToInt(frbNote.updatedAt),
+      ),
+      syncVersion: i64ToInt(frbNote.syncVersion),
     );
   }
 
@@ -214,9 +231,9 @@ class FfiMindMapRepository implements MindMapRepository {
       positionY: note.positionY,
       zIndex: note.zIndex,
       isCollapsed: note.isCollapsed,
-      createdAt: note.createdAt.millisecondsSinceEpoch,
-      updatedAt: note.updatedAt.millisecondsSinceEpoch,
-      syncVersion: note.syncVersion,
+      createdAt: intToI64(note.createdAt.millisecondsSinceEpoch),
+      updatedAt: intToI64(note.updatedAt.millisecondsSinceEpoch),
+      syncVersion: intToI64(note.syncVersion),
     );
   }
 
@@ -224,5 +241,227 @@ class FfiMindMapRepository implements MindMapRepository {
   List<String> _parsePipedList(String? value) {
     if (value == null || value.isEmpty) return [];
     return value.split('|').where((s) => s.isNotEmpty).toList();
+  }
+
+  // ==================== Relation CRUD ====================
+
+  @override
+  Future<String> createRelation({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+    String text = defaultRelationText,
+  }) async {
+    return await _api.crateApiStorageMindmapCreateRelation(
+      topicId: topicId,
+      sourceNoteId: sourceNoteId,
+      targetNoteId: targetNoteId,
+      text: text,
+    );
+  }
+
+  @override
+  Future<MindMapRelation?> getRelation(String id) async {
+    final result = await _api.crateApiStorageMindmapGetRelation(id: id);
+    return result != null ? _convertRelation(result) : null;
+  }
+
+  @override
+  Future<void> updateRelation(MindMapRelation relation) async {
+    await _api.crateApiStorageMindmapUpdateRelation(
+      relation: _convertToFrbRelation(relation),
+    );
+  }
+
+  @override
+  Future<void> deleteRelation(String id) async {
+    await _api.crateApiStorageMindmapDeleteRelation(id: id);
+  }
+
+  @override
+  Future<List<MindMapRelation>> listRelations(String topicId) async {
+    final results = await _api.crateApiStorageMindmapListRelations(topicId: topicId);
+    return results.map(_convertRelation).toList();
+  }
+
+  @override
+  Future<MindMapRelation?> findRelationByEndpoints({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+  }) async {
+    final result = await _api.crateApiStorageMindmapFindRelationByEndpoints(
+      topicId: topicId,
+      sourceNoteId: sourceNoteId,
+      targetNoteId: targetNoteId,
+    );
+    return result != null ? _convertRelation(result) : null;
+  }
+
+  @override
+  Future<void> deleteRelationsForNote(String noteId) async {
+    await _api.crateApiStorageMindmapDeleteRelationsForNote(noteId: noteId);
+  }
+
+  /// 将 FFI Relation 转换为 Domain Relation
+  MindMapRelation _convertRelation(frb.MindMapRelation relation) {
+    return MindMapRelation(
+      id: relation.id,
+      topicId: relation.topicId,
+      sourceNoteId: relation.sourceNoteId,
+      targetNoteId: relation.targetNoteId,
+      text: relation.text,
+      controlPoints: relation.controlPointsJson == null || relation.controlPointsJson!.isEmpty
+          ? const []
+          : (jsonDecode(relation.controlPointsJson!) as List)
+              .map((item) => RelationControlPoint.fromJson(
+                  Map<String, dynamic>.from(item as Map)))
+              .toList(),
+      style: relation.style,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(relation.createdAt)),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(relation.updatedAt)),
+    );
+  }
+
+  /// 将 Domain Relation 转换为 FFI Relation
+  frb.MindMapRelation _convertToFrbRelation(MindMapRelation relation) {
+    return frb.MindMapRelation(
+      id: relation.id,
+      topicId: relation.topicId,
+      sourceNoteId: relation.sourceNoteId,
+      targetNoteId: relation.targetNoteId,
+      text: relation.text,
+      controlPointsJson: relation.controlPoints.isEmpty
+          ? null
+          : jsonEncode(relation.controlPoints.map((p) => p.toJson()).toList()),
+      style: relation.style,
+      createdAt: intToI64(relation.createdAt.millisecondsSinceEpoch),
+      updatedAt: intToI64(relation.updatedAt.millisecondsSinceEpoch),
+    );
+  }
+
+  // ==================== Summary CRUD ====================
+
+  @override
+  Future<String> createSummary({
+    required String topicId,
+    required String parentId,
+    required int startIndex,
+    required int endIndex,
+    String text = defaultSummaryText,
+  }) async {
+    return await _api.crateApiStorageMindmapCreateSummary(
+      topicId: topicId,
+      parentId: parentId,
+      startIndex: startIndex,
+      endIndex: endIndex,
+      text: text,
+    );
+  }
+
+  @override
+  Future<MindMapSummary?> getSummary(String id) async {
+    final result = await _api.crateApiStorageMindmapGetSummary(id: id);
+    return result != null ? _convertSummary(result) : null;
+  }
+
+  @override
+  Future<void> updateSummary(MindMapSummary summary) async {
+    await _api.crateApiStorageMindmapUpdateSummary(
+      summary: _convertToFrbSummary(summary),
+    );
+  }
+
+  @override
+  Future<void> deleteSummary(String id) async {
+    await _api.crateApiStorageMindmapDeleteSummary(id: id);
+  }
+
+  @override
+  Future<List<MindMapSummary>> listSummaries(String topicId) async {
+    final results = await _api.crateApiStorageMindmapListSummaries(topicId: topicId);
+    return results.map(_convertSummary).toList();
+  }
+
+  @override
+  Future<void> deleteSummariesForNote(String noteId) async {
+    await _api.crateApiStorageMindmapDeleteSummariesForNote(noteId: noteId);
+  }
+
+  /// 将 FFI Summary 转换为 Domain Summary
+  MindMapSummary _convertSummary(frb.MindMapSummary summary) {
+    return MindMapSummary(
+      id: summary.id,
+      topicId: summary.topicId,
+      parentId: summary.parentId,
+      startIndex: summary.startIndex,
+      endIndex: summary.endIndex,
+      text: summary.text,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(summary.createdAt)),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(i64ToInt(summary.updatedAt)),
+    );
+  }
+
+  /// 将 Domain Summary 转换为 FFI Summary
+  frb.MindMapSummary _convertToFrbSummary(MindMapSummary summary) {
+    return frb.MindMapSummary(
+      id: summary.id,
+      topicId: summary.topicId,
+      parentId: summary.parentId,
+      startIndex: summary.startIndex,
+      endIndex: summary.endIndex,
+      text: summary.text,
+      createdAt: intToI64(summary.createdAt.millisecondsSinceEpoch),
+      updatedAt: intToI64(summary.updatedAt.millisecondsSinceEpoch),
+    );
+  }
+
+  // ==================== Note-Tag Binding ====================
+
+  @override
+  Future<void> bindTagToNote({required String noteId, required String tagId}) async {
+    await _api.crateApiStorageMindmapBindTagToNote(
+      noteId: noteId,
+      tagId: tagId,
+    );
+  }
+
+  @override
+  Future<void> unbindTagFromNote({required String noteId, required String tagId}) async {
+    await _api.crateApiStorageMindmapUnbindTagFromNote(
+      noteId: noteId,
+      tagId: tagId,
+    );
+  }
+
+  @override
+  Future<List<String>> listTagIdsForNote(String noteId) async {
+    return await _api.crateApiStorageMindmapListTagIdsForNote(noteId: noteId);
+  }
+
+  @override
+  Future<Map<String, List<String>>> listTagIdsForTopic(String topicId) async {
+    return await _api.crateApiStorageMindmapListTagIdsForTopic(topicId: topicId);
+  }
+
+  @override
+  Future<void> deleteNoteTagBindingsForNote(String noteId) async {
+    await _api.crateApiStorageMindmapDeleteNoteTagBindingsForNote(noteId: noteId);
+  }
+
+  // ==================== Tag Tree ====================
+
+  @override
+  Future<TagNode> getTagTree() async {
+    return await RustLib.instance.api.crateApiStorageGetTagTree();
+  }
+
+  @override
+  Future<String> createTag(String name, String? parentId, String? colorHex) async {
+    return await RustLib.instance.api.crateApiStorageCreateTag(
+      name: name,
+      parentId: parentId,
+      colorHex: colorHex,
+    );
   }
 }

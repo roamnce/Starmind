@@ -85,5 +85,8 @@ void main() {
 
       expect(controller.viewportScale, greaterThan(initialScale));
     });
+
+    // TODO(v15): InteractiveViewer 拦截了画布内节点的 tap 事件，
+    // 需要在 InteractiveViewer 外层处理手势分发后才能测试节点点击选择和空白画布取消选择。
   });
 }

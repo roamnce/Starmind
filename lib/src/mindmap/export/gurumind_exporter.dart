@@ -5,6 +5,8 @@ import 'package:archive/archive_io.dart';
 
 import '../domain/note.dart';
 import '../domain/topic.dart';
+import '../domain/mindmap_relation.dart';
+import '../domain/mindmap_summary.dart';
 import '../import/gurumind_data_converter.dart';
 import 'export_exception.dart';
 import 'hive_encoder.dart';
@@ -23,6 +25,9 @@ class GuruMindDataExporter {
     required String outputPath,
     List<String> assetPaths = const [],
     List<int>? thumbnailBytes,
+    List<MindMapRelation> relations = const [],
+    List<MindMapSummary> summaries = const [],
+    Map<String, List<String>> tagsByNoteId = const {},
   }) async {
     if (!outputPath.endsWith('.gurumind')) {
       throw ExportException('Output path must end with .gurumind', details: outputPath);
@@ -93,6 +98,22 @@ class GuruMindDataExporter {
       'assets': exportedAssets,
       'thumbnail': thumbnailPath,
     };
+
+    // 关联线
+    if (relations.isNotEmpty) {
+      manifest['relations'] = relations.map((r) => r.toMap()).toList();
+    }
+
+    // 概要
+    if (summaries.isNotEmpty) {
+      manifest['summaries'] = summaries.map((s) => s.toMap()).toList();
+    }
+
+    // 节点标签
+    if (tagsByNoteId.isNotEmpty) {
+      manifest['nodeTags'] = tagsByNoteId;
+    }
+
     _addJsonFile(archive, 'manifest.json', manifest);
 
     final encoded = ZipEncoder().encode(archive);

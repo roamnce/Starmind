@@ -72,7 +72,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 2022454548;
+  int get rustContentHash => 455815949;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -196,10 +196,30 @@ abstract class RustLibApi extends BaseApi {
     required String childId,
   });
 
+  Future<void> crateApiStorageMindmapBindTagToNote({
+    required String noteId,
+    required String tagId,
+  });
+
   Future<String> crateApiStorageMindmapCreateNote({
     required String topicId,
     required String title,
     String? parentId,
+  });
+
+  Future<String> crateApiStorageMindmapCreateRelation({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+    required String text,
+  });
+
+  Future<String> crateApiStorageMindmapCreateSummary({
+    required String topicId,
+    required String parentId,
+    required int startIndex,
+    required int endIndex,
+    required String text,
   });
 
   Future<String> crateApiStorageMindmapCreateTopic({
@@ -210,6 +230,28 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiStorageMindmapDeleteInkLayer({required String id});
 
   Future<void> crateApiStorageMindmapDeleteNote({required String id});
+
+  Future<void> crateApiStorageMindmapDeleteNoteTagBindingsForNote({
+    required String noteId,
+  });
+
+  Future<void> crateApiStorageMindmapDeleteRelation({required String id});
+
+  Future<void> crateApiStorageMindmapDeleteRelationsForNote({
+    required String noteId,
+  });
+
+  Future<void> crateApiStorageMindmapDeleteSummariesForNote({
+    required String noteId,
+  });
+
+  Future<void> crateApiStorageMindmapDeleteSummary({required String id});
+
+  Future<MindMapRelation?> crateApiStorageMindmapFindRelationByEndpoints({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+  });
 
   Future<List<Topic>> crateApiStorageMindmapGetAllTopics();
 
@@ -232,7 +274,31 @@ abstract class RustLibApi extends BaseApi {
     required String topicId,
   });
 
+  Future<MindMapRelation?> crateApiStorageMindmapGetRelation({
+    required String id,
+  });
+
+  Future<MindMapSummary?> crateApiStorageMindmapGetSummary({
+    required String id,
+  });
+
   Future<Topic?> crateApiStorageMindmapGetTopic({required String id});
+
+  Future<List<MindMapRelation>> crateApiStorageMindmapListRelations({
+    required String topicId,
+  });
+
+  Future<List<MindMapSummary>> crateApiStorageMindmapListSummaries({
+    required String topicId,
+  });
+
+  Future<List<String>> crateApiStorageMindmapListTagIdsForNote({
+    required String noteId,
+  });
+
+  Future<Map<String, List<String>>> crateApiStorageMindmapListTagIdsForTopic({
+    required String topicId,
+  });
 
   Future<void> crateApiStorageMindmapRemoveChild({
     required String parentId,
@@ -245,7 +311,20 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiStorageMindmapTrashTopic({required String id});
 
+  Future<void> crateApiStorageMindmapUnbindTagFromNote({
+    required String noteId,
+    required String tagId,
+  });
+
   Future<void> crateApiStorageMindmapUpdateNote({required Note note});
+
+  Future<void> crateApiStorageMindmapUpdateRelation({
+    required MindMapRelation relation,
+  });
+
+  Future<void> crateApiStorageMindmapUpdateSummary({
+    required MindMapSummary summary,
+  });
 
   Future<void> crateApiStorageMindmapUpdateTopic({required Topic topic});
 
@@ -1164,6 +1243,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiStorageMindmapBindTagToNote({
+    required String noteId,
+    required String tagId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          sse_encode_String(tagId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 27,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapBindTagToNoteConstMeta,
+        argValues: [noteId, tagId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapBindTagToNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_bind_tag_to_note",
+        argNames: ["noteId", "tagId"],
+      );
+
+  @override
   Future<String> crateApiStorageMindmapCreateNote({
     required String topicId,
     required String title,
@@ -1179,7 +1293,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 28,
             port: port_,
           );
         },
@@ -1201,6 +1315,86 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<String> crateApiStorageMindmapCreateRelation({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          sse_encode_String(sourceNoteId, serializer);
+          sse_encode_String(targetNoteId, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapCreateRelationConstMeta,
+        argValues: [topicId, sourceNoteId, targetNoteId, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapCreateRelationConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_create_relation",
+        argNames: ["topicId", "sourceNoteId", "targetNoteId", "text"],
+      );
+
+  @override
+  Future<String> crateApiStorageMindmapCreateSummary({
+    required String topicId,
+    required String parentId,
+    required int startIndex,
+    required int endIndex,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          sse_encode_String(parentId, serializer);
+          sse_encode_i_32(startIndex, serializer);
+          sse_encode_i_32(endIndex, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 30,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapCreateSummaryConstMeta,
+        argValues: [topicId, parentId, startIndex, endIndex, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapCreateSummaryConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_create_summary",
+        argNames: ["topicId", "parentId", "startIndex", "endIndex", "text"],
+      );
+
+  @override
   Future<String> crateApiStorageMindmapCreateTopic({
     required String title,
     String? author,
@@ -1214,7 +1408,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 31,
             port: port_,
           );
         },
@@ -1245,7 +1439,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 32,
             port: port_,
           );
         },
@@ -1276,7 +1470,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 33,
             port: port_,
           );
         },
@@ -1295,6 +1489,205 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "mindmap_delete_note", argNames: ["id"]);
 
   @override
+  Future<void> crateApiStorageMindmapDeleteNoteTagBindingsForNote({
+    required String noteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 34,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteNoteTagBindingsForNoteConstMeta,
+        argValues: [noteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiStorageMindmapDeleteNoteTagBindingsForNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_note_tag_bindings_for_note",
+        argNames: ["noteId"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteRelation({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 35,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteRelationConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteRelationConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_relation",
+        argNames: ["id"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteRelationsForNote({
+    required String noteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 36,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteRelationsForNoteConstMeta,
+        argValues: [noteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteRelationsForNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_relations_for_note",
+        argNames: ["noteId"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteSummariesForNote({
+    required String noteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 37,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteSummariesForNoteConstMeta,
+        argValues: [noteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteSummariesForNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_summaries_for_note",
+        argNames: ["noteId"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapDeleteSummary({required String id}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 38,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapDeleteSummaryConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapDeleteSummaryConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_delete_summary",
+        argNames: ["id"],
+      );
+
+  @override
+  Future<MindMapRelation?> crateApiStorageMindmapFindRelationByEndpoints({
+    required String topicId,
+    required String sourceNoteId,
+    required String targetNoteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          sse_encode_String(sourceNoteId, serializer);
+          sse_encode_String(targetNoteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 39,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_mind_map_relation,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapFindRelationByEndpointsConstMeta,
+        argValues: [topicId, sourceNoteId, targetNoteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapFindRelationByEndpointsConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_find_relation_by_endpoints",
+        argNames: ["topicId", "sourceNoteId", "targetNoteId"],
+      );
+
+  @override
   Future<List<Topic>> crateApiStorageMindmapGetAllTopics() {
     return handler.executeNormal(
       NormalTask(
@@ -1303,7 +1696,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 31,
+            funcId: 40,
             port: port_,
           );
         },
@@ -1333,7 +1726,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 32,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1368,7 +1761,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 33,
+            funcId: 42,
             port: port_,
           );
         },
@@ -1399,7 +1792,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 34,
+            funcId: 43,
             port: port_,
           );
         },
@@ -1429,7 +1822,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 35,
+            funcId: 44,
             port: port_,
           );
         },
@@ -1462,7 +1855,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 36,
+            funcId: 45,
             port: port_,
           );
         },
@@ -1484,6 +1877,66 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MindMapRelation?> crateApiStorageMindmapGetRelation({
+    required String id,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 46,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_mind_map_relation,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetRelationConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetRelationConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_get_relation", argNames: ["id"]);
+
+  @override
+  Future<MindMapSummary?> crateApiStorageMindmapGetSummary({
+    required String id,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 47,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_mind_map_summary,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapGetSummaryConstMeta,
+        argValues: [id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapGetSummaryConstMeta =>
+      const TaskConstMeta(debugName: "mindmap_get_summary", argNames: ["id"]);
+
+  @override
   Future<Topic?> crateApiStorageMindmapGetTopic({required String id}) {
     return handler.executeNormal(
       NormalTask(
@@ -1493,7 +1946,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 37,
+            funcId: 48,
             port: port_,
           );
         },
@@ -1512,6 +1965,138 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "mindmap_get_topic", argNames: ["id"]);
 
   @override
+  Future<List<MindMapRelation>> crateApiStorageMindmapListRelations({
+    required String topicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 49,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_mind_map_relation,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapListRelationsConstMeta,
+        argValues: [topicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapListRelationsConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_list_relations",
+        argNames: ["topicId"],
+      );
+
+  @override
+  Future<List<MindMapSummary>> crateApiStorageMindmapListSummaries({
+    required String topicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 50,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_mind_map_summary,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapListSummariesConstMeta,
+        argValues: [topicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapListSummariesConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_list_summaries",
+        argNames: ["topicId"],
+      );
+
+  @override
+  Future<List<String>> crateApiStorageMindmapListTagIdsForNote({
+    required String noteId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 51,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapListTagIdsForNoteConstMeta,
+        argValues: [noteId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapListTagIdsForNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_list_tag_ids_for_note",
+        argNames: ["noteId"],
+      );
+
+  @override
+  Future<Map<String, List<String>>> crateApiStorageMindmapListTagIdsForTopic({
+    required String topicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(topicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 52,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_Map_String_list_String_None,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapListTagIdsForTopicConstMeta,
+        argValues: [topicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapListTagIdsForTopicConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_list_tag_ids_for_topic",
+        argNames: ["topicId"],
+      );
+
+  @override
   Future<void> crateApiStorageMindmapRemoveChild({
     required String parentId,
     required String childId,
@@ -1525,7 +2110,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 38,
+            funcId: 53,
             port: port_,
           );
         },
@@ -1558,7 +2143,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 39,
+            funcId: 54,
             port: port_,
           );
         },
@@ -1589,7 +2174,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 40,
+            funcId: 55,
             port: port_,
           );
         },
@@ -1608,6 +2193,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "mindmap_trash_topic", argNames: ["id"]);
 
   @override
+  Future<void> crateApiStorageMindmapUnbindTagFromNote({
+    required String noteId,
+    required String tagId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(noteId, serializer);
+          sse_encode_String(tagId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 56,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapUnbindTagFromNoteConstMeta,
+        argValues: [noteId, tagId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapUnbindTagFromNoteConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_unbind_tag_from_note",
+        argNames: ["noteId", "tagId"],
+      );
+
+  @override
   Future<void> crateApiStorageMindmapUpdateNote({required Note note}) {
     return handler.executeNormal(
       NormalTask(
@@ -1617,7 +2237,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 41,
+            funcId: 57,
             port: port_,
           );
         },
@@ -1636,6 +2256,72 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "mindmap_update_note", argNames: ["note"]);
 
   @override
+  Future<void> crateApiStorageMindmapUpdateRelation({
+    required MindMapRelation relation,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_mind_map_relation(relation, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 58,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapUpdateRelationConstMeta,
+        argValues: [relation],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapUpdateRelationConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_update_relation",
+        argNames: ["relation"],
+      );
+
+  @override
+  Future<void> crateApiStorageMindmapUpdateSummary({
+    required MindMapSummary summary,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_mind_map_summary(summary, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 59,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStorageMindmapUpdateSummaryConstMeta,
+        argValues: [summary],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStorageMindmapUpdateSummaryConstMeta =>
+      const TaskConstMeta(
+        debugName: "mindmap_update_summary",
+        argNames: ["summary"],
+      );
+
+  @override
   Future<void> crateApiStorageMindmapUpdateTopic({required Topic topic}) {
     return handler.executeNormal(
       NormalTask(
@@ -1645,7 +2331,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 42,
+            funcId: 60,
             port: port_,
           );
         },
@@ -1680,7 +2366,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 43,
+            funcId: 61,
             port: port_,
           );
         },
@@ -1715,7 +2401,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 44,
+            funcId: 62,
             port: port_,
           );
         },
@@ -1750,7 +2436,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 45,
+            funcId: 63,
             port: port_,
           );
         },
@@ -1778,7 +2464,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 46,
+            funcId: 64,
             port: port_,
           );
         },
@@ -1810,7 +2496,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 47,
+            funcId: 65,
             port: port_,
           );
         },
@@ -1836,6 +2522,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return Map.fromEntries(
       dco_decode_list_record_string_string(
+        raw,
+      ).map((e) => MapEntry(e.$1, e.$2)),
+    );
+  }
+
+  @protected
+  Map<String, List<String>> dco_decode_Map_String_list_String_None(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return Map.fromEntries(
+      dco_decode_list_record_string_list_string(
         raw,
       ).map((e) => MapEntry(e.$1, e.$2)),
     );
@@ -1912,6 +2610,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   InkLayerRecord dco_decode_box_autoadd_ink_layer_record(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_ink_layer_record(raw);
+  }
+
+  @protected
+  MindMapRelation dco_decode_box_autoadd_mind_map_relation(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_mind_map_relation(raw);
+  }
+
+  @protected
+  MindMapSummary dco_decode_box_autoadd_mind_map_summary(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_mind_map_summary(raw);
   }
 
   @protected
@@ -2050,6 +2760,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<MindMapRelation> dco_decode_list_mind_map_relation(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_mind_map_relation).toList();
+  }
+
+  @protected
+  List<MindMapSummary> dco_decode_list_mind_map_summary(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_mind_map_summary).toList();
+  }
+
+  @protected
   List<Note> dco_decode_list_note(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_note).toList();
@@ -2059,6 +2781,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  List<(String, List<String>)> dco_decode_list_record_string_list_string(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_record_string_list_string)
+        .toList();
   }
 
   @protected
@@ -2077,6 +2809,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<Topic> dco_decode_list_topic(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_topic).toList();
+  }
+
+  @protected
+  MindMapRelation dco_decode_mind_map_relation(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    return MindMapRelation(
+      id: dco_decode_String(arr[0]),
+      topicId: dco_decode_String(arr[1]),
+      sourceNoteId: dco_decode_String(arr[2]),
+      targetNoteId: dco_decode_String(arr[3]),
+      text: dco_decode_String(arr[4]),
+      controlPointsJson: dco_decode_opt_String(arr[5]),
+      style: dco_decode_String(arr[6]),
+      createdAt: dco_decode_i_64(arr[7]),
+      updatedAt: dco_decode_i_64(arr[8]),
+    );
+  }
+
+  @protected
+  MindMapSummary dco_decode_mind_map_summary(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return MindMapSummary(
+      id: dco_decode_String(arr[0]),
+      topicId: dco_decode_String(arr[1]),
+      parentId: dco_decode_String(arr[2]),
+      startIndex: dco_decode_i_32(arr[3]),
+      endIndex: dco_decode_i_32(arr[4]),
+      text: dco_decode_String(arr[5]),
+      createdAt: dco_decode_i_64(arr[6]),
+      updatedAt: dco_decode_i_64(arr[7]),
+    );
   }
 
   @protected
@@ -2147,6 +2916,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  MindMapRelation? dco_decode_opt_box_autoadd_mind_map_relation(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_mind_map_relation(raw);
+  }
+
+  @protected
+  MindMapSummary? dco_decode_opt_box_autoadd_mind_map_summary(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_mind_map_summary(raw);
+  }
+
+  @protected
   Note? dco_decode_opt_box_autoadd_note(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_note(raw);
@@ -2166,6 +2947,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('Expected 2 elements, got ${arr.length}');
     }
     return (dco_decode_f_32(arr[0]), dco_decode_f_32(arr[1]));
+  }
+
+  @protected
+  (String, List<String>) dco_decode_record_string_list_string(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_String(arr[0]), dco_decode_list_String(arr[1]));
   }
 
   @protected
@@ -2197,8 +2988,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Topic dco_decode_topic(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 11)
-      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    if (arr.length != 13)
+      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
     return Topic(
       id: dco_decode_String(arr[0]),
       title: dco_decode_String(arr[1]),
@@ -2211,6 +3002,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lastVisitAt: dco_decode_opt_box_autoadd_i_64(arr[8]),
       isTrashed: dco_decode_bool(arr[9]),
       syncVersion: dco_decode_i_64(arr[10]),
+      layoutDirection: dco_decode_String(arr[11]),
+      layoutStyle: dco_decode_String(arr[12]),
     );
   }
 
@@ -2257,6 +3050,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_record_string_string(deserializer);
+    return Map.fromEntries(inner.map((e) => MapEntry(e.$1, e.$2)));
+  }
+
+  @protected
+  Map<String, List<String>> sse_decode_Map_String_list_String_None(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_list_record_string_list_string(deserializer);
     return Map.fromEntries(inner.map((e) => MapEntry(e.$1, e.$2)));
   }
 
@@ -2348,6 +3150,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_ink_layer_record(deserializer));
+  }
+
+  @protected
+  MindMapRelation sse_decode_box_autoadd_mind_map_relation(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_mind_map_relation(deserializer));
+  }
+
+  @protected
+  MindMapSummary sse_decode_box_autoadd_mind_map_summary(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_mind_map_summary(deserializer));
   }
 
   @protected
@@ -2533,6 +3351,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<MindMapRelation> sse_decode_list_mind_map_relation(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <MindMapRelation>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_mind_map_relation(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<MindMapSummary> sse_decode_list_mind_map_summary(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <MindMapSummary>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_mind_map_summary(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<Note> sse_decode_list_note(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2549,6 +3395,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<(String, List<String>)> sse_decode_list_record_string_list_string(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <(String, List<String>)>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_record_string_list_string(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -2587,6 +3447,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_topic(deserializer));
     }
     return ans_;
+  }
+
+  @protected
+  MindMapRelation sse_decode_mind_map_relation(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_topicId = sse_decode_String(deserializer);
+    var var_sourceNoteId = sse_decode_String(deserializer);
+    var var_targetNoteId = sse_decode_String(deserializer);
+    var var_text = sse_decode_String(deserializer);
+    var var_controlPointsJson = sse_decode_opt_String(deserializer);
+    var var_style = sse_decode_String(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    return MindMapRelation(
+      id: var_id,
+      topicId: var_topicId,
+      sourceNoteId: var_sourceNoteId,
+      targetNoteId: var_targetNoteId,
+      text: var_text,
+      controlPointsJson: var_controlPointsJson,
+      style: var_style,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
+  }
+
+  @protected
+  MindMapSummary sse_decode_mind_map_summary(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_topicId = sse_decode_String(deserializer);
+    var var_parentId = sse_decode_String(deserializer);
+    var var_startIndex = sse_decode_i_32(deserializer);
+    var var_endIndex = sse_decode_i_32(deserializer);
+    var var_text = sse_decode_String(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    return MindMapSummary(
+      id: var_id,
+      topicId: var_topicId,
+      parentId: var_parentId,
+      startIndex: var_startIndex,
+      endIndex: var_endIndex,
+      text: var_text,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
   }
 
   @protected
@@ -2707,6 +3615,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  MindMapRelation? sse_decode_opt_box_autoadd_mind_map_relation(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_mind_map_relation(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  MindMapSummary? sse_decode_opt_box_autoadd_mind_map_summary(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_mind_map_summary(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2733,6 +3667,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_f_32(deserializer);
     var var_field1 = sse_decode_f_32(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (String, List<String>) sse_decode_record_string_list_string(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_list_String(deserializer);
     return (var_field0, var_field1);
   }
 
@@ -2777,6 +3721,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_lastVisitAt = sse_decode_opt_box_autoadd_i_64(deserializer);
     var var_isTrashed = sse_decode_bool(deserializer);
     var var_syncVersion = sse_decode_i_64(deserializer);
+    var var_layoutDirection = sse_decode_String(deserializer);
+    var var_layoutStyle = sse_decode_String(deserializer);
     return Topic(
       id: var_id,
       title: var_title,
@@ -2789,6 +3735,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lastVisitAt: var_lastVisitAt,
       isTrashed: var_isTrashed,
       syncVersion: var_syncVersion,
+      layoutDirection: var_layoutDirection,
+      layoutStyle: var_layoutStyle,
     );
   }
 
@@ -2841,6 +3789,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_record_string_string(
+      self.entries.map((e) => (e.key, e.value)).toList(),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_Map_String_list_String_None(
+    Map<String, List<String>> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_record_string_list_string(
       self.entries.map((e) => (e.key, e.value)).toList(),
       serializer,
     );
@@ -2924,6 +3884,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_ink_layer_record(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_mind_map_relation(
+    MindMapRelation self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_mind_map_relation(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_mind_map_summary(
+    MindMapSummary self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_mind_map_summary(self, serializer);
   }
 
   @protected
@@ -3075,6 +4053,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_mind_map_relation(
+    List<MindMapRelation> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_mind_map_relation(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_mind_map_summary(
+    List<MindMapSummary> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_mind_map_summary(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_note(List<Note> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
@@ -3091,6 +4093,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_list_record_string_list_string(
+    List<(String, List<String>)> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_record_string_list_string(item, serializer);
+    }
   }
 
   @protected
@@ -3121,6 +4135,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     for (final item in self) {
       sse_encode_topic(item, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_mind_map_relation(
+    MindMapRelation self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.topicId, serializer);
+    sse_encode_String(self.sourceNoteId, serializer);
+    sse_encode_String(self.targetNoteId, serializer);
+    sse_encode_String(self.text, serializer);
+    sse_encode_opt_String(self.controlPointsJson, serializer);
+    sse_encode_String(self.style, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
+  }
+
+  @protected
+  void sse_encode_mind_map_summary(
+    MindMapSummary self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.topicId, serializer);
+    sse_encode_String(self.parentId, serializer);
+    sse_encode_i_32(self.startIndex, serializer);
+    sse_encode_i_32(self.endIndex, serializer);
+    sse_encode_String(self.text, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
   }
 
   @protected
@@ -3216,6 +4263,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_mind_map_relation(
+    MindMapRelation? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_mind_map_relation(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_mind_map_summary(
+    MindMapSummary? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_mind_map_summary(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_note(Note? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -3243,6 +4316,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_f_32(self.$1, serializer);
     sse_encode_f_32(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_record_string_list_string(
+    (String, List<String>) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_list_String(self.$2, serializer);
   }
 
   @protected
@@ -3279,6 +4362,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_box_autoadd_i_64(self.lastVisitAt, serializer);
     sse_encode_bool(self.isTrashed, serializer);
     sse_encode_i_64(self.syncVersion, serializer);
+    sse_encode_String(self.layoutDirection, serializer);
+    sse_encode_String(self.layoutStyle, serializer);
   }
 
   @protected

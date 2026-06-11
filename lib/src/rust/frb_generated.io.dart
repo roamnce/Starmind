@@ -30,6 +30,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Map<String, String> dco_decode_Map_String_String_None(dynamic raw);
 
   @protected
+  Map<String, List<String>> dco_decode_Map_String_list_String_None(dynamic raw);
+
+  @protected
   String dco_decode_String(dynamic raw);
 
   @protected
@@ -55,6 +58,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   InkLayerRecord dco_decode_box_autoadd_ink_layer_record(dynamic raw);
+
+  @protected
+  MindMapRelation dco_decode_box_autoadd_mind_map_relation(dynamic raw);
+
+  @protected
+  MindMapSummary dco_decode_box_autoadd_mind_map_summary(dynamic raw);
 
   @protected
   Note dco_decode_box_autoadd_note(dynamic raw);
@@ -105,10 +114,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<FolderNode> dco_decode_list_folder_node(dynamic raw);
 
   @protected
+  List<MindMapRelation> dco_decode_list_mind_map_relation(dynamic raw);
+
+  @protected
+  List<MindMapSummary> dco_decode_list_mind_map_summary(dynamic raw);
+
+  @protected
   List<Note> dco_decode_list_note(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  List<(String, List<String>)> dco_decode_list_record_string_list_string(
+    dynamic raw,
+  );
 
   @protected
   List<(String, String)> dco_decode_list_record_string_string(dynamic raw);
@@ -118,6 +138,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<Topic> dco_decode_list_topic(dynamic raw);
+
+  @protected
+  MindMapRelation dco_decode_mind_map_relation(dynamic raw);
+
+  @protected
+  MindMapSummary dco_decode_mind_map_summary(dynamic raw);
 
   @protected
   Note dco_decode_note(dynamic raw);
@@ -141,6 +167,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   InkLayerRecord? dco_decode_opt_box_autoadd_ink_layer_record(dynamic raw);
 
   @protected
+  MindMapRelation? dco_decode_opt_box_autoadd_mind_map_relation(dynamic raw);
+
+  @protected
+  MindMapSummary? dco_decode_opt_box_autoadd_mind_map_summary(dynamic raw);
+
+  @protected
   Note? dco_decode_opt_box_autoadd_note(dynamic raw);
 
   @protected
@@ -148,6 +180,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (double, double) dco_decode_record_f_32_f_32(dynamic raw);
+
+  @protected
+  (String, List<String>) dco_decode_record_string_list_string(dynamic raw);
 
   @protected
   (String, String) dco_decode_record_string_string(dynamic raw);
@@ -172,6 +207,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Map<String, String> sse_decode_Map_String_String_None(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Map<String, List<String>> sse_decode_Map_String_list_String_None(
     SseDeserializer deserializer,
   );
 
@@ -203,6 +243,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   InkLayerRecord sse_decode_box_autoadd_ink_layer_record(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  MindMapRelation sse_decode_box_autoadd_mind_map_relation(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  MindMapSummary sse_decode_box_autoadd_mind_map_summary(
     SseDeserializer deserializer,
   );
 
@@ -261,10 +311,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<FolderNode> sse_decode_list_folder_node(SseDeserializer deserializer);
 
   @protected
+  List<MindMapRelation> sse_decode_list_mind_map_relation(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<MindMapSummary> sse_decode_list_mind_map_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<Note> sse_decode_list_note(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  List<(String, List<String>)> sse_decode_list_record_string_list_string(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<(String, String)> sse_decode_list_record_string_string(
@@ -276,6 +341,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<Topic> sse_decode_list_topic(SseDeserializer deserializer);
+
+  @protected
+  MindMapRelation sse_decode_mind_map_relation(SseDeserializer deserializer);
+
+  @protected
+  MindMapSummary sse_decode_mind_map_summary(SseDeserializer deserializer);
 
   @protected
   Note sse_decode_note(SseDeserializer deserializer);
@@ -301,6 +372,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  MindMapRelation? sse_decode_opt_box_autoadd_mind_map_relation(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  MindMapSummary? sse_decode_opt_box_autoadd_mind_map_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Note? sse_decode_opt_box_autoadd_note(SseDeserializer deserializer);
 
   @protected
@@ -308,6 +389,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (double, double) sse_decode_record_f_32_f_32(SseDeserializer deserializer);
+
+  @protected
+  (String, List<String>) sse_decode_record_string_list_string(
+    SseDeserializer deserializer,
+  );
 
   @protected
   (String, String) sse_decode_record_string_string(
@@ -335,6 +421,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_Map_String_String_None(
     Map<String, String> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_Map_String_list_String_None(
+    Map<String, List<String>> self,
     SseSerializer serializer,
   );
 
@@ -374,6 +466,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_ink_layer_record(
     InkLayerRecord self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_mind_map_relation(
+    MindMapRelation self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_mind_map_summary(
+    MindMapSummary self,
     SseSerializer serializer,
   );
 
@@ -441,11 +545,29 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_mind_map_relation(
+    List<MindMapRelation> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_mind_map_summary(
+    List<MindMapSummary> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_note(List<Note> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_record_string_list_string(
+    List<(String, List<String>)> self,
     SseSerializer serializer,
   );
 
@@ -460,6 +582,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_topic(List<Topic> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_mind_map_relation(
+    MindMapRelation self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_mind_map_summary(
+    MindMapSummary self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_note(Note self, SseSerializer serializer);
@@ -489,6 +623,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_mind_map_relation(
+    MindMapRelation? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_mind_map_summary(
+    MindMapSummary? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_note(Note? self, SseSerializer serializer);
 
   @protected
@@ -497,6 +643,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_record_f_32_f_32(
     (double, double) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_list_string(
+    (String, List<String>) self,
     SseSerializer serializer,
   );
 

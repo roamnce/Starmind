@@ -24,6 +24,7 @@ void main() {
             body: NodeWidget(
               note: note,
               isSelected: false,
+              isFrameworkNode: true,
               onTap: () {},
               customSize: const Size(200, 150),
             ),
@@ -52,6 +53,7 @@ void main() {
             body: NodeWidget(
               note: note,
               isSelected: false,
+              isFrameworkNode: true,
               onTap: () {},
               customSize: const Size(200, 150),
             ),
@@ -79,6 +81,7 @@ void main() {
             body: NodeWidget(
               note: note,
               isSelected: true,
+              isFrameworkNode: true,
               onTap: () {},
               customSize: const Size(200, 150),
             ),
