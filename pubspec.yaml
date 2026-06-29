@@ -48,6 +48,11 @@ dependencies:
 
   path: any
   archive: ^4.0.9
+  # Markdown WYSIWYG rendering
+  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
+  flutter_math_fork: ^0.7.2
+  url_launcher: ^6.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
