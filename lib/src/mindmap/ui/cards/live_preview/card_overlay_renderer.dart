@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'placeholder_tracker.dart';
 import 'rendering/code_block_renderer.dart';
 import 'rendering/image_renderer.dart';
+import 'rendering/table_renderer.dart';
 
 /// Renders real Flutter widgets (images, code blocks, etc.) at positions
 /// matching their placeholder positions in the markdown text.
@@ -80,6 +81,24 @@ class CardOverlayRenderer extends StatelessWidget {
                 child: CodeBlockRenderer(
                   code: codeLines,
                   language: lang,
+                  maxWidth: maxWidth,
+                ),
+              ),
+            );
+          }
+          break;
+        case 'table':
+          final result = MarkdownTableParser.parse(p.rawMarkdown);
+          if (!result.isEmpty) {
+            widgets.add(
+              Positioned(
+                left: 8,
+                top: topOffset + 2,
+                right: 8,
+                child: TableRenderer(
+                  headers: result.headers,
+                  rows: result.rows,
+                  columnAligns: result.columnAligns,
                   maxWidth: maxWidth,
                 ),
               ),
