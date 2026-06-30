@@ -69,8 +69,10 @@ class PlaceholderTracker {
   /// placeholder list.
   ///
   /// Currently detects:
-  /// - **Image placeholders**: `![alt](url)`  -- inline images.
+  /// - **Image placeholders**: `![alt](url)` — inline images.
   /// - **Block math placeholders**: `$$...$$` on its own line.
+  /// - **Code block placeholders**: fenced code blocks (```lang / ~~~lang).
+  /// - **Table placeholders**: pipe tables (| header | ... |).
   ///
   /// If [markdown] is empty the placeholder list is cleared immediately.
   void rebuild(String markdown) {
@@ -83,6 +85,10 @@ class PlaceholderTracker {
       _scanLineForPlaceholders(lines[i], i, lineOffset);
       lineOffset += lines[i].length + 1;
     }
+
+    // Scan for multi-line blocks: code fences and tables.
+    _placeholders.addAll(scanCodeFences(markdown));
+    _placeholders.addAll(scanTables(markdown));
   }
 
   /// Scans a single [line] for placeholder patterns.
@@ -141,5 +147,143 @@ class PlaceholderTracker {
       total += p.length;
     }
     return total;
+  }
+
+  /// Scans the full markdown for fenced code blocks (```lang / ~~~lang).
+  ///
+  /// Returns placeholder info for each complete code block found.
+  /// The block spans from the opening fence line to the closing fence line.
+  List<PlaceholderInfo> scanCodeFences(String markdown) {
+    final fences = <PlaceholderInfo>[];
+    final lines = markdown.split('\n');
+    final fenceRe = RegExp(r'^\s*(```|~~~)(\w*)');
+    var inBlock = false;
+    var blockStartLine = 0;
+    var blockStartOffset = 0;
+    var blockLines = <String>[];
+    var lineOffset = 0;
+
+    for (var i = 0; i < lines.length; i++) {
+      final m = fenceRe.firstMatch(lines[i]);
+      if (m != null && !inBlock) {
+        // Opening fence
+        inBlock = true;
+        blockStartLine = i;
+        blockStartOffset = lineOffset;
+        blockLines = [lines[i]];
+      } else if (m != null && inBlock) {
+        // Closing fence
+        inBlock = false;
+        blockLines.add(lines[i]);
+        final blockText = blockLines.join('\n');
+        fences.add(PlaceholderInfo(
+          id: 'code_$blockStartLine',
+          lineIndex: blockStartLine,
+          charOffset: blockStartOffset,
+          length: lineOffset + lines[i].length - blockStartOffset + 1,
+          type: 'codeblock',
+          rawMarkdown: blockText,
+        ));
+      } else if (inBlock) {
+        blockLines.add(lines[i]);
+      }
+      lineOffset += lines[i].length + 1;
+    }
+    return fences;
+  }
+
+  /// Scans the full markdown for pipe tables.
+  ///
+  /// Consecutive lines starting with `|` are grouped as a table block.
+  /// Returns placeholder info for each complete table found.
+  List<PlaceholderInfo> scanTables(String markdown) {
+    final tables = <PlaceholderInfo>[];
+    final lines = markdown.split('\n');
+    var inTable = false;
+    var tableStartLine = 0;
+    var tableStartOffset = 0;
+    var tableLines = <String>[];
+    var lineOffset = 0;
+
+    for (var i = 0; i < lines.length; i++) {
+      final isTableRow = lines[i].trimLeft().startsWith('|');
+      if (isTableRow && !inTable) {
+        inTable = true;
+        tableStartLine = i;
+        tableStartOffset = lineOffset;
+        tableLines = [lines[i]];
+      } else if (isTableRow && inTable) {
+        tableLines.add(lines[i]);
+      } else if (!isTableRow && inTable) {
+        inTable = false;
+        if (tableLines.length >= 2) {
+          final tableText = tableLines.join('\n');
+          tables.add(PlaceholderInfo(
+            id: 'table_$tableStartLine',
+            lineIndex: tableStartLine,
+            charOffset: tableStartOffset,
+            length: lineOffset - tableStartOffset - 1,
+            type: 'table',
+            rawMarkdown: tableText,
+          ));
+        }
+      }
+      lineOffset += lines[i].length + 1;
+    }
+    // Handle table at end of text
+    if (inTable && tableLines.length >= 2) {
+      final tableText = tableLines.join('\n');
+      tables.add(PlaceholderInfo(
+        id: 'table_$tableStartLine',
+        lineIndex: tableStartLine,
+        charOffset: tableStartOffset,
+        length: lineOffset - tableStartOffset - 1,
+        type: 'table',
+        rawMarkdown: tableText,
+      ));
+    }
+    return tables;
+  }
+
+  /// Scans for Mermaid diagram fences (```mermaid / ```mmd).
+  ///
+  /// Returns placeholder info for each complete Mermaid block found.
+  List<PlaceholderInfo> scanMermaidFences(String markdown) {
+    final fences = <PlaceholderInfo>[];
+    final lines = markdown.split('\n');
+    final mermaidRe = RegExp(r'^\s*```\s*(mermaid|mmd)\s*$', caseSensitive: false);
+    final closingRe = RegExp(r'^\s*```\s*$');
+    var inBlock = false;
+    var blockStartLine = 0;
+    var blockStartOffset = 0;
+    var blockLines = <String>[];
+    var lineOffset = 0;
+
+    for (var i = 0; i < lines.length; i++) {
+      final isMermaidOpen = mermaidRe.firstMatch(lines[i]);
+      if (isMermaidOpen != null && !inBlock) {
+        inBlock = true;
+        blockStartLine = i;
+        blockStartOffset = lineOffset;
+        blockLines = [lines[i]];
+      } else if (inBlock && closingRe.firstMatch(lines[i]) != null) {
+        // Closing fence
+        inBlock = false;
+        blockLines.add(lines[i]);
+        final blockText = blockLines.join('\n');
+        fences.add(PlaceholderInfo(
+          id: 'mermaid_$blockStartLine',
+          lineIndex: blockStartLine,
+          charOffset: blockStartOffset,
+          length: lineOffset + lines[i].length - blockStartOffset + 1,
+          type: 'mermaid',
+          rawMarkdown: blockText,
+        ));
+      } else if (inBlock) {
+        blockLines.add(lines[i]);
+      }
+      lineOffset += lines[i].length + 1;
+    }
+    return fences;
   }
 }

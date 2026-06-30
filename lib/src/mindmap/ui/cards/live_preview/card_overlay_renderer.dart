@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'placeholder_tracker.dart';
+import 'rendering/code_block_renderer.dart';
 import 'rendering/image_renderer.dart';
 
 /// Renders real Flutter widgets (images, code blocks, etc.) at positions
@@ -43,6 +44,8 @@ class CardOverlayRenderer extends StatelessWidget {
     final widgets = <Widget>[];
 
     for (final p in placeholders) {
+      final topOffset = _estimateLineTop(p.lineIndex);
+
       switch (p.type) {
         case 'image':
           final url = _extractUrl(p.rawMarkdown);
@@ -50,7 +53,7 @@ class CardOverlayRenderer extends StatelessWidget {
             widgets.add(
               Positioned(
                 left: 8,
-                top: _estimateLineTop(p.lineIndex),
+                top: topOffset,
                 right: 8,
                 child: ImageRenderer(
                   imagePath: url,
@@ -59,6 +62,30 @@ class CardOverlayRenderer extends StatelessWidget {
               ),
             );
           }
+          break;
+        case 'codeblock':
+          final lines = p.rawMarkdown.split('\n');
+          final codeLines = lines.length > 1
+              ? lines.sublist(1, lines.length - 1).join('\n')
+              : '';
+          final fenceRe = RegExp(r'^\s*(```|~~~)(\w*)');
+          final fMatch = fenceRe.firstMatch(lines.first);
+          final lang = fMatch?.group(2) ?? '';
+          if (codeLines.isNotEmpty) {
+            widgets.add(
+              Positioned(
+                left: 8,
+                top: topOffset + 2,
+                right: 8,
+                child: CodeBlockRenderer(
+                  code: codeLines,
+                  language: lang,
+                  maxWidth: maxWidth,
+                ),
+              ),
+            );
+          }
+          break;
       }
     }
 

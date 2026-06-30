@@ -171,25 +171,33 @@ class LivePreviewController extends TextEditingController {
     }
 
     // 围栏代码块起始行（``` 或 ~~~）——语言标识保留为可见文本，
-    // 符号本身淡化。
+    // 符号本身淡化。光标不在代码块范围内时整行透明，以便 Overlay 渲染。
     final fenceRe = RegExp(r'^(`{3,}|~{3,})(\w*)');
     final fenceMatch = fenceRe.firstMatch(line);
     if (fenceMatch != null) {
       final marker = fenceMatch.group(1)!;
       final lang = fenceMatch.group(2)!;
-      out.add(TextSpan(
-        text: marker,
-        style: _syntaxStyle(revealSyntax),
-      ));
-      if (lang.isNotEmpty) {
+      if (!revealSyntax) {
+        // Cursor is outside this fence line — render transparent for overlay.
         out.add(TextSpan(
-          text: lang,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            color: codeColor,
-            fontSize: 13,
-          ),
+          text: line,
+          style: const TextStyle(color: Color(0x00000000)),
         ));
+      } else {
+        out.add(TextSpan(
+          text: marker,
+          style: _syntaxStyle(revealSyntax),
+        ));
+        if (lang.isNotEmpty) {
+          out.add(TextSpan(
+            text: lang,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              color: codeColor,
+              fontSize: 13,
+            ),
+          ));
+        }
       }
       return;
     }
