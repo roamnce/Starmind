@@ -15,6 +15,7 @@
 // 的实现。
 
 import 'dart:async';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,7 @@ import 'live_preview_toolbar.dart';
 import 'card_overlay_renderer.dart';
 import 'placeholder_tracker.dart';
 import 'file_attachment_service.dart';
+import 'link_handler.dart';
 
 /// Live Preview 卡片正文 widget。
 class LivePreviewCardBody extends StatefulWidget {
@@ -329,6 +331,8 @@ class LivePreviewCardBodyState extends State<LivePreviewCardBody> {
         _wrapSelection('[', '](url)');
       case MdToolbarAction.image:
         _pickAndInsertImage();
+      case MdToolbarAction.attachFile:
+        _pickAndInsertFile();
       case MdToolbarAction.horizontalRule:
         _insertAtSelection('\n---\n');
     }
@@ -353,7 +357,66 @@ class LivePreviewCardBodyState extends State<LivePreviewCardBody> {
           FileAttachmentService.toMarkdownInsertion(assetPath, alt: alt);
       _insertAtSelection(markdown);
     } catch (e) {
-      debugPrint('Image pick error: $e');
+      // ignore: avoid_print
+      'Image pick error: $e';
+    }
+  }
+
+  Future<void> _pickAndInsertFile() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final filePath = result.files.first.path;
+      if (filePath == null) return;
+
+      final assetPath = await FileAttachmentService.copyToAssets(filePath);
+      final markdown = FileAttachmentService.toMarkdownInsertion(assetPath);
+      _insertAtSelection(markdown);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /// Handle drag-and-drop of files from the desktop into the editor.
+  ///
+  /// Image files are inserted as `![alt](path)`, other files as `[name](path)`.
+  /// Multiple files are inserted separated by a space.
+  Future<void> _handleFileDrop(DropDoneDetails details) async {
+    final parts = <String>[];
+    for (final xFile in details.files) {
+      try {
+        final assetPath = await FileAttachmentService.copyToAssets(xFile.path);
+        final markdown = FileAttachmentService.toMarkdownInsertion(assetPath);
+        parts.add(markdown);
+      } catch (_) {
+        // Ignore individual file failures so one bad file doesn't block the rest.
+      }
+    }
+    if (parts.isNotEmpty) {
+      _insertAtSelection(parts.join(' '));
+    }
+  }
+
+  void _handleLinkTap() {
+    try {
+      final isCtrlPressed =
+          HardwareKeyboard.instance.isControlPressed ||
+          HardwareKeyboard.instance.isMetaPressed;
+      if (!isCtrlPressed) return;
+
+      final offset = _controller.selection.baseOffset;
+      if (offset < 0 || offset > _controller.text.length) return;
+
+      final links = LinkHandler.extractLinks(_controller.text);
+      final link = LinkHandler.isLinkAtOffset(links, offset);
+      if (link != null) {
+        LinkHandler.openLink(link.url);
+      }
+    } catch (e) {
+      // ignore
     }
   }
 
@@ -426,27 +489,32 @@ class LivePreviewCardBodyState extends State<LivePreviewCardBody> {
             border: InputBorder.none,
             hintText: 'markdown...',
           ),
-          onTap: _toggleCheckboxAtCursor,
+          onTap: () {
+              _toggleCheckboxAtCursor();
+              _handleLinkTap();
+            },
         ),
       ),
     );
 
-    return Stack(
+    final editorArea = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (widget.showToolbar && !widget.readOnly)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
-                child: LivePreviewToolbar(
-                  onAction: _handleToolbarAction,
-                  iconColor: text.withValues(alpha: 0.85),
-                ),
-              ),
-            Expanded(child: editor),
-          ],
-        ),
+        if (widget.showToolbar && !widget.readOnly)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
+            child: LivePreviewToolbar(
+              onAction: _handleToolbarAction,
+              iconColor: text.withValues(alpha: 0.85),
+            ),
+          ),
+        Expanded(child: editor),
+      ],
+    );
+
+    final stack = Stack(
+      children: [
+        editorArea,
         CardOverlayRenderer(
           markdown: _controller.text,
           maxWidth: MediaQuery.of(context).size.width - 40,
@@ -454,6 +522,15 @@ class LivePreviewCardBodyState extends State<LivePreviewCardBody> {
           textFieldKey: _textFieldKey,
         ),
       ],
+    );
+
+    if (widget.readOnly) {
+      return stack;
+    }
+
+    return DropTarget(
+      onDragDone: (detail) => _handleFileDrop(detail),
+      child: stack,
     );
   }
 }
