@@ -3,6 +3,7 @@ import 'placeholder_tracker.dart';
 import 'rendering/code_block_renderer.dart';
 import 'rendering/image_renderer.dart';
 import 'rendering/math_renderer.dart';
+import 'rendering/mermaid_renderer.dart';
 import 'rendering/table_renderer.dart';
 
 /// Renders real Flutter widgets (images, code blocks, etc.) at positions
@@ -118,6 +119,25 @@ class CardOverlayRenderer extends StatelessWidget {
                 child: MathRenderer(
                   tex: mathM.group(1)!,
                   isBlock: true,
+                  maxWidth: maxWidth,
+                ),
+              ),
+            );
+          }
+          break;
+        case 'mermaid':
+          final lines = p.rawMarkdown.split('\n');
+          final content = lines.length > 1
+              ? lines.sublist(1, lines.length - 1).join('\n')
+              : '';
+          if (content.isNotEmpty) {
+            widgets.add(
+              Positioned(
+                left: 8,
+                top: topOffset + 2,
+                right: 8,
+                child: MermaidRenderer(
+                  definition: content,
                   maxWidth: maxWidth,
                 ),
               ),
