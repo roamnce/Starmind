@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'placeholder_tracker.dart';
 import 'rendering/code_block_renderer.dart';
 import 'rendering/image_renderer.dart';
+import 'rendering/math_renderer.dart';
 import 'rendering/table_renderer.dart';
 
 /// Renders real Flutter widgets (images, code blocks, etc.) at positions
@@ -99,6 +100,24 @@ class CardOverlayRenderer extends StatelessWidget {
                   headers: result.headers,
                   rows: result.rows,
                   columnAligns: result.columnAligns,
+                  maxWidth: maxWidth,
+                ),
+              ),
+            );
+          }
+          break;
+        case 'math':
+          final mathRe = RegExp(r'\$\$([^$]+)\$\$');
+          final mathM = mathRe.firstMatch(p.rawMarkdown);
+          if (mathM != null) {
+            widgets.add(
+              Positioned(
+                left: 8,
+                top: topOffset + 2,
+                right: 8,
+                child: MathRenderer(
+                  tex: mathM.group(1)!,
+                  isBlock: true,
                   maxWidth: maxWidth,
                 ),
               ),
